@@ -6,3 +6,4 @@ tool/*
 *.out
 *.exe
 test.c
+kj_image.h

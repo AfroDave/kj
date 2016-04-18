@@ -9,14 +9,18 @@ extern "C" {
 #define KJ_THREAD_VERSION_MINOR 1
 #define KJ_THREAD_VERSION_PATCH 0
 
+typedef enum kj_thread_flags {
+    KJ_THREAD_FLAG_NONE         = (0 << 0),
+} kj_thread_flags_t;
+
 typedef struct kj_thread kj_thread_t;
 
 #define kj_thread_fn(name) void* name(void* data)
 typedef kj_thread_fn(kj_thread_fn);
 
-kj_thread_t kj_thread(kj_thread_fn* fn, void* data);
-void kj_thread_join(kj_thread_t* thread);
-void kj_thread_detach(kj_thread_t* thread);
+kj_def kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags);
+kj_def void kj_thread_join(kj_thread_t* thread);
+kj_def void kj_thread_detach(kj_thread_t* thread);
 
 #if defined(__cplusplus)
 }
@@ -25,7 +29,7 @@ void kj_thread_detach(kj_thread_t* thread);
 #endif
 
 #if defined(KJ_THREAD_IMPLEMENTATION)
-global u32 THREAD_COUNTER = 0;
+u32 THREAD_COUNTER = 0;
 
 #if defined(KJ_COMPILER_MSVC)
 
@@ -33,6 +37,7 @@ global u32 THREAD_COUNTER = 0;
 
 struct kj_thread {
     u32 id;
+    u32 flags;
     HANDLE handle;
     struct {
         kj_thread_fn* fn;
@@ -40,22 +45,23 @@ struct kj_thread {
     } ctx;
 };
 
-kj_thread_t kj_thread(kj_thread_fn* fn, void* data)
+inline kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags);
 {
     kj_thread_t res;
-    res.id = THREAD_COUNTER++;
+    res.id = _InterlockedIncrement(&THREAD_COUNTER);
     res.ctx.fn = fn;
     res.ctx.data = data;
+    res.flags = flags;
     res.handle = CreateThread(NULL, 0, cast(LPTHREAD_START_ROUTINE, fn), data, 0, NULL);
 }
 
-void kj_thread_join(kj_thread_t* thread)
+inline void kj_thread_join(kj_thread_t* thread)
 {
     WaitForSingleObjectEx(thread->handle, INFINITE, FALSE);
     CloseHandle(thread->handle);
 }
 
-void kj_thread_detach(kj_thread_t* thread)
+inline void kj_thread_detach(kj_thread_t* thread)
 {
     CloseHandle(thread->handle);
     thread->handle = NULL;
@@ -67,34 +73,38 @@ void kj_thread_detach(kj_thread_t* thread)
 
 struct kj_thread {
     u32 id;
+    u32 flags;
     pthread_t handle;
+    pthread_attr_t attr;
     struct {
         kj_thread_fn* fn;
         void* data;
     } ctx;
 };
 
-kj_thread_t kj_thread(kj_thread_fn* fn, void* data)
+inline kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags)
 {
     kj_thread_t res;
-    res.id = THREAD_COUNTER++;
+    res.id = __sync_add_and_fetch(&THREAD_COUNTER, 1);
     res.ctx.fn = fn;
     res.ctx.data = data;
-    pthread_create(&res.handle, NULL, fn, data);
+    res.flags = flags;
+    pthread_create(&res.handle, &res.attr, fn, data);
     return res;
 }
 
-void kj_thread_join(kj_thread_t* thread)
+inline void kj_thread_join(kj_thread_t* thread)
 {
     pthread_join(thread->handle, NULL);
 }
 
-void kj_thread_detach(kj_thread_t* thread)
+inline void kj_thread_detach(kj_thread_t* thread)
 {
     pthread_detach(thread->handle);
 }
 
-#define KJ_MUTEX_UNSUPPORTED
+#else
+#error KJ_MUTEX_UNSUPPORTED
 #endif
 
 #endif

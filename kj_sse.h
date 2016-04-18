@@ -17,12 +17,12 @@ extern "C" {
 
 typedef __m128 f128;
 
-#define kyj_sse_read_fence() _mm_lfence()
-#define kyj_sse_write_fence() _mm_sfence()
-#define kyj_sse_rw_fence() _mm_mfence()
+#define kj_sse_read_fence() _mm_lfence()
+#define kj_sse_write_fence() _mm_sfence()
+#define kj_sse_rw_fence() _mm_mfence()
 
 #define kj_sse(a, b, c, d) _mm_set_ps(a, b, c, d)
-#define kj_sser(a, b, c, d) _mm_setr_ps(a, b, c, d)
+#define kj_sse_reverse(a, b, c, d) _mm_setr_ps(a, b, c, d)
 #define kj_sse_all(a) _mm_set1_ps(a)
 #define kj_sse_zero() kj_sse_all(0.0f)
 #define kj_sse_one() kj_sse_all(1.0f)
@@ -33,11 +33,11 @@ typedef __m128 f128;
 #define kj_sse_div(a, b) _mm_div_ps(a, b)
 
 #define kj_sse_load(src) _mm_load_ps(src)
-#define kj_sse_loadu(src) _mm_loadu_ps(src)
-#define kj_sse_loadr(src) _mm_loadr_ps(src)
+#define kj_sse_load_unaligned(src) _mm_loadu_ps(src)
+#define kj_sse_load_reverse(src) _mm_loadr_ps(src)
 #define kj_sse_store(dst, src) _mm_store_ps(dst, src)
-#define kj_sse_storeu(dst, src) _mm_storeu_ps(dst, src)
-#define kj_sse_storer(dst, src) _mm_storer_ps(dst, src)
+#define kj_sse_store_unaligned(dst, src) _mm_storeu_ps(dst, src)
+#define kj_sse_store_reverse(dst, src) _mm_storer_ps(dst, src)
 
 #define kj_sse_sqrt(a) _mm_sqrt_ps(a)
 #define kj_sse_rsqrt(a) _mm_rsqrt_ps(a)

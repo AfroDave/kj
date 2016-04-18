@@ -40,10 +40,6 @@ extern "C" {
 
 #define KJ_ENDIAN KJ_LE
 
-#include <stddef.h>
-#include <stdint.h>
-#include <float.h>
-
 #if !defined(NULL)
 #if defined(KJ_COMPILER_MSVC)
 #define NULL 0
@@ -51,6 +47,18 @@ extern "C" {
 #define NULL __null
 #else
 #define NULL (cast_of(void*, 0))
+#endif
+#endif
+
+#if !defined(kj_def)
+#if defined(kj_static)
+#define kj_def static
+#else
+#if defined(__cplusplus)
+#define kj_def extern "C"
+#else
+#define kj_def extern
+#endif
 #endif
 #endif
 
@@ -146,6 +154,17 @@ extern "C" {
 #endif
 #endif
 
+#if defined(KJ_COMPILER_MSVC)
+typedef unsigned __int8 u8;
+typedef signed __int8 i8;
+typedef unsigned __int16 u16;
+typedef signed __int16 i16;
+typedef unsigned __int32 u32;
+typedef signed __int32 i32;
+typedef unsigned __int64 u64;
+typedef signed __int64 i64;
+#else
+#include <stdint.h>
 typedef int8_t i8;
 typedef uint8_t u8;
 typedef int16_t i16;
@@ -154,31 +173,32 @@ typedef int32_t i32;
 typedef uint32_t u32;
 typedef int64_t i64;
 typedef uint64_t u64;
+#endif
 
 #if !defined(I8_MIN)
-#define I8_MIN INT8_MIN
-#define I8_MAX INT8_MAX
+#define I8_MIN (-128)
+#define I8_MAX (127)
 
-#define I16_MIN INT16_MIN
-#define I16_MAX INT16_MAX
+#define I16_MIN (-32768)
+#define I16_MAX (32767)
 
-#define I32_MIN INT32_MIN
-#define I32_MAX INT32_MAX
+#define I32_MIN (-2147483648)
+#define I32_MAX (2147483647)
 
-#define I64_MIN INT64_MIN
-#define I64_MAX INT64_MAX
+#define I64_MIN (-9223372036854775808)
+#define I64_MAX (9223372036854775807)
 
-#define U8_MIN 0
-#define U8_MAX UINT8_MAX
+#define U8_MIN (0)
+#define U8_MAX (256)
 
-#define U16_MIN 0
-#define U16_MAX UINT16_MAX
+#define U16_MIN (0)
+#define U16_MAX (65536)
 
-#define U32_MIN 0
-#define U32_MAX UINT32_MAX
+#define U32_MIN (0)
+#define U32_MAX (4294967296)
 
-#define U64_MIN 0
-#define U64_MAX UINT64_MAX
+#define U64_MIN (0)
+#define U64_MAX (18446744073709551616)
 #endif
 
 typedef u32 b32;
@@ -210,19 +230,19 @@ typedef u32 usize;
 
 typedef intptr_t iptr;
 typedef uintptr_t uptr;
-typedef ptrdiff_t dptr;
+typedef isize dptr;
 
 typedef float f32;
 typedef double f64;
 
 #if !defined(F32_MIN)
-#define F32_MIN -FLT_MAX
-#define F32_MAX FLT_MAX
-#define F32_EPS FLT_EPSILON
+#define F32_MIN (-3.402823e+38)
+#define F32_MAX (3.402823e+38)
+#define F32_EPS (1.192093e-07)
 
-#define F64_MIN -DBL_MAX
-#define F64_MAX DBL_MAX
-#define F64_EPS DBL_EPSILON
+#define F64_MIN (-1.797693e+308)
+#define F64_MAX (1.797693e+308)
+#define F64_EPS (2.220446e-16)
 #endif
 
 #define kj_static_assert(n, a) typedef int kj_static_assert_##n[(a) * 2 - 1]
@@ -249,7 +269,7 @@ kj_static_assert(f64, size_of(f64) == 8);
 #define kj_move memmove
 #endif
 
-void kj_assert_handler(char* expr, char* file, u64 line, char* msg, ...);
+void kj_assert_handler(const char* expr, const char* file, u64 line, const char* msg, ...);
 
 #if defined(KJ_DEBUG)
 #if defined(KJ_COMPILER_MSVC)
@@ -337,7 +357,8 @@ global const u32 KJ_TYPE_SIZE[] = {
 #define kj_swap64(a) kj_swap32(((a) & 0xFFFFFFFF00000000) >> 32) | kj_swap32(((a) & 0x00000000FFFFFFFF) << 32)
 
 #if KJ_ENDIAN == KJ_LE
-#define kj_encode(a, b, c, d) ((a) << 0) | ((b) << 8) | ((c) << 16) | ((d) << 24)
+#define kj_encode32(a, b, c, d) (((a) << 0) | ((b) << 8) | ((c) << 16) | ((d) << 24))
+#define kj_encode16(a, b) (((a) << 0) | ((b) << 8))
 #define kj_swap16_le(a) (a)
 #define kj_swap32_le(a) (a)
 #define kj_swap64_le(a) (a)
@@ -345,7 +366,8 @@ global const u32 KJ_TYPE_SIZE[] = {
 #define kj_swap32_be(a) kj_swap32(a)
 #define kj_swap64_be(a) kj_swap64(a)
 #else
-#define kj_encode(a, b, c, d) ((d) << 0) | ((c) << 8) | ((b) << 16) | ((a) << 24)
+#define kj_encode32(a, b, c, d) (((d) << 0) | ((c) << 8) | ((b) << 16) | ((a) << 24))
+#define kj_encode16(a, b) (((b) << 0) | ((a) << 8))
 #define kj_swap16_le(a) kj_swap16(a)
 #define kj_swap32_le(a) kj_swap32(a)
 #define kj_swap64_le(a) kj_swap64(a)
@@ -358,6 +380,7 @@ global const u32 KJ_TYPE_SIZE[] = {
 #define kj_max(a, b) ((a) > (b) ? (a): (b))
 #define kj_clamp(a, min, max) kj_max((min), kj_min((a), (max)))
 #define kj_range(a, fl, fu, tl, tu) ((a - fl) * (tu - tl) / ((fu - fl) + tl))
+#define kj_swap(T, a, b) { T tmp = a; a = b; b = a; }
 
 #define kj_kb(a) ((a) * 1024)
 #define kj_mb(a) (kj_kb((a)) * 1024)
@@ -368,69 +391,69 @@ global const u32 KJ_TYPE_SIZE[] = {
 #define kj_b_gb(a) (kj_b_mb((a)) / 1024)
 #define kj_b_tb(a) (kj_b_gb((a)) / 1024)
 
-inline b32 kj_char_is_eol(char c)
+kj_def inline b32 kj_char_is_eol(char c)
 {
     return c == '\r' || c == '\n';
 }
 
-inline b32 kj_char_is_ws(char c)
+kj_def inline b32 kj_char_is_ws(char c)
 {
-    return c == ' ' || c == '\t' || c == '\v' || c == '\f' || kj_char_is_eol(c);
+    return c == ' ' || c == '\t' || c == '\v' || c == '\f' || c == '\r' || c == '\n';
 }
 
-inline b32 kj_char_is_alpha(char c)
+kj_def inline b32 kj_char_is_alpha(char c)
 {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <='Z');
 }
 
-inline b32 kj_char_is_digit(char c)
+kj_def inline b32 kj_char_is_digit(char c)
 {
     return (c >= '0' && c <= '9');
 }
 
-inline b32 kj_char_is_alphanum(char c)
+kj_def inline b32 kj_char_is_alphanum(char c)
 {
-    return kj_char_is_alpha(c) || kj_char_is_digit(c);
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <='Z') || (c >= '0' && c <= '9');
 }
 
-inline b32 kj_char_is_hex_letter(char c)
+kj_def inline b32 kj_char_is_hex_letter(char c)
 {
     return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
-inline b32 kj_char_is_hex_digit(char c)
+kj_def inline b32 kj_char_is_hex_digit(char c)
 {
-    return kj_char_is_digit(c) || kj_char_is_hex_letter(c);
+    return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || (c >= '0' && c <= '9');
 }
 
-inline char kj_char_is_lower(char c)
+kj_def inline char kj_char_is_lower(char c)
 {
     return (c >= 'a' && c <= 'z');
 }
 
-inline char kj_char_is_upper(char c)
+kj_def inline char kj_char_is_upper(char c)
 {
     return (c >= 'A' && c <= 'Z');
 }
 
-inline char kj_char_to_lower(char c)
+kj_def inline char kj_char_to_lower(char c)
 {
-    return kj_char_is_upper(c) ? 'a' + (c - 'A'): c;
+    return (c >= 'A' && c <= 'Z') ? 'a' + (c - 'A'): c;
 }
 
-inline char kj_char_to_upper(char c)
+kj_def inline char kj_char_to_upper(char c)
 {
-    return kj_char_is_lower(c) ? 'A' + (c - 'a'): c;
+    return (c >= 'a' && c <= 'z') ? 'A' + (c - 'a'): c;
 }
 
-inline isize kj_str_size(char* s)
+kj_def inline isize kj_str_size(const char* s)
 {
-    char* e = NULL;
-    for(e = s; *e; e++) { }
+    const char* e = s;
+    while(*e) { e++; }
     return (e - s);
 }
 
-isize kj_str_cmp_n(char* s1, char* s2, usize n)
+kj_def inline isize kj_str_cmp_n(const char* s1, const char* s2, usize n)
 {
     while(*s1 && *s2 && n) {
         if(*s1 != *s2) {
@@ -443,7 +466,7 @@ isize kj_str_cmp_n(char* s1, char* s2, usize n)
     return 0;
 }
 
-isize kj_str_cmp(char* s1, char* s2)
+kj_def inline isize kj_str_cmp(const char* s1, const char* s2)
 {
     while(*s1 && *s2) {
         if(*s1 != *s2) {
@@ -455,11 +478,18 @@ isize kj_str_cmp(char* s1, char* s2)
     return 0;
 }
 
+#if defined(KJ_SYS_WIN32)
+#define KJ_PATH_SEPARATOR '\\'
+#define KJ_NEWLINE '\r\n'
+#else
+#define KJ_PATH_SEPARATOR '/'
+#define KJ_NEWLINE '\n'
+#endif
+
 #define KJ_ERR_NONE (0)
 typedef u32 kj_err_t;
 
 #if defined(__cplusplus)
 }
 #endif
-
 #endif
