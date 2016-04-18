@@ -5,6 +5,10 @@
 extern "C" {
 #endif
 
+#define KJ_MUTEX_VERSION_MAJOR 0
+#define KJ_MUTEX_VERSION_MINOR 1
+#define KJ_MUTEX_VERSION_PATCH 0
+
 typedef struct kj_mutex kj_mutex_t;
 
 kj_mutex_t kj_mutex(void);

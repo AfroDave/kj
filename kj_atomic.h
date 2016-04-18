@@ -5,6 +5,10 @@
 extern "C" {
 #endif
 
+#define KJ_ATOMIC_VERSION_MAJOR 0
+#define KJ_ATOMIC_VERSION_MINOR 1
+#define KJ_ATOMIC_VERSION_PATCH 0
+
 void kj_atomic_read_fence(void);
 
 void kj_atomic_write_fence(void);

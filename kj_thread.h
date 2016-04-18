@@ -5,6 +5,10 @@
 extern "C" {
 #endif
 
+#define KJ_THREAD_VERSION_MAJOR 0
+#define KJ_THREAD_VERSION_MINOR 1
+#define KJ_THREAD_VERSION_PATCH 0
+
 typedef struct kj_thread kj_thread_t;
 
 #define kj_thread_fn(name) void* name(void* data)

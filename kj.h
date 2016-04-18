@@ -354,9 +354,10 @@ global const u32 KJ_TYPE_SIZE[] = {
 #define kj_swap64_be(a) (a)
 #endif
 
-#define kj_min(a, b) (a) < (b) ? (a): (b)
-#define kj_max(a, b) (a) > (b) ? (a): (b)
+#define kj_min(a, b) ((a) < (b) ? (a): (b))
+#define kj_max(a, b) ((a) > (b) ? (a): (b))
 #define kj_clamp(a, min, max) kj_max((min), kj_min((a), (max)))
+#define kj_range(a, fl, fu, tl, tu) ((a - fl) * (tu - tl) / ((fu - fl) + tl))
 
 #define kj_kb(a) ((a) * 1024)
 #define kj_mb(a) (kj_kb((a)) * 1024)

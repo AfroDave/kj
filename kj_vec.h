@@ -5,6 +5,10 @@
 extern "C" {
 #endif
 
+#define KJ_VEC_VERSION_MAJOR 0
+#define KJ_VEC_VERSION_MINOR 1
+#define KJ_VEC_VERSION_PATCH 0
+
 typedef struct kj_vec2f {
     f32 x, y;
 } kj_vec2f_t;

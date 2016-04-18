@@ -5,6 +5,10 @@
 extern "C" {
 #endif
 
+#define KJ_SSE_VERSION_MAJOR 0
+#define KJ_SSE_VERSION_MINOR 1
+#define KJ_SSE_VERSION_PATCH 0
+
 #if defined(KJ_SYS_WIN32)
 #include <intrin.h>
 #elif defined(KJ_SYS_LINUX)

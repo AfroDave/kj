@@ -5,6 +5,10 @@
 extern "C" {
 #endif
 
+#define KJ_SEMAPHORE_VERSION_MAJOR 0
+#define KJ_SEMAPHORE_VERSION_MINOR 1
+#define KJ_SEMAPHORE_VERSION_PATCH 0
+
 #define KJ_TIMEOUT_INFINITE 0xFFFFFFFF
 
 typedef struct kj_semaphore kj_semaphore_t;

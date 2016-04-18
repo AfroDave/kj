@@ -5,6 +5,10 @@
 extern "C" {
 #endif
 
+#define KJ_SHAPE_VERSION_MAJOR 0
+#define KJ_SHAPE_VERSION_MINOR 1
+#define KJ_SHAPE_VERSION_PATCH 0
+
 typedef struct kj_rect2f {
     f32 x, y, w, h;
 } kj_rect2f_t;

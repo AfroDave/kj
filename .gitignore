@@ -3,3 +3,6 @@ data/*
 bin/*
 lib/*
 tool/*
+*.out
+*.exe
+test.c
