@@ -18,9 +18,9 @@ typedef struct kj_thread kj_thread_t;
 #define kj_thread_fn(name) void* name(void* data)
 typedef kj_thread_fn(kj_thread_fn);
 
-kj_def kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags);
-kj_def void kj_thread_join(kj_thread_t* thread);
-kj_def void kj_thread_detach(kj_thread_t* thread);
+kj_api kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags);
+kj_api void kj_thread_join(kj_thread_t* thread);
+kj_api void kj_thread_detach(kj_thread_t* thread);
 
 #if defined(__cplusplus)
 }
@@ -31,7 +31,7 @@ kj_def void kj_thread_detach(kj_thread_t* thread);
 #if defined(KJ_THREAD_IMPLEMENTATION)
 u32 THREAD_COUNTER = 0;
 
-#if defined(KJ_COMPILER_MSVC)
+#if defined(KJ_SYS_WIN32)
 
 #include <windows.h>
 
@@ -67,7 +67,7 @@ inline void kj_thread_detach(kj_thread_t* thread)
     thread->handle = NULL;
 }
 
-#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+#elif defined(KJ_SYS_LINUX)
 
 #include <pthread.h>
 

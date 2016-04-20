@@ -9,23 +9,23 @@ extern "C" {
 #define KJ_ATOMIC_VERSION_MINOR 1
 #define KJ_ATOMIC_VERSION_PATCH 0
 
-kj_def void kj_atomic_read_fence(void);
-kj_def void kj_atomic_write_fence(void);
-kj_def void kj_atomic_rw_fence(void);
-kj_def u32 kj_atomic_cmp_swap_u32(u32* value, u32 expected_value, u32 new_value);
-kj_def u64 kj_atomic_cmp_swap_u64(u64* value, u64 expected_value, u64 new_value);
-kj_def void* kj_atomic_cmp_swap_ptr(void** value, void* expected_value, void* new_value);
-kj_def u32 kj_atomic_swap_u32(u32* value, u32 new_value);
-kj_def u64 kj_atomic_swap_u64(u64* value, u64 new_value);
-kj_def void* kj_atomic_swap_ptr(void** value, void* new_value);
-kj_def u32 kj_atomic_inc_u32(u32* value);
-kj_def u64 kj_atomic_inc_u64(u64* value);
-kj_def u32 kj_atomic_dec_u32(u32* value);
-kj_def u64 kj_atomic_dec_u64(u64* value);
-kj_def u32 kj_atomic_fetch_add_u32(u32* value, u32 add);
-kj_def u64 kj_atomic_fetch_add_u64(u64* value, u64 add);
-kj_def u32 kj_atomic_fetch_sub_u32(u32* value, u32 sub);
-kj_def u64 kj_atomic_fetch_sub_u64(u64* value, u64 sub);
+kj_api void kj_atomic_read_fence(void);
+kj_api void kj_atomic_write_fence(void);
+kj_api void kj_atomic_rw_fence(void);
+kj_api u32 kj_atomic_cmp_swap_u32(u32* value, u32 expected_value, u32 new_value);
+kj_api u64 kj_atomic_cmp_swap_u64(u64* value, u64 expected_value, u64 new_value);
+kj_api void* kj_atomic_cmp_swap_ptr(void** value, void* expected_value, void* new_value);
+kj_api u32 kj_atomic_swap_u32(u32* value, u32 new_value);
+kj_api u64 kj_atomic_swap_u64(u64* value, u64 new_value);
+kj_api void* kj_atomic_swap_ptr(void** value, void* new_value);
+kj_api u32 kj_atomic_inc_u32(u32* value);
+kj_api u64 kj_atomic_inc_u64(u64* value);
+kj_api u32 kj_atomic_dec_u32(u32* value);
+kj_api u64 kj_atomic_dec_u64(u64* value);
+kj_api u32 kj_atomic_fetch_add_u32(u32* value, u32 add);
+kj_api u64 kj_atomic_fetch_add_u64(u64* value, u64 add);
+kj_api u32 kj_atomic_fetch_sub_u32(u32* value, u32 sub);
+kj_api u64 kj_atomic_fetch_sub_u64(u64* value, u64 sub);
 
 #if defined(__cplusplus)
 }

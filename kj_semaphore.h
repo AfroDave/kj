@@ -13,11 +13,11 @@ extern "C" {
 
 typedef struct kj_semaphore kj_semaphore_t;
 
-kj_def kj_semaphore_t kj_semaphore(u32 count, u32 max);
-kj_def b32 kj_semaphore_wait(kj_semaphore_t* semaphore);
-kj_def b32 kj_semaphore_try_wait(kj_semaphore_t* semaphore);
-kj_def void kj_semaphore_signal(kj_semaphore_t* semaphore);
-kj_def void kj_semaphore_destroy(kj_semaphore_t* semaphore);
+kj_api kj_semaphore_t kj_semaphore(u32 count, u32 max);
+kj_api b32 kj_semaphore_wait(kj_semaphore_t* semaphore);
+kj_api b32 kj_semaphore_try_wait(kj_semaphore_t* semaphore);
+kj_api void kj_semaphore_signal(kj_semaphore_t* semaphore);
+kj_api void kj_semaphore_destroy(kj_semaphore_t* semaphore);
 
 #if defined(__cplusplus)
 }
@@ -27,7 +27,7 @@ kj_def void kj_semaphore_destroy(kj_semaphore_t* semaphore);
 
 #if defined(KJ_SEMAPHORE_IMPLEMENTATION)
 
-#if defined(KJ_COMPILER_MSVC)
+#if defined(KJ_SYS_WIN32)
 
 #include <windows.h>
 
@@ -50,7 +50,8 @@ inline b32 kj_semaphore_wait(kj_semaphore_t* semaphore)
 
 inline b32 kj_semaphore_try_wait(kj_semaphore_t* semaphore)
 {
-    return kj_semaphore_wait(semaphore, 0);
+    u32 res = WaitForSingleObject(semaphore->handle, 0);
+    return res == WAIT_OBJECT_0;
 }
 
 inline void kj_semaphore_signal(kj_semaphore_t* semaphore)
@@ -64,7 +65,7 @@ inline void kj_semaphore_destroy(kj_semaphore_t* semaphore)
     semaphore->handle = NULL;
 }
 
-#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+#elif defined(KJ_SYS_LINUX)
 
 #include <semaphore.h>
 
@@ -75,6 +76,7 @@ struct kj_semaphore {
 inline kj_semaphore_t kj_semaphore(u32 count, u32 max)
 {
     kj_semaphore_t semaphore;
+    unused(max);
     sem_init(&semaphore.handle, 0, count);
     return semaphore;
 }

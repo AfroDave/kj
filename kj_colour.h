@@ -17,17 +17,17 @@ typedef struct kj_rgbaf {
     f32 r, g, b, a;
 } kj_rgbaf_t;
 
-kj_def kj_rgba_t kj_rgba(u8 r, u8 g, u8 b, u8 a);
-kj_def kj_rgba_t kj_rgba_4f(f32 r, f32 g, f32 b, f32 a);
-kj_def kj_rgba_t kj_rgba_rgbaf(kj_rgbaf_t rgbaf);
-kj_def u32 kj_rgba_pack(kj_rgba_t rgba);
-kj_def kj_rgba_t kj_rgba_unpack(u32 packed);
+kj_api kj_rgba_t kj_rgba(u8 r, u8 g, u8 b, u8 a);
+kj_api kj_rgba_t kj_rgba_4f(f32 r, f32 g, f32 b, f32 a);
+kj_api kj_rgba_t kj_rgba_rgbaf(kj_rgbaf_t rgbaf);
+kj_api u32 kj_rgba_pack(kj_rgba_t rgba);
+kj_api kj_rgba_t kj_rgba_unpack(u32 packed);
 
-kj_def kj_rgbaf_t kj_rgbaf(f32 r, f32 g, f32 b, f32 a);
-kj_def kj_rgbaf_t kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a);
-kj_def kj_rgbaf_t kj_rgbaf_rgba(kj_rgba_t rgba);
-kj_def u32 kj_rgbaf_pack(kj_rgbaf_t rgba);
-kj_def kj_rgbaf_t kj_rgbaf_unpack(u32 packed);
+kj_api kj_rgbaf_t kj_rgbaf(f32 r, f32 g, f32 b, f32 a);
+kj_api kj_rgbaf_t kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a);
+kj_api kj_rgbaf_t kj_rgbaf_rgba(kj_rgba_t rgba);
+kj_api u32 kj_rgbaf_pack(kj_rgbaf_t rgba);
+kj_api kj_rgbaf_t kj_rgbaf_unpack(u32 packed);
 
 #if defined(__cplusplus)
 }

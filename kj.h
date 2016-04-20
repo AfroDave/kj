@@ -50,14 +50,14 @@ extern "C" {
 #endif
 #endif
 
-#if !defined(kj_def)
+#if !defined(kj_api)
 #if defined(kj_static)
-#define kj_def static
+#define kj_api static
 #else
 #if defined(__cplusplus)
-#define kj_def extern "C"
+#define kj_api extern "C"
 #else
-#define kj_def extern
+#define kj_api extern
 #endif
 #endif
 #endif
@@ -131,6 +131,14 @@ extern "C" {
 
 #if !defined(align_of)
 #define align_of(type) offset_of(struct { u8 c; type member; }, member)
+#endif
+
+#if !defined(unused)
+#if defined(KJ_COMPILER_MSVC)
+#define unused(a) __pragma(warning(suppress:4100)) (a)
+#else
+#define unused(a) cast_of(void, (a))
+#endif
 #endif
 
 #if !defined(align_to)
@@ -228,8 +236,8 @@ typedef u32 usize;
 #endif
 #endif
 
-typedef intptr_t iptr;
-typedef uintptr_t uptr;
+typedef isize iptr;
+typedef usize uptr;
 typedef isize dptr;
 
 typedef float f32;
@@ -245,7 +253,7 @@ typedef double f64;
 #define F64_EPS (2.220446e-16)
 #endif
 
-#define kj_static_assert(n, a) typedef int kj_static_assert_##n[(a) * 2 - 1]
+#define kj_static_assert(n, a) typedef i32 kj_static_assert_##n[(a) * 2 - 1]
 kj_static_assert(i8, size_of(i8) == 1);
 kj_static_assert(u8, size_of(u8) == 1);
 kj_static_assert(i16, size_of(i16) == 2);
@@ -269,7 +277,7 @@ kj_static_assert(f64, size_of(f64) == 8);
 #define kj_move memmove
 #endif
 
-void kj_assert_handler(const char* expr, const char* file, u64 line, const char* msg, ...);
+void kj_assert_handler(const char* expr, const char* file, u64 line, const char* msg);
 
 #if defined(KJ_DEBUG)
 #if defined(KJ_COMPILER_MSVC)
@@ -280,83 +288,93 @@ void kj_assert_handler(const char* expr, const char* file, u64 line, const char*
 #error KJ_BREAK_UNSUPPORTED
 #endif
 
-#define kj_assert_msg(expr, msg, ...) do {                                      \
+#define kj_assert_msg(expr, msg) do {                                           \
     if(!(expr)) {                                                               \
         kj_assert_handler(                                                      \
-                string_of(expr), __FILE__, __LINE__, msg, ##__VA_ARGS__);       \
+                string_of(expr), __FILE__, __LINE__, msg);                      \
         kj_break();                                                             \
     }                                                                           \
 } while(0)
 
 #define kj_assert(expr) kj_assert_msg(expr, NULL)
 #else
-#define kj_assert_msg(expr, msg, ...)
+#define kj_assert_msg(expr, msg)
 #define kj_assert(expr)
 #define kj_panic(msg)
 #endif
 
 typedef enum kj_type {
-    KJ_TYPE_NONE,
-    KJ_TYPE_CHAR,
-    KJ_TYPE_I8,
-    KJ_TYPE_U8,
-    KJ_TYPE_I16,
-    KJ_TYPE_U16,
-    KJ_TYPE_I32,
-    KJ_TYPE_U32,
-    KJ_TYPE_B32,
-    KJ_TYPE_I64,
-    KJ_TYPE_U64,
-    KJ_TYPE_ISIZE,
-    KJ_TYPE_USIZE,
-    KJ_TYPE_F32,
-    KJ_TYPE_F64,
-    KJ_TYPE_UNKNOWN,
+    KJ_TYPE_NONE = 0,
+    KJ_TYPE_CHAR = 1,
+    KJ_TYPE_I8 = 2,
+    KJ_TYPE_U8 = 3,
+    KJ_TYPE_I16 = 4,
+    KJ_TYPE_U16 = 5,
+    KJ_TYPE_I32 = 6,
+    KJ_TYPE_U32 = 7,
+    KJ_TYPE_B32 = 8,
+    KJ_TYPE_I64 = 9,
+    KJ_TYPE_U64 = 10,
+    KJ_TYPE_ISIZE = 11,
+    KJ_TYPE_USIZE = 12,
+    KJ_TYPE_F32 = 13,
+    KJ_TYPE_F64 = 14,
+    KJ_TYPE_UNKNOWN = 15,
+    KJ_TYPE_COUNT,
 } kj_type_t;
 
-global const char* KJ_TYPE_STR[] = {
-    "none",
-    "char",
-    "i8",
-    "u8",
-    "i16",
-    "u16",
-    "i32",
-    "u32",
-    "b32",
-    "i64",
-    "u64",
-    "isize",
-    "usize",
-    "f32",
-    "f64",
-    "unknown",
-};
+const char* kj_type_to_str(kj_type_t type)
+{
+    static const char* KJ_TYPE_STR[] = {
+        "none",
+        "char",
+        "i8",
+        "u8",
+        "i16",
+        "u16",
+        "i32",
+        "u32",
+        "b32",
+        "i64",
+        "u64",
+        "isize",
+        "usize",
+        "f32",
+        "f64",
+        "unknown",
+    };
+    return KJ_TYPE_STR[type];
+}
 
-global const u32 KJ_TYPE_SIZE[] = {
-    0,
-    size_of(char),
-    size_of(i8),
-    size_of(u8),
-    size_of(i16),
-    size_of(u16),
-    size_of(i32),
-    size_of(u32),
-    size_of(b32),
-    size_of(i64),
-    size_of(u64),
-    size_of(isize),
-    size_of(usize),
-    size_of(f32),
-    size_of(f64),
-    0,
-};
+usize kj_type_to_size(kj_type_t type)
+{
+    static const usize KJ_TYPE_SIZE[] = {
+        0,
+        size_of(char),
+        size_of(i8),
+        size_of(u8),
+        size_of(i16),
+        size_of(u16),
+        size_of(i32),
+        size_of(u32),
+        size_of(b32),
+        size_of(i64),
+        size_of(u64),
+        size_of(isize),
+        size_of(usize),
+        size_of(f32),
+        size_of(f64),
+        0,
+    };
+    return KJ_TYPE_SIZE[type];
+}
 
 #define kj_swap16(a) (((a) << 8) | ((a) >> 8))
 #define kj_swap32(a) ((a) >> 24) | (((a) << 8) & 0x00FF0000) | (((a) >> 8) & 0x0000FF00) | ((a) << 24)
 #define kj_swap64(a) kj_swap32(((a) & 0xFFFFFFFF00000000) >> 32) | kj_swap32(((a) & 0x00000000FFFFFFFF) << 32)
 
 #if KJ_ENDIAN == KJ_LE
+#define kj_encode64(a, b, c, d, e, f, g, h) (((a) << 0) | ((b) << 8) | ((c) << 16) | ((d) << 24) | ((e) << 32) | ((f) << 40) | ((g) << 48) | ((h) << 56))
 #define kj_encode32(a, b, c, d) (((a) << 0) | ((b) << 8) | ((c) << 16) | ((d) << 24))
 #define kj_encode16(a, b) (((a) << 0) | ((b) << 8))
 #define kj_swap16_le(a) (a)
@@ -366,6 +384,7 @@ global const u32 KJ_TYPE_SIZE[] = {
 #define kj_swap32_be(a) kj_swap32(a)
 #define kj_swap64_be(a) kj_swap64(a)
 #else
+#define kj_encode64(a, b, c, d, e, f, g, h) (((h) << 0) | ((g) << 8) | ((f) << 16) | ((e) << 24) | ((d) << 32) | ((c) << 40) | ((b) << 48) | ((a) << 56))
 #define kj_encode32(a, b, c, d) (((d) << 0) | ((c) << 8) | ((b) << 16) | ((a) << 24))
 #define kj_encode16(a, b) (((b) << 0) | ((a) << 8))
 #define kj_swap16_le(a) kj_swap16(a)
@@ -391,69 +410,123 @@ global const u32 KJ_TYPE_SIZE[] = {
 #define kj_b_gb(a) (kj_b_mb((a)) / 1024)
 #define kj_b_tb(a) (kj_b_gb((a)) / 1024)
 
-kj_def inline b32 kj_char_is_eol(char c)
+#if defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+#define kj_printf_vargs(a) __attribute__((format(printf, a, (a+1))))
+#else
+#define kj_printf_vargs(a)
+#endif
+
+#if defined(KJ_PRINTF)
+#include <stdarg.h>
+#include <stdio.h>
+kj_api inline i32 kj_vprintf(char const* fmt, va_list v);
+kj_api inline i32 kj_printf(char const* fmt, ...) kj_printf_vargs(1);
+kj_api inline i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v);
+kj_api i32 kj_snprintf(char* buf, isize size, char const* fmt, ...) kj_printf_vargs(3);
+
+inline i32 kj_vprintf(char const* fmt, va_list v)
+{
+    return vfprintf(stdout, fmt, v);
+}
+
+inline i32 kj_printf(char const* fmt, ...)
+{
+    i32 res;
+    va_list v;
+    va_start(v, fmt);
+    res = kj_vprintf(fmt, v);
+    va_end(v);
+    return res;
+}
+
+inline i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v)
+{
+    i32 res;
+#if defined(KJ_COMPILER_MSVC)
+    res = _vsnprintf(buf, size, fmt, v);
+#else
+    res = vsnprintf(buf, size, fmt, v);
+#endif
+    if(size) {
+        buf[size - 1] = '\0';
+    }
+    return (res >= size || res < 0) ? -1 : res;
+}
+
+inline i32 kj_snprintf(char* buf, isize size, char const* fmt, ...)
+{
+    int res;
+    va_list v;
+    va_start(v,fmt);
+    res = kj_vsnprintf(buf, size, fmt, v);
+    va_end(v);
+    return res;
+}
+#endif
+
+kj_api inline b32 kj_char_is_eol(char c)
 {
     return c == '\r' || c == '\n';
 }
 
-kj_def inline b32 kj_char_is_ws(char c)
+kj_api inline b32 kj_char_is_ws(char c)
 {
     return c == ' ' || c == '\t' || c == '\v' || c == '\f' || c == '\r' || c == '\n';
 }
 
-kj_def inline b32 kj_char_is_alpha(char c)
+kj_api inline b32 kj_char_is_alpha(char c)
 {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <='Z');
 }
 
-kj_def inline b32 kj_char_is_digit(char c)
+kj_api inline b32 kj_char_is_digit(char c)
 {
     return (c >= '0' && c <= '9');
 }
 
-kj_def inline b32 kj_char_is_alphanum(char c)
+kj_api inline b32 kj_char_is_alphanum(char c)
 {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <='Z') || (c >= '0' && c <= '9');
 }
 
-kj_def inline b32 kj_char_is_hex_letter(char c)
+kj_api inline b32 kj_char_is_hex_letter(char c)
 {
     return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
-kj_def inline b32 kj_char_is_hex_digit(char c)
+kj_api inline b32 kj_char_is_hex_digit(char c)
 {
     return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || (c >= '0' && c <= '9');
 }
 
-kj_def inline char kj_char_is_lower(char c)
+kj_api inline char kj_char_is_lower(char c)
 {
     return (c >= 'a' && c <= 'z');
 }
 
-kj_def inline char kj_char_is_upper(char c)
+kj_api inline char kj_char_is_upper(char c)
 {
     return (c >= 'A' && c <= 'Z');
 }
 
-kj_def inline char kj_char_to_lower(char c)
+kj_api inline char kj_char_to_lower(char c)
 {
     return (c >= 'A' && c <= 'Z') ? 'a' + (c - 'A'): c;
 }
 
-kj_def inline char kj_char_to_upper(char c)
+kj_api inline char kj_char_to_upper(char c)
 {
     return (c >= 'a' && c <= 'z') ? 'A' + (c - 'a'): c;
 }
 
-kj_def inline isize kj_str_size(const char* s)
+kj_api inline isize kj_str_size(const char* s)
 {
     const char* e = s;
     while(*e) { e++; }
     return (e - s);
 }
 
-kj_def inline isize kj_str_cmp_n(const char* s1, const char* s2, usize n)
+kj_api inline isize kj_str_cmp_n(const char* s1, const char* s2, usize n)
 {
     while(*s1 && *s2 && n) {
         if(*s1 != *s2) {
@@ -466,7 +539,7 @@ kj_def inline isize kj_str_cmp_n(const char* s1, const char* s2, usize n)
     return 0;
 }
 
-kj_def inline isize kj_str_cmp(const char* s1, const char* s2)
+kj_api inline isize kj_str_cmp(const char* s1, const char* s2)
 {
     while(*s1 && *s2) {
         if(*s1 != *s2) {

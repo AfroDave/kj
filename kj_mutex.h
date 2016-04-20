@@ -11,11 +11,11 @@ extern "C" {
 
 typedef struct kj_mutex kj_mutex_t;
 
-kj_def kj_mutex_t kj_mutex(void);
-kj_def void kj_mutex_lock(kj_mutex_t* mutex);
-kj_def b32 kj_mutex_try_lock(kj_mutex_t* mutex);
-kj_def void kj_mutex_unlock(kj_mutex_t* mutex);
-kj_def void kj_mutex_destroy(kj_mutex_t* mutex);
+kj_api kj_mutex_t kj_mutex(void);
+kj_api void kj_mutex_lock(kj_mutex_t* mutex);
+kj_api b32 kj_mutex_try_lock(kj_mutex_t* mutex);
+kj_api void kj_mutex_unlock(kj_mutex_t* mutex);
+kj_api void kj_mutex_destroy(kj_mutex_t* mutex);
 
 #if defined(__cplusplus)
 }
@@ -25,7 +25,7 @@ kj_def void kj_mutex_destroy(kj_mutex_t* mutex);
 
 #if defined(KJ_MUTEX_IMPLEMENTATION)
 
-#if defined(KJ_COMPILER_MSVC)
+#if defined(KJ_SYS_WIN32)
 
 #include <windows.h>
 
@@ -36,7 +36,7 @@ struct kj_mutex {
 inline kj_mutex_t kj_mutex(void)
 {
     kj_mutex_t mutex;
-    InitialiseCriticalSectionAndSpinCount(&mutex.handle, 1000);
+    InitializeCriticalSectionAndSpinCount(&mutex.handle, 1000);
     return mutex;
 }
 
@@ -60,7 +60,7 @@ inline void kj_mutex_destroy(kj_mutex_t* mutex)
     DeleteCriticalSection(&mutex->handle);
 }
 
-#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+#elif defined(KJ_SYS_LINUX)
 
 #include <pthread.h>
 
