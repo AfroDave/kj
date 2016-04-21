@@ -6,5 +6,5 @@ tool/*
 *.out
 *.exe
 *.obj
-test.c
+test.*
 kj_image.h

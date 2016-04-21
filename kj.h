@@ -35,15 +35,18 @@ extern "C" {
 #error KJ_ARCH_UNSUPPORTED
 #endif
 
-#define KJ_LE 0xABCD
-#define KJ_BE 0xDCBA
+#define KJ_LE 1234
+#define KJ_BE 4321
 
+#if defined(KJ_SYS_LINUX)
+#include <endian.h>
+#define KJ_ENDIAN __BYTE_ORDER
+#else
 #define KJ_ENDIAN KJ_LE
+#endif
 
 #if !defined(NULL)
-#if defined(KJ_COMPILER_MSVC)
-#define NULL 0
-#elif defined(KJ_COMPILER_GNU)
+#if defined(KJ_COMPILER_GNU)
 #define NULL __null
 #else
 #define NULL (cast_of(void*, 0))
@@ -211,29 +214,15 @@ typedef uint64_t u64;
 
 typedef u32 b32;
 
-#if defined(KJ_ARCH_64_BIT)
 typedef i64 isize;
 typedef u64 usize;
-#elif defined(KJ_ARCH_32_BIT)
-typedef i32 isize;
-typedef u32 usize;
-#endif
 
 #if !defined(ISIZE_MIN)
-#if defined(KJ_ARCH_64_BIT)
 #define ISIZE_MIN I64_MIN
 #define ISIZE_MAX I64_MAX
 
 #define USIZE_MIN U64_MIN
 #define USIZE_MAX U64_MAX
-
-#elif defined(KJ_ARCH_32_BIT)
-#define ISIZE_MIN I32_MIN
-#define ISIZE_MAX I32_MAX
-
-#define USIZE_MIN U32_MIN
-#define USIZE_MAX U32_MAX
-#endif
 #endif
 
 typedef isize iptr;
@@ -320,7 +309,7 @@ typedef enum kj_type {
     KJ_TYPE_F32 = 13,
     KJ_TYPE_F64 = 14,
     KJ_TYPE_UNKNOWN = 15,
-    KJ_TYPE_COUNT,
+    KJ_TYPE_COUNT
 } kj_type_t;
 
 const char* kj_type_to_str(kj_type_t type)
