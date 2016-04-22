@@ -57,11 +57,7 @@ extern "C" {
 #if defined(kj_static)
 #define kj_api static
 #else
-#if defined(__cplusplus)
-#define kj_api extern "C"
-#else
 #define kj_api extern
-#endif
 #endif
 #endif
 
@@ -72,11 +68,13 @@ extern "C" {
 #endif
 #endif
 
+#if !defined(__cplusplus)
 #if !defined(thread_local)
 #if defined(KJ_COMPILER_MSVC)
 #define thread_local __declspec(thread)
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
 #define thread_local __thread
+#endif
 #endif
 #endif
 
@@ -116,12 +114,13 @@ extern "C" {
 #define cast_of(t, e) ((t) (e))
 #endif
 
-#if !defined(size_of)
-#define size_of sizeof
+#if !defined(isize_of)
+#define usize_of(a) (cast_of(usize, sizeof(a)))
+#define isize_of(a) (cast_of(isize, sizeof(a)))
 #endif
 
 #if !defined(count_of)
-#define count_of(a) (size_of(a) / size_of((a)[0]))
+#define count_of(a) (isize_of(a) / isize_of((a)[0]))
 #endif
 
 #if !defined(string_of)
@@ -129,11 +128,11 @@ extern "C" {
 #endif
 
 #if !defined(offset_of)
-#define offset_of(s, m) (cast_of(usize, (&(cast_of(s*, 0)->m))))
+#define offset_of(s, m) (cast_of(isize, (&(cast_of(s*, 0)->m))))
 #endif
 
 #if !defined(align_of)
-#define align_of(type) offset_of(struct { u8 c; type member; }, member)
+#define align_of(type) (offset_of(struct { u8 c; type member; }, member))
 #endif
 
 #if !defined(unused)
@@ -166,24 +165,23 @@ extern "C" {
 #endif
 
 #if defined(KJ_COMPILER_MSVC)
-typedef unsigned __int8 u8;
 typedef signed __int8 i8;
-typedef unsigned __int16 u16;
+typedef unsigned __int8 u8;
 typedef signed __int16 i16;
-typedef unsigned __int32 u32;
+typedef unsigned __int16 u16;
 typedef signed __int32 i32;
-typedef unsigned __int64 u64;
+typedef unsigned __int32 u32;
 typedef signed __int64 i64;
+typedef unsigned __int64 u64;
 #else
-#include <stdint.h>
-typedef int8_t i8;
-typedef uint8_t u8;
-typedef int16_t i16;
-typedef uint16_t u16;
-typedef int32_t i32;
-typedef uint32_t u32;
-typedef int64_t i64;
-typedef uint64_t u64;
+typedef signed char i8;
+typedef unsigned char u8;
+typedef signed short i16;
+typedef unsigned short u16;
+typedef signed int i32;
+typedef unsigned int u32;
+typedef signed long i64;
+typedef unsigned long u64;
 #endif
 
 #if !defined(I8_MIN)
@@ -214,15 +212,28 @@ typedef uint64_t u64;
 
 typedef u32 b32;
 
+#if defined(KJ_ARCH_64_BIT)
 typedef i64 isize;
 typedef u64 usize;
+#elif defined(KJ_ARCH_32_BIT)
+typedef i32 isize;
+typedef u32 usize;
+#endif
 
 #if !defined(ISIZE_MIN)
+#if defined(KJ_ARCH_64_BIT)
 #define ISIZE_MIN I64_MIN
 #define ISIZE_MAX I64_MAX
 
 #define USIZE_MIN U64_MIN
 #define USIZE_MAX U64_MAX
+#elif defined(KJ_ARCH_32_BIT)
+#define ISIZE_MIN I32_MIN
+#define ISIZE_MAX I32_MAX
+
+#define USIZE_MIN U32_MIN
+#define USIZE_MAX U32_MAX
+#endif
 #endif
 
 typedef isize iptr;
@@ -242,27 +253,31 @@ typedef double f64;
 #define F64_EPS (2.220446e-16)
 #endif
 
-#define kj_static_assert(n, a) typedef i32 kj_static_assert_##n[(a) * 2 - 1]
-kj_static_assert(i8, size_of(i8) == 1);
-kj_static_assert(u8, size_of(u8) == 1);
-kj_static_assert(i16, size_of(i16) == 2);
-kj_static_assert(u16, size_of(u16) == 2);
-kj_static_assert(i32, size_of(i32) == 4);
-kj_static_assert(u32, size_of(u32) == 4);
-kj_static_assert(i64, size_of(i64) == 8);
-kj_static_assert(u64, size_of(u64) == 8);
-kj_static_assert(f32, size_of(f32) == 4);
-kj_static_assert(f64, size_of(f64) == 8);
+#define kj_static_assert(n, a) typedef void* kj_static_assert_##n[(a) * 2 - 1]
+kj_static_assert(i8, isize_of(i8) == 1);
+kj_static_assert(u8, isize_of(u8) == 1);
+kj_static_assert(i16, isize_of(i16) == 2);
+kj_static_assert(u16, isize_of(u16) == 2);
+kj_static_assert(i32, isize_of(i32) == 4);
+kj_static_assert(u32, isize_of(u32) == 4);
+kj_static_assert(i64, isize_of(i64) == 8);
+kj_static_assert(u64, isize_of(u64) == 8);
+kj_static_assert(f32, isize_of(f32) == 4);
+kj_static_assert(f64, isize_of(f64) == 8);
 
 #if defined(KJ_SYS_WIN32)
+#include <windows.h>
 #define kj_copy CopyMemory
 #define kj_set FillMemory
 #define kj_zero ZeroMemory
+#define kj_one(p, s) kj_set(p, s, 1)
 #define kj_move MoveMemory
 #else
+#include <string.h>
 #define kj_copy memcpy
 #define kj_set(p, s, v) memset((p), (v), (s))
 #define kj_zero(p, s) kj_set(p, s, 0)
+#define kj_one(p, s) kj_set(p, s, 1)
 #define kj_move memmove
 #endif
 
@@ -279,8 +294,7 @@ void kj_assert_handler(const char* expr, const char* file, u64 line, const char*
 
 #define kj_assert_msg(expr, msg) do {                                           \
     if(!(expr)) {                                                               \
-        kj_assert_handler(                                                      \
-                string_of(expr), __FILE__, __LINE__, msg);                      \
+        kj_assert_handler(string_of(expr), __FILE__, __LINE__, msg);            \
         kj_break();                                                             \
     }                                                                           \
 } while(0)
@@ -308,7 +322,7 @@ typedef enum kj_type {
     KJ_TYPE_USIZE = 12,
     KJ_TYPE_F32 = 13,
     KJ_TYPE_F64 = 14,
-    KJ_TYPE_UNKNOWN = 15,
+    KJ_TYPE_UNKNOWN,
     KJ_TYPE_COUNT
 } kj_type_t;
 
@@ -335,32 +349,43 @@ const char* kj_type_to_str(kj_type_t type)
     return KJ_TYPE_STR[type];
 }
 
-usize kj_type_to_size(kj_type_t type)
+isize kj_type_to_size(kj_type_t type)
 {
-    static const usize KJ_TYPE_SIZE[] = {
+    static const isize KJ_TYPE_SIZE[] = {
         0,
-        size_of(char),
-        size_of(i8),
-        size_of(u8),
-        size_of(i16),
-        size_of(u16),
-        size_of(i32),
-        size_of(u32),
-        size_of(b32),
-        size_of(i64),
-        size_of(u64),
-        size_of(isize),
-        size_of(usize),
-        size_of(f32),
-        size_of(f64),
+        isize_of(char),
+        isize_of(i8),
+        isize_of(u8),
+        isize_of(i16),
+        isize_of(u16),
+        isize_of(i32),
+        isize_of(u32),
+        isize_of(b32),
+        isize_of(i64),
+        isize_of(u64),
+        isize_of(isize),
+        isize_of(usize),
+        isize_of(f32),
+        isize_of(f64),
         0,
     };
     return KJ_TYPE_SIZE[type];
 }
 
-#define kj_swap16(a) (((a) << 8) | ((a) >> 8))
-#define kj_swap32(a) ((a) >> 24) | (((a) << 8) & 0x00FF0000) | (((a) >> 8) & 0x0000FF00) | ((a) << 24)
-#define kj_swap64(a) kj_swap32(((a) & 0xFFFFFFFF00000000) >> 32) | kj_swap32(((a) & 0x00000000FFFFFFFF) << 32)
+kj_api inline u16 kj_swap16(u16 a)
+{
+    return cast_of(u16, (a << 8) | (a >> 8));
+}
+
+kj_api inline u32 kj_swap32(u32 a)
+{
+    return cast_of(u32, (a << 24) | ((a << 8) & 0x00FF0000) | ((a >> 8) & 0x0000FF00) | (a >> 24));
+}
+
+kj_api inline u64 kj_swap64(u64 a)
+{
+    return cast_of(u64, kj_swap32((a & 0xFFFFFFFF00000000) >> 32) | kj_swap32((a & 0x00000000FFFFFFFF) << 32));
+}
 
 #if KJ_ENDIAN == KJ_LE
 #define kj_encode64(a, b, c, d, e, f, g, h) (((a) << 0) | ((b) << 8) | ((c) << 16) | ((d) << 24) | ((e) << 32) | ((f) << 40) | ((g) << 48) | ((h) << 56))
@@ -408,9 +433,9 @@ usize kj_type_to_size(kj_type_t type)
 #if defined(KJ_PRINTF)
 #include <stdarg.h>
 #include <stdio.h>
-kj_api inline i32 kj_vprintf(char const* fmt, va_list v);
-kj_api inline i32 kj_printf(char const* fmt, ...) kj_printf_vargs(1);
-kj_api inline i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v);
+kj_api i32 kj_vprintf(char const* fmt, va_list v);
+kj_api i32 kj_printf(char const* fmt, ...) kj_printf_vargs(1);
+kj_api i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v);
 kj_api i32 kj_snprintf(char* buf, isize size, char const* fmt, ...) kj_printf_vargs(3);
 
 inline i32 kj_vprintf(char const* fmt, va_list v)
@@ -515,7 +540,7 @@ kj_api inline isize kj_str_size(const char* s)
     return (e - s);
 }
 
-kj_api inline isize kj_str_cmp_n(const char* s1, const char* s2, usize n)
+kj_api inline isize kj_str_cmp_n(const char* s1, const char* s2, isize n)
 {
     while(*s1 && *s2 && n) {
         if(*s1 != *s2) {
@@ -542,10 +567,8 @@ kj_api inline isize kj_str_cmp(const char* s1, const char* s2)
 
 #if defined(KJ_SYS_WIN32)
 #define KJ_PATH_SEPARATOR '\\'
-#define KJ_NEWLINE '\r\n'
 #else
 #define KJ_PATH_SEPARATOR '/'
-#define KJ_NEWLINE '\n'
 #endif
 
 #define KJ_ERR_NONE (0)

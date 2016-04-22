@@ -1,10 +1,6 @@
 #ifndef KJ_THREAD_H
 #define KJ_THREAD_H
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 #define KJ_THREAD_VERSION_MAJOR 0
 #define KJ_THREAD_VERSION_MINOR 1
 #define KJ_THREAD_VERSION_PATCH 0
@@ -17,6 +13,10 @@ typedef struct kj_thread kj_thread_t;
 
 #define kj_thread_fn(name) void* name(void* data)
 typedef kj_thread_fn(kj_thread_fn);
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 kj_api kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags);
 kj_api void kj_thread_join(kj_thread_t* thread);
@@ -45,7 +45,7 @@ struct kj_thread {
     } ctx;
 };
 
-inline kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags);
+kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags);
 {
     kj_thread_t res;
     res.id = _InterlockedIncrement(&THREAD_COUNTER);
@@ -55,13 +55,13 @@ inline kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags);
     res.handle = CreateThread(NULL, 0, cast(LPTHREAD_START_ROUTINE, fn), data, 0, NULL);
 }
 
-inline void kj_thread_join(kj_thread_t* thread)
+void kj_thread_join(kj_thread_t* thread)
 {
     WaitForSingleObjectEx(thread->handle, INFINITE, FALSE);
     CloseHandle(thread->handle);
 }
 
-inline void kj_thread_detach(kj_thread_t* thread)
+void kj_thread_detach(kj_thread_t* thread)
 {
     CloseHandle(thread->handle);
     thread->handle = NULL;
@@ -82,7 +82,7 @@ struct kj_thread {
     } ctx;
 };
 
-inline kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags)
+kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags)
 {
     kj_thread_t res;
     res.id = __sync_add_and_fetch(&THREAD_COUNTER, 1);
@@ -93,12 +93,12 @@ inline kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags)
     return res;
 }
 
-inline void kj_thread_join(kj_thread_t* thread)
+void kj_thread_join(kj_thread_t* thread)
 {
     pthread_join(thread->handle, NULL);
 }
 
-inline void kj_thread_detach(kj_thread_t* thread)
+void kj_thread_detach(kj_thread_t* thread)
 {
     pthread_detach(thread->handle);
 }

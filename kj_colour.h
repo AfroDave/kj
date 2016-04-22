@@ -1,10 +1,6 @@
 #ifndef KJ_COLOUR_H
 #define KJ_COLOUR_H
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 #define KJ_COLOUR_VERSION_MAJOR 0
 #define KJ_COLOUR_VERSION_MINOR 1
 #define KJ_COLOUR_VERSION_PATCH 0
@@ -16,6 +12,10 @@ typedef struct kj_rgba {
 typedef struct kj_rgbaf {
     f32 r, g, b, a;
 } kj_rgbaf_t;
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 kj_api kj_rgba_t kj_rgba(u8 r, u8 g, u8 b, u8 a);
 kj_api kj_rgba_t kj_rgba_4f(f32 r, f32 g, f32 b, f32 a);
