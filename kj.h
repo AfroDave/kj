@@ -197,17 +197,17 @@ typedef unsigned long u64;
 #define I64_MIN (-9223372036854775808)
 #define I64_MAX (9223372036854775807)
 
-#define U8_MIN (0)
-#define U8_MAX (256)
+#define U8_MIN (0x00)
+#define U8_MAX (0xFF)
 
-#define U16_MIN (0)
-#define U16_MAX (65536)
+#define U16_MIN (0x0000)
+#define U16_MAX (0xFFFF)
 
-#define U32_MIN (0)
-#define U32_MAX (4294967296)
+#define U32_MIN (0x00000000)
+#define U32_MAX (0xFFFFFFFF)
 
-#define U64_MIN (0)
-#define U64_MAX (18446744073709551616)
+#define U64_MIN (0x0000000000000000)
+#define U64_MAX (0xFFFFFFFFFFFFFFFF)
 #endif
 
 typedef u32 b32;

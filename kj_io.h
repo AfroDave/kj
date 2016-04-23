@@ -59,6 +59,8 @@ typedef struct kj_io_stat {
 extern "C" {
 #endif
 
+#define kj_io_has_err(io) ((io)->err != KJ_IO_ERR_NONE)
+
 kj_api kj_io_t kj_io_open(const char* path, u32 flags);
 kj_api kj_io_err_t kj_io_close(kj_io_t* io);
 kj_api isize kj_io_read(kj_io_t* io, void* buf, isize size, i64 offset);
@@ -106,36 +108,69 @@ internal kj_io_err_t kj_io_err_from_win32(u32 err)
         case ERROR_FILE_NOT_FOUND: return KJ_IO_ERR_NOT_FOUND;
         case ERROR_PATH_NOT_FOUND: return KJ_IO_ERR_NOT_FOUND;
         case ERROR_NO_DATA: return KJ_IO_ERR_BROKEN_PIPE;
+        case ERROR_INVALID_PARAMETER: return KJ_IO_ERR_INVALID_INPUT;
         case ERROR_OPERATION_ABORTED: return KJ_IO_ERR_TIMED_OUT;
         default: return KJ_IO_ERR_UNKNOWN;
     }
 }
 
+internal u32 kj_io_gen_access_mode(u32 flags)
+{
+    u32 res = 0;
+    if((flags & KJ_IO_FLAG_READ) && !(flags & KJ_IO_FLAG_WRITE) && !(flags & KJ_IO_FLAG_APPEND)) {
+        res = GENERIC_READ;
+    } elif(!(flags & KJ_IO_FLAG_READ) && (flags & KJ_IO_FLAG_WRITE) && !(flags & KJ_IO_FLAG_APPEND)) {
+        res = GENERIC_WRITE;
+    } elif((flags & KJ_IO_FLAG_READ) && (flags & KJ_IO_FLAG_WRITE) && !(flags & KJ_IO_FLAG_APPEND)) {
+        res = GENERIC_READ | GENERIC_WRITE;
+    } elif(!(flags & KJ_IO_FLAG_READ) && (flags & KJ_IO_FLAG_APPEND)) {
+        res = FILE_GENERIC_WRITE & ~FILE_WRITE_DATA;
+    } elif((flags & KJ_IO_FLAG_READ) && (flags & KJ_IO_FLAG_APPEND)) {
+        res = GENERIC_READ | (FILE_GENERIC_WRITE & ~FILE_WRITE_DATA);
+    }
+    return res;
+}
+
+internal u32 kj_io_gen_create_mode(u32 flags)
+{
+    u32 res = U32_MAX;
+    if(!(flags & KJ_IO_FLAG_WRITE) && !(flags & KJ_IO_FLAG_APPEND)) {
+        if((flags & KJ_IO_FLAG_TRUNCATE) || (flags & KJ_IO_FLAG_CREATE) || (flags & KJ_IO_FLAG_CREATE_NEW)) {
+            res = 0;
+        }
+    } elif(flags & KJ_IO_FLAG_APPEND) {
+        if((flags & KJ_IO_FLAG_TRUNCATE) && !(flags & KJ_IO_FLAG_CREATE_NEW)) {
+            res = 0;
+        }
+    }
+    if(res != 0) {
+        if(!(flags & KJ_IO_FLAG_CREATE) && !(flags & KJ_IO_FLAG_TRUNCATE) && !(flags & KJ_IO_FLAG_CREATE_NEW)) {
+            res = OPEN_EXISTING;
+        } elif((flags & KJ_IO_FLAG_CREATE) && !(flags & KJ_IO_FLAG_TRUNCATE) && !(flags & KJ_IO_FLAG_CREATE_NEW)) {
+            res = OPEN_ALWAYS;
+        } elif(!(flags & KJ_IO_FLAG_CREATE) && (flags & KJ_IO_FLAG_TRUNCATE) && !(flags & KJ_IO_FLAG_CREATE_NEW)) {
+            res = TRUNCATE_EXISTING;
+        } elif((flags & KJ_IO_FLAG_CREATE) && (flags & KJ_IO_FLAG_TRUNCATE) && !(flags & KJ_IO_FLAG_CREATE_NEW)) {
+            res = CREATE_ALWAYS;
+        } elif(flags & KJ_IO_FLAG_CREATE_NEW) {
+            res = CREATE_NEW
+        }
+    }
+    return res;
+}
+
 kj_io_t kj_io_open(const char* path, u32 flags)
 {
     kj_io_t res;
-    u32 access = 0;
-    if(flags & KJ_IO_FLAG_READ) {
-        access |= GENERIC_READ;
-    }
-    if(flags & KJ_IO_FLAG_WRITE) {
-        access |= GENERIC_WRITE;
-    }
-
-    u32 create = OPEN_EXISTING;
-    u32 share = FILE_SHARE_READ;
-    res.handle = CreateFile(path, access, share, NULL, create, FILE_ATTRIBUTE_NORMAL, NULL);
+    u32 access = kj_io_gen_access_mode(flags);
+    u32 create = kj_io_gen_create_mode(flags);
+    res.handle = CreateFile(path, access, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, create, 0, NULL);
     res.flags = flags;
-    res.err = res.handle == INVALID_HANDLE_VALUE ? KJ_IO_ERR_BAD_HANDLE: kj_io_err_from_errno(errno);
+    res.err = res.handle == INVALID_HANDLE_VALUE ? KJ_IO_ERR_BAD_HANDLE: kj_io_err_from_win32(GetLastError());
     return res;
 }
 
 #elif defined(KJ_SYS_LINUX)
-
-#include <errno.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
 
 internal kj_io_err_t kj_io_err_from_errno(u32 err)
 {
@@ -173,7 +208,7 @@ internal u32 kj_io_gen_access_mode(u32 flags)
 
 internal u32 kj_io_gen_create_mode(u32 flags)
 {
-    u32 res = 0;
+    u32 res = U32_MAX;
     if(!(flags & KJ_IO_FLAG_WRITE) && !(flags & KJ_IO_FLAG_APPEND)) {
         if((flags & KJ_IO_FLAG_TRUNCATE) || (flags & KJ_IO_FLAG_CREATE) || (flags & KJ_IO_FLAG_CREATE_NEW)) {
             res = 0;
@@ -182,7 +217,8 @@ internal u32 kj_io_gen_create_mode(u32 flags)
         if((flags & KJ_IO_FLAG_TRUNCATE) && !(flags & KJ_IO_FLAG_CREATE_NEW)) {
             res = 0;
         }
-    } else {
+    }
+    if(res != 0) {
         if((flags & KJ_IO_FLAG_CREATE) && !(flags & KJ_IO_FLAG_TRUNCATE) && !(flags & KJ_IO_FLAG_CREATE_NEW)) {
             res = O_CREAT;
         } elif(!(flags & KJ_IO_FLAG_CREATE) && (flags & KJ_IO_FLAG_TRUNCATE) && !(flags & KJ_IO_FLAG_CREATE_NEW)) {
@@ -229,7 +265,20 @@ kj_io_err_t kj_io_close(kj_io_t* io)
 isize kj_io_read(kj_io_t* io, void* buf, isize size, i64 offset)
 {
     isize res = -1;
-    res = pread(io->handle, buf, size, offset);
+#if defined(KJ_ARCH_64_BIT)
+    register i64 r10 __asm("r10") = offset;
+    __asm volatile(
+        "syscall"
+        : "=a" (res)
+        : "0" (17), "D" (io->handle), "S" (buf), "d" (size), "r" (r10));
+#elif define(KJ_ARCH_32_BIT)
+    __asm volatile(
+        "int $0x80"
+        : "=a" (res)
+        : "0" (180), "b" (io->handle), "c" (buf), "d" (size), "s" (offset));
+#else
+#error KJ_IO_WRIATE_UNSUPPORTED
+#endif
     io->err = kj_io_err_from_errno(errno);
     return res;
 }
@@ -237,7 +286,20 @@ isize kj_io_read(kj_io_t* io, void* buf, isize size, i64 offset)
 isize kj_io_write(kj_io_t* io, void* buf, isize size, i64 offset)
 {
     isize res = -1;
-    res = pwrite(io->handle, buf, size, offset);
+#if defined(KJ_ARCH_64_BIT)
+    register i64 r10 __asm("r10") = offset;
+    __asm volatile(
+        "syscall"
+        : "=a" (res)
+        : "0" (18), "D" (io->handle), "S" (buf), "d" (size), "r" (r10));
+#elif define(KJ_ARCH_32_BIT)
+    __asm volatile(
+        "int $0x80"
+        : "=a" (res)
+        : "0" (181), "b" (io->handle), "c" (buf), "d" (size), "s" (offset));
+#else
+#error KJ_IO_WRIATE_UNSUPPORTED
+#endif
     io->err = kj_io_err_from_errno(errno);
     return res;
 }

@@ -8,3 +8,5 @@ tool/*
 *.obj
 test.*
 kj_image.h
+*.sh
+*.bat
