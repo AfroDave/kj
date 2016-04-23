@@ -52,7 +52,7 @@ typedef struct kj_io {
 #endif
 
 typedef struct kj_io_stat {
-    u64 size;
+    i64 size;
 } kj_io_stat_t;
 
 #if defined(__cplusplus)
@@ -68,7 +68,7 @@ kj_api isize kj_io_write(kj_io_t* io, void* buf, isize size, i64 offset);
 
 kj_api kj_io_stat_t kj_io_stat(kj_io_t* io);
 
-kj_api const char* kj_io_err_str(kj_io_err_t err);
+kj_api const char* kj_io_err_str(kj_io_t* io);
 
 #if defined(__cplusplus)
 }
@@ -78,9 +78,9 @@ kj_api const char* kj_io_err_str(kj_io_err_t err);
 
 #if defined(KJ_IO_IMPLEMENTATION)
 
-const char* kj_io_err_str(kj_io_err_t err)
+const char* kj_io_err_str(kj_io_t* io)
 {
-    switch(err) {
+    switch(io->err) {
         case KJ_IO_ERR_NONE: return "None";
         case KJ_IO_ERR_BAD_HANDLE: return "Bad Handle";
         case KJ_IO_ERR_PERMISSION_DENIED: return "Permission Denied";
@@ -153,7 +153,7 @@ internal u32 kj_io_gen_create_mode(u32 flags)
         } elif((flags & KJ_IO_FLAG_CREATE) && (flags & KJ_IO_FLAG_TRUNCATE) && !(flags & KJ_IO_FLAG_CREATE_NEW)) {
             res = CREATE_ALWAYS;
         } elif(flags & KJ_IO_FLAG_CREATE_NEW) {
-            res = CREATE_NEW
+            res = CREATE_NEW;
         }
     }
     return res;
@@ -167,6 +167,54 @@ kj_io_t kj_io_open(const char* path, u32 flags)
     res.handle = CreateFile(path, access, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, create, 0, NULL);
     res.flags = flags;
     res.err = res.handle == INVALID_HANDLE_VALUE ? KJ_IO_ERR_BAD_HANDLE: kj_io_err_from_win32(GetLastError());
+    return res;
+}
+
+kj_io_err_t kj_io_close(kj_io_t* io)
+{
+    CloseHandle(io->handle);
+    io->handle = NULL;
+}
+
+isize kj_io_read(kj_io_t* io, void* buf, isize size, i64 offset)
+{
+    isize res = -1;
+    OVERLAPPED overlapped = {0};
+    overlapped.Offset = cast_of(u32, ((offset >> 0) & 0xFFFFFFFF));
+    overlapped.OffsetHigh = cast_of(u32, ((offset >> 32) & 0xFFFFFFFF));
+    DWORD read = 0;
+    if(ReadFile(io->handle, buf, cast_of(DWORD, size), cast_of(DWORD*, &read), &overlapped)) {
+        res = read;
+    } else {
+        io->err = kj_io_err_from_win32(GetLastError());
+    }
+    return res;
+}
+
+isize kj_io_write(kj_io_t* io, void* buf, isize size, i64 offset)
+{
+    isize res = -1;
+    OVERLAPPED overlapped = {0};
+    overlapped.Offset = cast_of(u32, ((offset >> 0) & 0xFFFFFFFF));
+    overlapped.OffsetHigh = cast_of(u32, ((offset >> 32) & 0xFFFFFFFF));
+    DWORD wrote = 0;
+    if(WriteFile(io->handle, buf, cast_of(DWORD, size), cast_of(DWORD*, &wrote), &overlapped)) {
+        res = wrote;
+    } else {
+        io->err = kj_io_err_from_win32(GetLastError());
+    }
+    return res;
+}
+
+kj_io_stat_t kj_io_stat(kj_io_t* io)
+{
+    kj_io_stat_t res = {0};
+    BY_HANDLE_FILE_INFORMATION io_info = {0};
+    if(GetFileInformationByHandle(io->handle, &io_info)) {
+        res.size = (cast_of(i64, io_info.nFileSizeHigh) << 32) | cast_of(i64, io_info.nFileSizeLow);
+    } else {
+        io->err = kj_io_err_from_win32(GetLastError());
+    }
     return res;
 }
 

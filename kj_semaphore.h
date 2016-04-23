@@ -7,7 +7,17 @@
 
 #define KJ_TIMEOUT_INFINITE 0xFFFFFFFF
 
-typedef struct kj_semaphore kj_semaphore_t;
+#if defined(KJ_SYS_WIN32)
+#include <windows.h>
+typedef struct kj_semaphore {
+    HANDLE handle;
+} kj_semaphore_t;
+#elif defined(KJ_SYS_LINUX)
+#include <semaphore.h>
+typedef sem_t kj_semaphore_t;
+#else
+#error KJ_SEMAPHORE_UNSUPPORTED
+#endif
 
 #if defined(__cplusplus)
 extern "C" {
@@ -29,17 +39,11 @@ kj_api void kj_semaphore_destroy(kj_semaphore_t* semaphore);
 
 #if defined(KJ_SYS_WIN32)
 
-#include <windows.h>
-
-struct kj_semaphore {
-    HANDLE handle;
-};
-
 kj_semaphore_t kj_semaphore(u32 count, u32 max)
 {
-    kj_semaphore_t semaphore;
-    semaphore.handle = CreateSemaphore(NULL, count, max, NULL);
-    return semaphore;
+    kj_semaphore_t res;
+    res.handle = CreateSemaphore(NULL, count, max, NULL);
+    return res;
 }
 
 b32 kj_semaphore_wait(kj_semaphore_t* semaphore)
@@ -67,38 +71,32 @@ void kj_semaphore_destroy(kj_semaphore_t* semaphore)
 
 #elif defined(KJ_SYS_LINUX)
 
-#include <semaphore.h>
-
-struct kj_semaphore {
-    sem_t handle;
-};
-
 kj_semaphore_t kj_semaphore(u32 count, u32 max)
 {
-    kj_semaphore_t semaphore;
+    kj_semaphore_t res;
     unused(max);
-    sem_init(&semaphore.handle, 0, count);
-    return semaphore;
+    sem_init(&res, 0, count);
+    return res;
 }
 
 b32 kj_semaphore_wait(kj_semaphore_t* semaphore)
 {
-    return sem_wait(&semaphore->handle);
+    return sem_wait(semaphore);
 }
 
 b32 kj_semaphore_try_wait(kj_semaphore_t* semaphore)
 {
-    return sem_trywait(&semaphore->handle);
+    return sem_trywait(semaphore);
 }
 
 void kj_semaphore_signal(kj_semaphore_t* semaphore)
 {
-    sem_post(&semaphore->handle);
+    sem_post(semaphore);
 }
 
 void kj_semaphore_destroy(kj_semaphore_t* semaphore)
 {
-    sem_destroy(&semaphore->handle);
+    sem_destroy(semaphore);
 }
 
 #else

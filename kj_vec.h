@@ -234,19 +234,7 @@ kj_vec4u_t kj_vec4u_all(u32 a) { return kj_vec4u(a, a, a, a); }
 kj_vec4f_t kj_vec4f_negate(kj_vec4f_t a) { return kj_vec4f(-a.x, -a.y, -a.z, -a.w); }
 kj_vec4i_t kj_vec4i_negate(kj_vec4i_t a) { return kj_vec4i(-a.x, -a.y, -a.z, -a.w); }
 kj_vec4u_t kj_vec4u_negate(kj_vec4u_t a) { return kj_vec4u(-a.x, -a.y, -a.z, -a.w); }
-#if defined(KJ_SSE_H)
-kj_vec4f_t kj_vec4f_add(kj_vec4f_t a, kj_vec4f_t b)
-{
-    kj_vec4f_t res;
-    f128 a_sse = kj_sse_loadf(cast_of(f32*, &a));
-    f128 b_sse = kj_sse_loadf(cast_of(f32*, &b));
-    f128 res_sse = kj_sse_addf(a_sse, b_sse);
-    kj_sse_storef(cast_of(f32*, &res), res_sse);
-    return res;
-}
-#else
 kj_vec4f_t kj_vec4f_add(kj_vec4f_t a, kj_vec4f_t b) { return kj_vec4f(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w); }
-#endif
 kj_vec4i_t kj_vec4i_add(kj_vec4i_t a, kj_vec4i_t b) { return kj_vec4i(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w); }
 kj_vec4u_t kj_vec4u_add(kj_vec4u_t a, kj_vec4u_t b) { return kj_vec4u(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w); }
 kj_vec4f_t kj_vec4f_sub(kj_vec4f_t a, kj_vec4f_t b) { return kj_vec4f(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w); }

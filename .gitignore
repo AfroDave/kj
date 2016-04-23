@@ -3,10 +3,14 @@ data/*
 bin/*
 lib/*
 tool/*
+
+test.*
+
 *.out
 *.exe
 *.obj
-test.*
-kj_image.h
 *.sh
 *.bat
+*.pdb
+
+kj_image.h

@@ -38,7 +38,7 @@ kj_api void kj_mutex_destroy(kj_mutex_t* mutex);
 kj_mutex_t kj_mutex(void)
 {
     kj_mutex_t mutex;
-    InitializeCriticalSectionAndSpinCount(&mutex.handle, 1000);
+    InitializeCriticalSectionAndSpinCount(&mutex, 1000);
     return mutex;
 }
 

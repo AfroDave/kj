@@ -46,7 +46,9 @@ extern "C" {
 #endif
 
 #if !defined(NULL)
-#if defined(KJ_COMPILER_GNU)
+#if defined(KJ_COMPILER_MSVC)
+#define NULL 0
+#elif defined(KJ_COMPILER_GNU)
 #define NULL __null
 #else
 #define NULL (cast_of(void*, 0))
@@ -433,6 +435,7 @@ kj_api inline u64 kj_swap64(u64 a)
 #if defined(KJ_PRINTF)
 #include <stdarg.h>
 #include <stdio.h>
+
 kj_api i32 kj_vprintf(char const* fmt, va_list v);
 kj_api i32 kj_printf(char const* fmt, ...) kj_printf_vargs(1);
 kj_api i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v);
