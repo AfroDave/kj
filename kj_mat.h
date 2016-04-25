@@ -41,6 +41,7 @@ kj_api kj_mat4f_t kj_mat4f_ident(void);
 kj_api kj_mat4f_t kj_mat4f_zero(void);
 kj_api kj_mat4f_t kj_mat4f_one(void);
 kj_api kj_mat4f_t kj_mat4f_mul(kj_mat4f_t a, kj_mat4f_t b);
+kj_api kj_vec4f_t kj_mat4f_mul_vec4f(kj_mat4f_t a, kj_vec4f_t b);
 kj_api kj_mat4f_t kj_mat4f_translate(f32 x, f32 y, f32 z);
 
 #if defined(__cplusplus)
@@ -115,6 +116,15 @@ kj_mat3f_t kj_mat3f_mul(kj_mat3f_t a, kj_mat3f_t b)
         kj_vec3f_mul(a.v[2], bv1)),
         kj_vec3f_mul(a.v[2], bv2));
     return res;
+}
+
+kj_vec4f_t kj_mat4f_mul_vec4f(kj_mat4f_t a, kj_vec4f_t b)
+{
+    kj_vec4f_t v0 = kj_vec4f_mulf(a.v[0], b.x);
+    kj_vec4f_t v1 = kj_vec4f_mulf(a.v[1], b.y);
+    kj_vec4f_t v2 = kj_vec4f_mulf(a.v[2], b.z);
+    kj_vec4f_t v3 = kj_vec4f_mulf(a.v[3], b.w);
+    return kj_vec4f_add(kj_vec4f_add(v0, v1), kj_vec4f_add(v2, v3));
 }
 
 kj_mat4f_t kj_mat4f(

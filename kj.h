@@ -56,7 +56,7 @@ extern "C" {
 #endif
 
 #if !defined(kj_api)
-#if defined(kj_static)
+#if defined(KJ_STATIC)
 #define kj_api static
 #else
 #define kj_api extern
@@ -246,13 +246,13 @@ typedef float f32;
 typedef double f64;
 
 #if !defined(F32_MIN)
-#define F32_MIN (-3.402823e+38)
-#define F32_MAX (3.402823e+38)
-#define F32_EPS (1.192093e-07)
+#define F32_MIN cast_of(f32, -3.402823e+38)
+#define F32_MAX cast_of(f32, 3.402823e+38)
+#define F32_EPS cast_of(f32, 1.192093e-07)
 
-#define F64_MIN (-1.797693e+308)
-#define F64_MAX (1.797693e+308)
-#define F64_EPS (2.220446e-16)
+#define F64_MIN cast_of(f64, -1.797693e+308)
+#define F64_MAX cast_of(f64, 1.797693e+308)
+#define F64_EPS cast_of(f64, 2.220446e-16)
 #endif
 
 #define kj_static_assert(n, a) typedef void* kj_static_assert_##n[(a) * 2 - 1]
@@ -328,7 +328,7 @@ typedef enum kj_type {
     KJ_TYPE_COUNT
 } kj_type_t;
 
-const char* kj_type_to_str(kj_type_t type)
+force_inline const char* kj_type_to_str(kj_type_t type)
 {
     static const char* KJ_TYPE_STR[] = {
         "none",
@@ -351,7 +351,7 @@ const char* kj_type_to_str(kj_type_t type)
     return KJ_TYPE_STR[type];
 }
 
-isize kj_type_to_size(kj_type_t type)
+force_inline isize kj_type_to_size(kj_type_t type)
 {
     static const isize KJ_TYPE_SIZE[] = {
         0,

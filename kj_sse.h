@@ -16,6 +16,7 @@ extern "C" {
 #endif
 
 typedef __m128 f128;
+typedef __m128i i128;
 
 #define kj_sse_read_fence() _mm_lfence()
 #define kj_sse_write_fence() _mm_sfence()

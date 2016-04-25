@@ -9,10 +9,35 @@ typedef enum kj_thread_flags {
     KJ_THREAD_FLAG_NONE         = (0 << 0),
 } kj_thread_flags_t;
 
-typedef struct kj_thread kj_thread_t;
-
 #define kj_thread_fn(name) void* name(void* data)
 typedef kj_thread_fn(kj_thread_fn);
+
+#if defined(KJ_SYS_WIN32)
+#include <windows.h>
+typedef struct kj_thread {
+    u32 id;
+    u32 flags;
+    HANDLE handle;
+    struct {
+        kj_thread_fn* fn;
+        void* data;
+    } ctx;
+} kj_thread_t;
+#elif define(KJ_SYS_LINUX)
+#include <pthread.h>
+typedef struct kj_thread {
+    u32 id;
+    u32 flags;
+    pthread_t handle;
+    pthread_attr_t attr;
+    struct {
+        kj_thread_fn* fn;
+        void* data;
+    } ctx;
+} kj_thread_t;
+#else
+#error KJ_THREAD_UNSUPPORTED
+#endif
 
 #if defined(__cplusplus)
 extern "C" {
@@ -32,18 +57,6 @@ kj_api void kj_thread_detach(kj_thread_t* thread);
 u32 THREAD_COUNTER = 0;
 
 #if defined(KJ_SYS_WIN32)
-
-#include <windows.h>
-
-struct kj_thread {
-    u32 id;
-    u32 flags;
-    HANDLE handle;
-    struct {
-        kj_thread_fn* fn;
-        void* data;
-    } ctx;
-};
 
 kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags);
 {
@@ -68,19 +81,6 @@ void kj_thread_detach(kj_thread_t* thread)
 }
 
 #elif defined(KJ_SYS_LINUX)
-
-#include <pthread.h>
-
-struct kj_thread {
-    u32 id;
-    u32 flags;
-    pthread_t handle;
-    pthread_attr_t attr;
-    struct {
-        kj_thread_fn* fn;
-        void* data;
-    } ctx;
-};
 
 kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags)
 {

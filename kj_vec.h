@@ -69,6 +69,9 @@ kj_api kj_vec2u_t kj_vec2u_sub(kj_vec2u_t a, kj_vec2u_t b);
 kj_api kj_vec2f_t kj_vec2f_mul(kj_vec2f_t a, kj_vec2f_t b);
 kj_api kj_vec2i_t kj_vec2i_mul(kj_vec2i_t a, kj_vec2i_t b);
 kj_api kj_vec2u_t kj_vec2u_mul(kj_vec2u_t a, kj_vec2u_t b);
+kj_api kj_vec2f_t kj_vec2f_mulf(kj_vec2f_t a, f32 b);
+kj_api kj_vec2i_t kj_vec2i_muli(kj_vec2i_t a, i32 b);
+kj_api kj_vec2u_t kj_vec2u_mulu(kj_vec2u_t a, u32 b);
 kj_api kj_vec2f_t kj_vec2f_div(kj_vec2f_t a, kj_vec2f_t b);
 kj_api kj_vec2i_t kj_vec2i_div(kj_vec2i_t a, kj_vec2i_t b);
 kj_api kj_vec2u_t kj_vec2u_div(kj_vec2u_t a, kj_vec2u_t b);
@@ -103,6 +106,9 @@ kj_api kj_vec3u_t kj_vec3u_sub(kj_vec3u_t a, kj_vec3u_t b);
 kj_api kj_vec3f_t kj_vec3f_mul(kj_vec3f_t a, kj_vec3f_t b);
 kj_api kj_vec3i_t kj_vec3i_mul(kj_vec3i_t a, kj_vec3i_t b);
 kj_api kj_vec3u_t kj_vec3u_mul(kj_vec3u_t a, kj_vec3u_t b);
+kj_api kj_vec3f_t kj_vec3f_mulf(kj_vec3f_t a, f32 b);
+kj_api kj_vec3i_t kj_vec3i_muli(kj_vec3i_t a, i32 b);
+kj_api kj_vec3u_t kj_vec3u_mulu(kj_vec3u_t a, u32 b);
 kj_api kj_vec3f_t kj_vec3f_div(kj_vec3f_t a, kj_vec3f_t b);
 kj_api kj_vec3i_t kj_vec3i_div(kj_vec3i_t a, kj_vec3i_t b);
 kj_api kj_vec3u_t kj_vec3u_div(kj_vec3u_t a, kj_vec3u_t b);
@@ -137,6 +143,9 @@ kj_api kj_vec4u_t kj_vec4u_sub(kj_vec4u_t a, kj_vec4u_t b);
 kj_api kj_vec4f_t kj_vec4f_mul(kj_vec4f_t a, kj_vec4f_t b);
 kj_api kj_vec4i_t kj_vec4i_mul(kj_vec4i_t a, kj_vec4i_t b);
 kj_api kj_vec4u_t kj_vec4u_mul(kj_vec4u_t a, kj_vec4u_t b);
+kj_api kj_vec4f_t kj_vec4f_mulf(kj_vec4f_t a, f32 b);
+kj_api kj_vec4i_t kj_vec4i_muli(kj_vec4i_t a, i32 b);
+kj_api kj_vec4u_t kj_vec4u_mulu(kj_vec4u_t a, u32 b);
 kj_api kj_vec4f_t kj_vec4f_div(kj_vec4f_t a, kj_vec4f_t b);
 kj_api kj_vec4i_t kj_vec4i_div(kj_vec4i_t a, kj_vec4i_t b);
 kj_api kj_vec4u_t kj_vec4u_div(kj_vec4u_t a, kj_vec4u_t b);
@@ -175,6 +184,9 @@ kj_vec2u_t kj_vec2u_sub(kj_vec2u_t a, kj_vec2u_t b) { return kj_vec2u(a.x - b.x,
 kj_vec2f_t kj_vec2f_mul(kj_vec2f_t a, kj_vec2f_t b) { return kj_vec2f(a.x * b.x, a.y * b.y); }
 kj_vec2i_t kj_vec2i_mul(kj_vec2i_t a, kj_vec2i_t b) { return kj_vec2i(a.x * b.x, a.y * b.y); }
 kj_vec2u_t kj_vec2u_mul(kj_vec2u_t a, kj_vec2u_t b) { return kj_vec2u(a.x * b.x, a.y * b.y); }
+kj_vec2f_t kj_vec2f_mulf(kj_vec2f_t a, f32 b) { return kj_vec2f(a.x * b, a.y * b); }
+kj_vec2i_t kj_vec2i_muli(kj_vec2i_t a, i32 b) { return kj_vec2f(a.x * b, a.y * b); }
+kj_vec2u_t kj_vec2u_mulu(kj_vec2u_t a, u32 b) { return kj_vec2f(a.x * b, a.y * b); }
 kj_vec2f_t kj_vec2f_div(kj_vec2f_t a, kj_vec2f_t b) { return kj_vec2f(a.x / b.x, a.y / b.y); }
 kj_vec2i_t kj_vec2i_div(kj_vec2i_t a, kj_vec2i_t b) { return kj_vec2i(a.x / b.x, a.y / b.y); }
 kj_vec2u_t kj_vec2u_div(kj_vec2u_t a, kj_vec2u_t b) { return kj_vec2u(a.x / b.x, a.y / b.y); }
@@ -209,6 +221,9 @@ kj_vec3u_t kj_vec3u_sub(kj_vec3u_t a, kj_vec3u_t b) { return kj_vec3u(a.x - b.x,
 kj_vec3f_t kj_vec3f_mul(kj_vec3f_t a, kj_vec3f_t b) { return kj_vec3f(a.x * b.x, a.y * b.y, a.z * b.z); }
 kj_vec3i_t kj_vec3i_mul(kj_vec3i_t a, kj_vec3i_t b) { return kj_vec3i(a.x * b.x, a.y * b.y, a.z * b.z); }
 kj_vec3u_t kj_vec3u_mul(kj_vec3u_t a, kj_vec3u_t b) { return kj_vec3u(a.x * b.x, a.y * b.y, a.z * b.z); }
+kj_vec3f_t kj_vec3f_mulf(kj_vec3f_t a, f32 b) { return kj_vec3f(a.x * b, a.y * b, a.z * b); }
+kj_vec3i_t kj_vec3i_muli(kj_vec3i_t a, i32 b) { return kj_vec3f(a.x * b, a.y * b, a.z * b); }
+kj_vec3u_t kj_vec3u_mulu(kj_vec3u_t a, u32 b) { return kj_vec3f(a.x * b, a.y * b, a.z * b); }
 kj_vec3f_t kj_vec3f_div(kj_vec3f_t a, kj_vec3f_t b) { return kj_vec3f(a.x / b.x, a.y / b.y, a.z / b.z); }
 kj_vec3i_t kj_vec3i_div(kj_vec3i_t a, kj_vec3i_t b) { return kj_vec3i(a.x / b.x, a.y / b.y, a.z / b.z); }
 kj_vec3u_t kj_vec3u_div(kj_vec3u_t a, kj_vec3u_t b) { return kj_vec3u(a.x / b.x, a.y / b.y, a.z / b.z); }
@@ -243,6 +258,9 @@ kj_vec4u_t kj_vec4u_sub(kj_vec4u_t a, kj_vec4u_t b) { return kj_vec4u(a.x - b.x,
 kj_vec4f_t kj_vec4f_mul(kj_vec4f_t a, kj_vec4f_t b) { return kj_vec4f(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w); }
 kj_vec4i_t kj_vec4i_mul(kj_vec4i_t a, kj_vec4i_t b) { return kj_vec4i(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w); }
 kj_vec4u_t kj_vec4u_mul(kj_vec4u_t a, kj_vec4u_t b) { return kj_vec4u(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w); }
+kj_vec4f_t kj_vec4f_mulf(kj_vec4f_t a, f32 b) { return kj_vec4f(a.x * b, a.y * b, a.z * b, a.w * b); }
+kj_vec4i_t kj_vec4i_muli(kj_vec4i_t a, i32 b) { return kj_vec4f(a.x * b, a.y * b, a.z * b, a.w * b); }
+kj_vec4u_t kj_vec4u_mulu(kj_vec4u_t a, u32 b) { return kj_vec4f(a.x * b, a.y * b, a.z * b, a.w * b); }
 kj_vec4f_t kj_vec4f_div(kj_vec4f_t a, kj_vec4f_t b) { return kj_vec4f(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w); }
 kj_vec4i_t kj_vec4i_div(kj_vec4i_t a, kj_vec4i_t b) { return kj_vec4i(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w); }
 kj_vec4u_t kj_vec4u_div(kj_vec4u_t a, kj_vec4u_t b) { return kj_vec4u(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w); }

@@ -172,8 +172,12 @@ kj_io_t kj_io_open(const char* path, u32 flags)
 
 kj_io_err_t kj_io_close(kj_io_t* io)
 {
-    CloseHandle(io->handle);
+    kj_io_err_t res = KJ_IO_ERR_NONE;
+    if(!CloseHandle(io->handle)) {
+        res = kj_io_err_from_win32(GetLastError());
+    }
     io->handle = NULL;
+    return res;
 }
 
 isize kj_io_read(kj_io_t* io, void* buf, isize size, i64 offset)
@@ -325,7 +329,7 @@ isize kj_io_read(kj_io_t* io, void* buf, isize size, i64 offset)
         : "=a" (res)
         : "0" (180), "b" (io->handle), "c" (buf), "d" (size), "s" (offset));
 #else
-#error KJ_IO_WRIATE_UNSUPPORTED
+#error KJ_IO_READ_UNSUPPORTED
 #endif
     io->err = kj_io_err_from_errno(errno);
     return res;
@@ -346,7 +350,7 @@ isize kj_io_write(kj_io_t* io, void* buf, isize size, i64 offset)
         : "=a" (res)
         : "0" (181), "b" (io->handle), "c" (buf), "d" (size), "s" (offset));
 #else
-#error KJ_IO_WRIATE_UNSUPPORTED
+#error KJ_IO_WRITE_UNSUPPORTED
 #endif
     io->err = kj_io_err_from_errno(errno);
     return res;
