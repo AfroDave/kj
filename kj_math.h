@@ -447,8 +447,7 @@ kjVec4u kj_vec4u_normalise(kjVec4u a) { return kj_vec4u_div(a, kj_vec4u_all(kj_v
 kjMat3f kj_mat3f(
         f32 e00, f32 e10, f32 e20,
         f32 e01, f32 e11, f32 e21,
-        f32 e02, f32 e12, f32 e22)
-{
+        f32 e02, f32 e12, f32 e22) {
     kjMat3f res;
     res.e[0][0] = e00;
     res.e[1][0] = e10;
@@ -462,35 +461,30 @@ kjMat3f kj_mat3f(
     return res;
 }
 
-kjMat3f kj_mat3f_diag(f32 e00, f32 e11, f32 e22)
-{
+kjMat3f kj_mat3f_diag(f32 e00, f32 e11, f32 e22) {
     return kj_mat3f(
             e00, 0.0f, 0.0f,
             0.0f, e11, 0.0f,
             0.0f, 0.0f, e22);
 }
 
-kjMat3f kj_mat3f_ident(void)
-{
+kjMat3f kj_mat3f_ident(void) {
     return kj_mat3f_diag(1.0f, 1.0f, 1.0f);
 }
 
-kjMat3f kj_mat3f_zero(void)
-{
+kjMat3f kj_mat3f_zero(void) {
     kjMat3f res;
     kj_zero(&res, isize_of(kjMat3f));
     return res;
 }
 
-kjMat3f kj_mat3f_one(void)
-{
+kjMat3f kj_mat3f_one(void) {
     kjMat3f res;
     kj_one(&res, isize_of(kjMat3f));
     return res;
 }
 
-kjMat3f kj_mat3f_mul(kjMat3f a, kjMat3f b)
-{
+kjMat3f kj_mat3f_mul(kjMat3f a, kjMat3f b) {
     kjMat3f res;
     kjVec3f bv0 = kj_vec3f(b.v[0].x, b.v[1].x, b.v[2].x);
     kjVec3f bv1 = kj_vec3f(b.v[0].y, b.v[1].y, b.v[2].y);
@@ -510,16 +504,14 @@ kjMat3f kj_mat3f_mul(kjMat3f a, kjMat3f b)
     return res;
 }
 
-kjMat3f kj_mat3f_transpose(kjMat3f a)
-{
+kjMat3f kj_mat3f_transpose(kjMat3f a) {
     return kj_mat3f(
         a.e[0][0], a.e[1][0], a.e[2][0],
         a.e[0][1], a.e[1][1], a.e[2][1],
         a.e[0][2], a.e[1][2], a.e[2][2]);
 }
 
-kjMat3f kj_mat3f_rotate(f32 angle, f32 x, f32 y, f32 z)
-{
+kjMat3f kj_mat3f_rotate(f32 angle, f32 x, f32 y, f32 z) {
     kjMat3f res;
     f32 c = cosf(angle);
     f32 s = sinf(angle);
@@ -542,8 +534,7 @@ kjMat4f kj_mat4f(
         f32 e00, f32 e10, f32 e20, f32 e30,
         f32 e01, f32 e11, f32 e21, f32 e31,
         f32 e02, f32 e12, f32 e22, f32 e32,
-        f32 e03, f32 e13, f32 e23, f32 e33)
-{
+        f32 e03, f32 e13, f32 e23, f32 e33) {
     kjMat4f res;
     res.e[0][0] = e00;
     res.e[1][0] = e10;
@@ -564,8 +555,7 @@ kjMat4f kj_mat4f(
     return res;
 }
 
-kjMat4f kj_mat4f_diag(f32 e00, f32 e11, f32 e22, f32 e33)
-{
+kjMat4f kj_mat4f_diag(f32 e00, f32 e11, f32 e22, f32 e33) {
     return kj_mat4f(
             e00, 0.0f, 0.0f, 0.0f,
             0.0f, e11, 0.0f, 0.0f,
@@ -573,8 +563,7 @@ kjMat4f kj_mat4f_diag(f32 e00, f32 e11, f32 e22, f32 e33)
             0.0f, 0.0f, 0.0f, e33);
 }
 
-kjMat4f kj_mat4f_ident(void)
-{
+kjMat4f kj_mat4f_ident(void) {
     return kj_mat4f_diag(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
@@ -762,13 +751,6 @@ kjMat4f kj_mat4f_look_at(kjVec3f eye, kjVec3f target, kjVec3f up)
     return res;
 }
 
-#if defined(__cplusplus)
-kjMat4f operator*(kjMat4f a, kjMat4f b)
-{
-    return kj_mat4f_mul(a, b);
-}
-#endif
-
 kjRect2f kj_rect2f(f32 x, f32 y, f32 w, f32 h) { kjRect2f res; res.x = x; res.y = y; res.w = w; res.h = h; return res; }
 kjRect2i kj_rect2i(i32 x, i32 y, i32 w, i32 h) { kjRect2i res; res.x = x; res.y = y; res.w = w; res.h = h; return res; }
 kjRect2u kj_rect2u(u32 x, u32 y, u32 w, u32 h) { kjRect2u res; res.x = x; res.y = y; res.w = w; res.h = h; return res; }
@@ -800,5 +782,12 @@ b32 kj_rect3u_contains_xyz(kjRect3u r, u32 x, u32 y, u32 z) { return (r.x <= x &
 b32 kj_rect3f_contains_vec3f(kjRect3f r, kjVec3f xyz) { return (r.x <= xyz.x && (r.x + r.w) >= xyz.x && r.y <= xyz.y && (r.y + r.h) >= xyz.y && r.z <= xyz.z && (r.z + r.d) >= xyz.z); }
 b32 kj_rect3i_contains_vec3i(kjRect3i r, kjVec3i xyz) { return (r.x <= xyz.x && (r.x + r.w) >= xyz.x && r.y <= xyz.y && (r.y + r.h) >= xyz.y && r.z <= xyz.z && (r.z + r.d) >= xyz.z); }
 b32 kj_rect3u_contains_vec3u(kjRect3u r, kjVec3u xyz) { return (r.x <= xyz.x && (r.x + r.w) >= xyz.x && r.y <= xyz.y && (r.y + r.h) >= xyz.y && r.z <= xyz.z && (r.z + r.d) >= xyz.z); }
+
+#if defined(__cplusplus)
+kjMat4f operator*(kjMat4f a, kjMat4f b)
+{
+    return kj_mat4f_mul(a, b);
+}
+#endif
 
 #endif

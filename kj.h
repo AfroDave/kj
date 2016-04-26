@@ -11,6 +11,12 @@ extern "C" {
 
 #if defined(_WIN32) || defined(_WIN64)
 #define KJ_SYS_WIN32
+#if !defined(WIN32_LEAN_AND_MEAN)
+#define NOMINMAX 1
+#define WIN32_LEAN_AND_MEAN 1
+#define VC_EXTRALEAN 1
+#endif
+#include <windows.h>
 #elif defined(__linux__)
 #define KJ_SYS_LINUX
 #else
@@ -268,7 +274,12 @@ kj_static_assert(f32, isize_of(f32) == 4);
 kj_static_assert(f64, isize_of(f64) == 8);
 
 #if defined(KJ_SYS_WIN32)
-#include <windows.h>
+#define KJ_PATH_SEPARATOR '\\'
+#else
+#define KJ_PATH_SEPARATOR '/'
+#endif
+
+#if defined(KJ_SYS_WIN32)
 #define kj_copy CopyMemory
 #define kj_set FillMemory
 #define kj_zero ZeroMemory
@@ -328,8 +339,7 @@ typedef enum kjType {
     KJ_TYPE_COUNT
 } kjType;
 
-KJ_API const char* kj_type_to_str(kjType type)
-{
+KJ_API inline const char* kj_type_to_str(kjType type) {
     static const char* KJ_TYPE_STR[] = {
         "none",
         "char",
@@ -351,8 +361,7 @@ KJ_API const char* kj_type_to_str(kjType type)
     return KJ_TYPE_STR[type];
 }
 
-KJ_API isize kj_type_to_size(kjType type)
-{
+KJ_API inline isize kj_type_to_size(kjType type) {
     static const isize KJ_TYPE_SIZE[] = {
         0,
         isize_of(char),
@@ -374,9 +383,9 @@ KJ_API isize kj_type_to_size(kjType type)
     return KJ_TYPE_SIZE[type];
 }
 
-KJ_API u16 kj_swap16(u16 a) { return cast_of(u16, (a << 8) | (a >> 8)); }
-KJ_API u32 kj_swap32(u32 a) { return cast_of(u32, (a << 24) | ((a << 8) & 0x00FF0000) | ((a >> 8) & 0x0000FF00) | (a >> 24)); }
-KJ_API u64 kj_swap64(u64 a) { return cast_of(u64, kj_swap32((a & 0xFFFFFFFF00000000) >> 32) | kj_swap32((a & 0x00000000FFFFFFFF) << 32)); }
+KJ_API u16 kj_swap16(u16 a);
+KJ_API u32 kj_swap32(u32 a);
+KJ_API u64 kj_swap64(u64 a);
 
 #if KJ_ENDIAN == KJ_LE
 #define kj_encode64(a, b, c, d, e, f, g, h) (((a) << 0) | ((b) << 8) | ((c) << 16) | ((d) << 24) | ((e) << 32) | ((f) << 40) | ((g) << 48) | ((h) << 56))
@@ -421,22 +430,53 @@ KJ_API u64 kj_swap64(u64 a) { return cast_of(u64, kj_swap32((a & 0xFFFFFFFF00000
 #define kj_printf_vargs(a)
 #endif
 
-#if defined(KJ_PRINTF)
-#include <stdarg.h>
-#include <stdio.h>
-
 KJ_API i32 kj_vprintf(char const* fmt, va_list v);
 KJ_API i32 kj_printf(char const* fmt, ...) kj_printf_vargs(1);
 KJ_API i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v);
 KJ_API i32 kj_snprintf(char* buf, isize size, char const* fmt, ...) kj_printf_vargs(3);
 
-i32 kj_vprintf(char const* fmt, va_list v)
-{
+KJ_API b32 kj_char_is_eol(char c);
+KJ_API b32 kj_char_is_ws(char c);
+KJ_API b32 kj_char_is_alpha(char c);
+KJ_API b32 kj_char_is_digit(char c);
+KJ_API b32 kj_char_is_alphanum(char c);
+KJ_API b32 kj_char_is_hex_letter(char c);
+KJ_API b32 kj_char_is_hex_digit(char c);
+KJ_API char kj_char_is_lower(char c);
+KJ_API char kj_char_is_upper(char c);
+KJ_API char kj_char_to_lower(char c);
+KJ_API char kj_char_to_upper(char c);
+KJ_API isize kj_str_size(const char* s);
+KJ_API isize kj_str_cmp_n(const char* s1, const char* s2, isize n);
+KJ_API isize kj_str_cmp(const char* s1, const char* s2);
+
+typedef void* kjLib;
+KJ_API kjLib kj_lib(const char* path);
+KJ_API void* kj_lib_proc(kjLib lib, const char* name);
+KJ_API void kj_lib_destroy(kjLib lib);
+
+#define KJ_ERR_NONE (0)
+typedef u32 kjErr;
+
+#if defined(__cplusplus)
+}
+#endif
+#endif
+
+#if defined(KJ_IMPLEMENTATION)
+
+u16 kj_swap16(u16 a) { return cast_of(u16, (a << 8) | (a >> 8)); }
+u32 kj_swap32(u32 a) { return cast_of(u32, (a << 24) | ((a << 8) & 0x00FF0000) | ((a >> 8) & 0x0000FF00) | (a >> 24)); }
+u64 kj_swap64(u64 a) { return cast_of(u64, kj_swap32((a & 0xFFFFFFFF00000000) >> 32) | kj_swap32((a & 0x00000000FFFFFFFF) << 32)); }
+
+#include <stdarg.h>
+#include <stdio.h>
+
+i32 kj_vprintf(char const* fmt, va_list v) {
     return vfprintf(stdout, fmt, v);
 }
 
-i32 kj_printf(char const* fmt, ...)
-{
+i32 kj_printf(char const* fmt, ...) {
     i32 res;
     va_list v;
     va_start(v, fmt);
@@ -445,8 +485,7 @@ i32 kj_printf(char const* fmt, ...)
     return res;
 }
 
-i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v)
-{
+i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v) {
     i32 res;
 #if defined(KJ_COMPILER_MSVC)
     res = _vsnprintf(buf, size, fmt, v);
@@ -459,8 +498,7 @@ i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v)
     return (res >= size || res < 0) ? -1 : res;
 }
 
-i32 kj_snprintf(char* buf, isize size, char const* fmt, ...)
-{
+i32 kj_snprintf(char* buf, isize size, char const* fmt, ...) {
     int res;
     va_list v;
     va_start(v,fmt);
@@ -468,23 +506,21 @@ i32 kj_snprintf(char* buf, isize size, char const* fmt, ...)
     va_end(v);
     return res;
 }
-#endif
 
-KJ_API b32 kj_char_is_eol(char c) { return c == '\r' || c == '\n'; }
-KJ_API b32 kj_char_is_ws(char c) { return c == ' ' || c == '\t' || c == '\v' || c == '\f' || c == '\r' || c == '\n'; }
-KJ_API b32 kj_char_is_alpha(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <='Z'); }
-KJ_API b32 kj_char_is_digit(char c) { return (c >= '0' && c <= '9'); }
-KJ_API b32 kj_char_is_alphanum(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <='Z') || (c >= '0' && c <= '9'); }
-KJ_API b32 kj_char_is_hex_letter(char c) { return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
-KJ_API b32 kj_char_is_hex_digit(char c) { return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || (c >= '0' && c <= '9'); }
-KJ_API char kj_char_is_lower(char c) { return (c >= 'a' && c <= 'z'); }
-KJ_API char kj_char_is_upper(char c) { return (c >= 'A' && c <= 'Z'); }
-KJ_API char kj_char_to_lower(char c) { return (c >= 'A' && c <= 'Z') ? 'a' + (c - 'A'): c; }
-KJ_API char kj_char_to_upper(char c) { return (c >= 'a' && c <= 'z') ? 'A' + (c - 'a'): c; }
-KJ_API isize kj_str_size(const char* s) { const char* e = s; while(*e) { e++; } return (e - s); }
+b32 kj_char_is_eol(char c) { return c == '\r' || c == '\n'; }
+b32 kj_char_is_ws(char c) { return c == ' ' || c == '\t' || c == '\v' || c == '\f' || c == '\r' || c == '\n'; }
+b32 kj_char_is_alpha(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <='Z'); }
+b32 kj_char_is_digit(char c) { return (c >= '0' && c <= '9'); }
+b32 kj_char_is_alphanum(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <='Z') || (c >= '0' && c <= '9'); }
+b32 kj_char_is_hex_letter(char c) { return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
+b32 kj_char_is_hex_digit(char c) { return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || (c >= '0' && c <= '9'); }
+char kj_char_is_lower(char c) { return (c >= 'a' && c <= 'z'); }
+char kj_char_is_upper(char c) { return (c >= 'A' && c <= 'Z'); }
+char kj_char_to_lower(char c) { return (c >= 'A' && c <= 'Z') ? 'a' + (c - 'A'): c; }
+char kj_char_to_upper(char c) { return (c >= 'a' && c <= 'z') ? 'A' + (c - 'a'): c; }
+isize kj_str_size(const char* s) { const char* e = s; while(*e) { e++; } return (e - s); }
 
-KJ_API isize kj_str_cmp_n(const char* s1, const char* s2, isize n)
-{
+isize kj_str_cmp_n(const char* s1, const char* s2, isize n) {
     while(*s1 && *s2 && n) {
         if(*s1 != *s2) {
             return cast_of(uptr, *s1) < cast_of(uptr, *s2) ? -1: +1;
@@ -496,8 +532,7 @@ KJ_API isize kj_str_cmp_n(const char* s1, const char* s2, isize n)
     return 0;
 }
 
-KJ_API isize kj_str_cmp(const char* s1, const char* s2)
-{
+isize kj_str_cmp(const char* s1, const char* s2) {
     while(*s1 && *s2) {
         if(*s1 != *s2) {
             return cast_of(uptr, *s1) < cast_of(uptr, *s2) ? -1: +1;
@@ -508,16 +543,8 @@ KJ_API isize kj_str_cmp(const char* s1, const char* s2)
     return 0;
 }
 
-#if defined(KJ_SYS_WIN32)
-#define KJ_PATH_SEPARATOR '\\'
-#else
-#define KJ_PATH_SEPARATOR '/'
-#endif
+kjLib kj_lib(const char* path) { return cast_of(kjLib, LoadLibrary(path)); }
+void* kj_lib_proc(kjLib lib, const char* name) { return cast_of(void*, GetProcAddress(cast_of(HMODULE, lib), name)); }
+void kj_lib_destroy(kjLib lib) { FreeLibrary(cast_of(HMODULE, lib)); }
 
-#define KJ_ERR_NONE (0)
-typedef u32 kjErr;
-
-#if defined(__cplusplus)
-}
-#endif
 #endif

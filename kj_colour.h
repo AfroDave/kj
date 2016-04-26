@@ -37,13 +37,11 @@ KJ_API kjRgbaf kj_rgbaf_unpack(u32 packed);
 
 #if defined(KJ_COLOUR_IMPLEMENTATION)
 
-kjRgba kj_rgba(u8 r, u8 g, u8 b, u8 a)
-{
-    return (kj_rgba_t) { r, g, b, a };
+kjRgba kj_rgba(u8 r, u8 g, u8 b, u8 a) {
+    kjRgba res; res.r = r; res.b = b; res.g = g; res.a = a; return res;
 }
 
-kjRgba kj_rgba_4f(f32 r, f32 g, f32 b, f32 a)
-{
+kjRgba kj_rgba_4f(f32 r, f32 g, f32 b, f32 a) {
     return kj_rgba(
         cast_of(u8, r * 255.0f + 0.5f),
         cast_of(u8, g * 255.0f + 0.5f),
@@ -51,18 +49,15 @@ kjRgba kj_rgba_4f(f32 r, f32 g, f32 b, f32 a)
         cast_of(u8, a * 255.0f + 0.5f));
 }
 
-kjRgba kj_rgba_rgbaf(kjRgbaf rgbaf)
-{
+kjRgba kj_rgba_rgbaf(kjRgbaf rgbaf) {
     return kj_rgba_4f(rgbaf.r, rgbaf.g, rgbaf.b, rgbaf.a);
 }
 
-u32 kj_rgba_pack(kjRgba rgba)
-{
+u32 kj_rgba_pack(kjRgba rgba) {
     return (rgba.r << 24) | (rgba.g << 16) | (rgba.b << 8) | (rgba.a << 0);
 }
 
-kjRgba kj_rgba_unpack(u32 packed)
-{
+kjRgba kj_rgba_unpack(u32 packed) {
     return kj_rgba(
         cast_of(u8, (packed & 0xFF000000) >> 24),
         cast_of(u8, (packed & 0x00FF0000) >> 16),
@@ -70,13 +65,11 @@ kjRgba kj_rgba_unpack(u32 packed)
         cast_of(u8, (packed & 0x000000FF) >> 0));
 }
 
-kjRgbaf kj_rgbaf(f32 r, f32 g, f32 b, f32 a)
-{
-    return (kj_rgbaf_t) { r, g, b, a };
+kjRgbaf kj_rgbaf(f32 r, f32 g, f32 b, f32 a) {
+    kjRgbaf res; res.r = r; res.b = b; res.g = g; res.a = a; return res;
 }
 
-kjRgbaf kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a)
-{
+kjRgbaf kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a) {
     return kj_rgbaf(
         cast_of(f32, r / 255.0f),
         cast_of(f32, g / 255.0f),
@@ -84,13 +77,11 @@ kjRgbaf kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a)
         cast_of(f32, a / 255.0f));
 }
 
-kjRgbaf kj_rgbaf_rgba(kjRgba rgba)
-{
+kjRgbaf kj_rgbaf_rgba(kjRgba rgba) {
     return kj_rgbaf_4b(rgba.r, rgba.g, rgba.b, rgba.a);
 }
 
-u32 kj_rgbaf_pack(kjRgbaf rgba)
-{
+u32 kj_rgbaf_pack(kjRgbaf rgba) {
     return
         (cast_of(u8, rgba.r * 255.0f) << 24) |
         (cast_of(u8, rgba.g * 255.0f) << 16) |
@@ -98,12 +89,12 @@ u32 kj_rgbaf_pack(kjRgbaf rgba)
         (cast_of(u8, rgba.a * 255.0f) << 0);
 }
 
-kjRgbaf kj_rgbaf_unpack(u32 packed)
-{
+kjRgbaf kj_rgbaf_unpack(u32 packed) {
     return kj_rgbaf(
         cast_of(f32, ((packed & 0xFF000000) >> 24) / 255.0f),
         cast_of(f32, ((packed & 0x00FF0000) >> 16) / 255.0f),
         cast_of(f32, ((packed & 0x0000FF00) >> 8)  / 255.0f),
         cast_of(f32, ((packed & 0x000000FF) >> 0)  / 255.0f));
 }
+
 #endif
