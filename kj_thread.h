@@ -57,13 +57,14 @@ u32 THREAD_COUNTER = 0;
 
 #if defined(KJ_SYS_WIN32)
 
-kjThread kj_thread(kj_thread_fn* fn, void* data, u32 flags); {
+kjThread kj_thread(kj_thread_fn* fn, void* data, u32 flags) {
     kjThread res;
     res.id = _InterlockedIncrement(&THREAD_COUNTER);
     res.ctx.fn = fn;
     res.ctx.data = data;
     res.flags = flags;
-    res.handle = CreateThread(NULL, 0, cast(LPTHREAD_START_ROUTINE, fn), data, 0, NULL);
+    res.handle = CreateThread(NULL, 0, cast_of(LPTHREAD_START_ROUTINE, fn), data, 0, NULL);
+    return res;
 }
 
 void kj_thread_join(kjThread* thread) {

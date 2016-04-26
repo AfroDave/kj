@@ -69,6 +69,24 @@ extern "C" {
 #endif
 #endif
 
+#if !defined(KJ_EXPORT)
+#if defined(KJ_COMPILER_MSVC)
+#if defined(__cplusplus)
+#define KJ_EXPORT extern "C" __declspec(dllexport)
+#else
+#define KJ_EXPORT __declspec(dllexport)
+#endif
+#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+#if defined(__cplusplus)
+#define extern "C" __attribute__((dllexport))
+#else
+#define __attribute__((dllexport))
+#endif
+#else
+#error KJ_EXPORT_UNSUPPORTED
+#endif
+#endif
+
 #if !defined(inline)
 #if defined(KJ_COMPILER_MSVC) && !defined(__cplusplus) && _MSC_VER <= 1800
 #define inline __inline
@@ -451,9 +469,9 @@ KJ_API isize kj_str_cmp_n(const char* s1, const char* s2, isize n);
 KJ_API isize kj_str_cmp(const char* s1, const char* s2);
 
 typedef void* kjLib;
-KJ_API kjLib kj_lib(const char* path);
-KJ_API void* kj_lib_proc(kjLib lib, const char* name);
-KJ_API void kj_lib_destroy(kjLib lib);
+KJ_API kjLib kj_lib_open(const char* path);
+KJ_API void* kj_lib_fn(kjLib lib, const char* name);
+KJ_API void kj_lib_close(kjLib lib);
 
 #define KJ_ERR_NONE (0)
 typedef u32 kjErr;
@@ -543,8 +561,17 @@ isize kj_str_cmp(const char* s1, const char* s2) {
     return 0;
 }
 
-kjLib kj_lib(const char* path) { return cast_of(kjLib, LoadLibrary(path)); }
-void* kj_lib_proc(kjLib lib, const char* name) { return cast_of(void*, GetProcAddress(cast_of(HMODULE, lib), name)); }
-void kj_lib_destroy(kjLib lib) { FreeLibrary(cast_of(HMODULE, lib)); }
+#if defined(KJ_SYS_WIN32)
+kjLib kj_lib_open(const char* path) { return cast_of(kjLib, LoadLibrary(path)); }
+void* kj_lib_fn(kjLib lib, const char* name) { return cast_of(void*, GetProcAddress(cast_of(HMODULE, lib), name)); }
+void kj_lib_close(kjLib lib) { FreeLibrary(cast_of(HMODULE, lib)); }
+#elif defined(KJ_SYS_LINUX)
+#include <dlfcn.h>
+kjLib kj_lib_open(const char* path) { return cast_of(kjLib, dlopen(path, RTLD_LAZY)); }
+void* kj_lib_fn(kjLib lib, const char* name) { return cast_of(void*, dlsym(lib, name)); }
+void kj_lib_close(kjLib lib) { dlclose(lib); }
+#else
+#error KJ_LIB_UNSUPPORTED
+#endif
 
 #endif

@@ -4,7 +4,7 @@ bin/*
 lib/*
 tool/*
 
-test.*
+test*.*
 
 *.out
 *.exe
@@ -12,5 +12,9 @@ test.*
 *.sh
 *.bat
 *.pdb
+*.exp
+*.lib
+*.dll
+*.so
 
 kj_image.h
