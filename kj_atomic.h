@@ -9,23 +9,23 @@
 extern "C" {
 #endif
 
-kj_api void kj_atomic_read_fence(void);
-kj_api void kj_atomic_write_fence(void);
-kj_api void kj_atomic_rw_fence(void);
-kj_api u32 kj_atomic_cmp_swap_u32(volatile u32* value, u32 expected_value, u32 new_value);
-kj_api u64 kj_atomic_cmp_swap_u64(volatile u64* value, u64 expected_value, u64 new_value);
-kj_api void* kj_atomic_cmp_swap_ptr(volatile void** value, void* expected_value, void* new_value);
-kj_api u32 kj_atomic_swap_u32(volatile u32* value, u32 new_value);
-kj_api u64 kj_atomic_swap_u64(volatile u64* value, u64 new_value);
-kj_api void* kj_atomic_swap_ptr(volatile void** value, void* new_value);
-kj_api u32 kj_atomic_inc_u32(volatile u32* value);
-kj_api u64 kj_atomic_inc_u64(volatile u64* value);
-kj_api u32 kj_atomic_dec_u32(volatile u32* value);
-kj_api u64 kj_atomic_dec_u64(volatile u64* value);
-kj_api u32 kj_atomic_fetch_add_u32(volatile u32* value, u32 add);
-kj_api u64 kj_atomic_fetch_add_u64(volatile u64* value, u64 add);
-kj_api u32 kj_atomic_fetch_sub_u32(volatile u32* value, u32 sub);
-kj_api u64 kj_atomic_fetch_sub_u64(volatile u64* value, u64 sub);
+KJ_API void kj_atomic_read_fence(void);
+KJ_API void kj_atomic_write_fence(void);
+KJ_API void kj_atomic_rw_fence(void);
+KJ_API u32 kj_atomic_cmp_swap_u32(volatile u32* value, u32 expected_value, u32 new_value);
+KJ_API u64 kj_atomic_cmp_swap_u64(volatile u64* value, u64 expected_value, u64 new_value);
+KJ_API void* kj_atomic_cmp_swap_ptr(volatile void** value, void* expected_value, void* new_value);
+KJ_API u32 kj_atomic_swap_u32(volatile u32* value, u32 new_value);
+KJ_API u64 kj_atomic_swap_u64(volatile u64* value, u64 new_value);
+KJ_API void* kj_atomic_swap_ptr(volatile void** value, void* new_value);
+KJ_API u32 kj_atomic_inc_u32(volatile u32* value);
+KJ_API u64 kj_atomic_inc_u64(volatile u64* value);
+KJ_API u32 kj_atomic_dec_u32(volatile u32* value);
+KJ_API u64 kj_atomic_dec_u64(volatile u64* value);
+KJ_API u32 kj_atomic_fetch_add_u32(volatile u32* value, u32 add);
+KJ_API u64 kj_atomic_fetch_add_u64(volatile u64* value, u64 add);
+KJ_API u32 kj_atomic_fetch_sub_u32(volatile u32* value, u32 sub);
+KJ_API u64 kj_atomic_fetch_sub_u64(volatile u64* value, u64 sub);
 
 #if defined(__cplusplus)
 }

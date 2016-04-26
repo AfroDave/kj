@@ -17,7 +17,7 @@ typedef enum kj_io_err {
     KJ_IO_ERR_INTERRUPED,
     KJ_IO_ERR_UNKNOWN,
     KJ_IO_ERR_COUNT
-} kj_io_err_t;
+} kj_io_err;
 
 typedef enum kj_io_flag {
     KJ_IO_FLAG_INVALID = (0 << 0),
@@ -28,32 +28,32 @@ typedef enum kj_io_flag {
     KJ_IO_FLAG_CREATE_NEW = (1 << 3),
     KJ_IO_FLAG_APPEND = (1 << 4),
     KJ_IO_FLAG_TRUNCATE = (1 << 5)
-} kj_io_flag_t;
+} kj_io_flag;
 
 #if defined(KJ_SYS_WIN32)
 #include <windows.h>
-typedef struct kj_io {
+typedef struct kjIo {
     HANDLE handle;
     u32 flags;
-    kj_io_err_t err;
-} kj_io_t;
+    kj_io_err err;
+} kjIo;
 #elif defined(KJ_SYS_LINUX)
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
-typedef struct kj_io {
+typedef struct kjIo {
     i32 handle;
     u32 flags;
-    kj_io_err_t err;
-} kj_io_t;
+    kj_io_err err;
+} kjIo;
 #else
 #error KJ_IO_UNSUPPORTED
 #endif
 
-typedef struct kj_io_stat {
+typedef struct kjIoStat {
     i64 size;
-} kj_io_stat_t;
+} kjIoStat;
 
 #if defined(__cplusplus)
 extern "C" {
@@ -61,14 +61,14 @@ extern "C" {
 
 #define kj_io_has_err(io) ((io)->err != KJ_IO_ERR_NONE)
 
-kj_api kj_io_t kj_io_open(const char* path, u32 flags);
-kj_api kj_io_err_t kj_io_close(kj_io_t* io);
-kj_api isize kj_io_read(kj_io_t* io, void* buf, isize size, i64 offset);
-kj_api isize kj_io_write(kj_io_t* io, void* buf, isize size, i64 offset);
+KJ_API kjIo kj_io_open(const char* path, u32 flags);
+KJ_API kj_io_err kj_io_close(kjIo* io);
+KJ_API isize kj_io_read(kjIo* io, void* buf, isize size, i64 offset);
+KJ_API isize kj_io_write(kjIo* io, void* buf, isize size, i64 offset);
 
-kj_api kj_io_stat_t kj_io_stat(kj_io_t* io);
+KJ_API kjIoStat kj_io_stat(kjIo* io);
 
-kj_api const char* kj_io_err_str(kj_io_t* io);
+KJ_API const char* kj_io_err_str(kjIo* io);
 
 #if defined(__cplusplus)
 }
@@ -78,7 +78,7 @@ kj_api const char* kj_io_err_str(kj_io_t* io);
 
 #if defined(KJ_IO_IMPLEMENTATION)
 
-const char* kj_io_err_str(kj_io_t* io)
+const char* kj_io_err_str(kjIo* io)
 {
     switch(io->err) {
         case KJ_IO_ERR_NONE: return "None";
@@ -98,7 +98,7 @@ const char* kj_io_err_str(kj_io_t* io)
 
 #include <windows.h>
 
-internal kj_io_err_t kj_io_err_from_win32(u32 err)
+internal kj_io_err kj_io_err_from_win32(u32 err)
 {
     switch(err) {
         case ERROR_SUCCESS: return KJ_IO_ERR_NONE;
@@ -159,9 +159,9 @@ internal u32 kj_io_gen_create_mode(u32 flags)
     return res;
 }
 
-kj_io_t kj_io_open(const char* path, u32 flags)
+kjIo kj_io_open(const char* path, u32 flags)
 {
-    kj_io_t res;
+    kjIo res;
     u32 access = kj_io_gen_access_mode(flags);
     u32 create = kj_io_gen_create_mode(flags);
     res.handle = CreateFile(path, access, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, create, 0, NULL);
@@ -170,9 +170,9 @@ kj_io_t kj_io_open(const char* path, u32 flags)
     return res;
 }
 
-kj_io_err_t kj_io_close(kj_io_t* io)
+kj_io_err kj_io_close(kjIo* io)
 {
-    kj_io_err_t res = KJ_IO_ERR_NONE;
+    kj_io_err res = KJ_IO_ERR_NONE;
     if(!CloseHandle(io->handle)) {
         res = kj_io_err_from_win32(GetLastError());
     }
@@ -180,7 +180,7 @@ kj_io_err_t kj_io_close(kj_io_t* io)
     return res;
 }
 
-isize kj_io_read(kj_io_t* io, void* buf, isize size, i64 offset)
+isize kj_io_read(kjIo* io, void* buf, isize size, i64 offset)
 {
     isize res = -1;
     OVERLAPPED overlapped = {0};
@@ -195,7 +195,7 @@ isize kj_io_read(kj_io_t* io, void* buf, isize size, i64 offset)
     return res;
 }
 
-isize kj_io_write(kj_io_t* io, void* buf, isize size, i64 offset)
+isize kj_io_write(kjIo* io, void* buf, isize size, i64 offset)
 {
     isize res = -1;
     OVERLAPPED overlapped = {0};
@@ -210,9 +210,9 @@ isize kj_io_write(kj_io_t* io, void* buf, isize size, i64 offset)
     return res;
 }
 
-kj_io_stat_t kj_io_stat(kj_io_t* io)
+kjIoStat kj_io_stat(kjIo* io)
 {
-    kj_io_stat_t res = {0};
+    kjIoStat res = {0};
     BY_HANDLE_FILE_INFORMATION io_info = {0};
     if(GetFileInformationByHandle(io->handle, &io_info)) {
         res.size = (cast_of(i64, io_info.nFileSizeHigh) << 32) | cast_of(i64, io_info.nFileSizeLow);
@@ -224,7 +224,7 @@ kj_io_stat_t kj_io_stat(kj_io_t* io)
 
 #elif defined(KJ_SYS_LINUX)
 
-internal kj_io_err_t kj_io_err_from_errno(u32 err)
+internal kj_io_err kj_io_err_from_errno(u32 err)
 {
     switch(err) {
         case 0: return KJ_IO_ERR_NONE;
@@ -284,9 +284,9 @@ internal u32 kj_io_gen_create_mode(u32 flags)
     return res;
 }
 
-kj_io_t kj_io_open(const char* path, u32 flags)
+kjIo kj_io_open(const char* path, u32 flags)
 {
-    kj_io_t res;
+    kjIo res;
     u32 access = kj_io_gen_access_mode(flags);
     u32 create = kj_io_gen_create_mode(flags);
     if((access | create) == 0) {
@@ -302,9 +302,9 @@ kj_io_t kj_io_open(const char* path, u32 flags)
     return res;
 }
 
-kj_io_err_t kj_io_close(kj_io_t* io)
+kj_io_err kj_io_close(kjIo* io)
 {
-    kj_io_err_t res = KJ_IO_ERR_NONE;
+    kj_io_err res = KJ_IO_ERR_NONE;
     if(close(io->handle) == -1) {
         io->err = kj_io_err_from_errno(errno);
         res = io->err;
@@ -314,7 +314,7 @@ kj_io_err_t kj_io_close(kj_io_t* io)
     return res;
 }
 
-isize kj_io_read(kj_io_t* io, void* buf, isize size, i64 offset)
+isize kj_io_read(kjIo* io, void* buf, isize size, i64 offset)
 {
     isize res = -1;
 #if defined(KJ_ARCH_64_BIT)
@@ -335,7 +335,7 @@ isize kj_io_read(kj_io_t* io, void* buf, isize size, i64 offset)
     return res;
 }
 
-isize kj_io_write(kj_io_t* io, void* buf, isize size, i64 offset)
+isize kj_io_write(kjIo* io, void* buf, isize size, i64 offset)
 {
     isize res = -1;
 #if defined(KJ_ARCH_64_BIT)
@@ -356,9 +356,9 @@ isize kj_io_write(kj_io_t* io, void* buf, isize size, i64 offset)
     return res;
 }
 
-kj_io_stat_t kj_io_stat(kj_io_t* io)
+kjIoStat kj_io_stat(kjIo* io)
 {
-    kj_io_stat_t res;
+    kjIoStat res;
     struct stat buf;
     if(fstat(io->handle, &buf) == -1) {
         io->err = kj_io_err_from_errno(errno);

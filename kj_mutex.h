@@ -7,10 +7,10 @@
 
 #if defined(KJ_SYS_WIN32)
 #include <windows.h>
-typedef CRITICAL_SECTION kj_mutex_t;
+typedef CRITICAL_SECTION kjMutex;
 #elif defined(KJ_SYS_LINUX)
 #include <pthread.h>
-typedef pthread_mutex_t kj_mutex_t;
+typedef pthread_mutex kjMutex;
 #else
 #error KJ_MUTEX_UNSUPPORTED
 #endif
@@ -19,11 +19,11 @@ typedef pthread_mutex_t kj_mutex_t;
 extern "C" {
 #endif
 
-kj_api kj_mutex_t kj_mutex(void);
-kj_api void kj_mutex_lock(kj_mutex_t* mutex);
-kj_api b32 kj_mutex_try_lock(kj_mutex_t* mutex);
-kj_api void kj_mutex_unlock(kj_mutex_t* mutex);
-kj_api void kj_mutex_destroy(kj_mutex_t* mutex);
+KJ_API kjMutex kj_mutex(void);
+KJ_API void kj_mutex_lock(kjMutex* mutex);
+KJ_API b32 kj_mutex_try_lock(kjMutex* mutex);
+KJ_API void kj_mutex_unlock(kjMutex* mutex);
+KJ_API void kj_mutex_destroy(kjMutex* mutex);
 
 #if defined(__cplusplus)
 }
@@ -35,58 +35,58 @@ kj_api void kj_mutex_destroy(kj_mutex_t* mutex);
 
 #if defined(KJ_SYS_WIN32)
 
-kj_mutex_t kj_mutex(void)
+kjMutex kj_mutex(void)
 {
-    kj_mutex_t mutex;
+    kjMutex mutex;
     InitializeCriticalSectionAndSpinCount(&mutex, 1000);
     return mutex;
 }
 
-void kj_mutex_lock(kj_mutex_t* mutex)
+void kj_mutex_lock(kjMutex* mutex)
 {
     EnterCriticalSection(mutex);
 }
 
-b32 kj_mutex_try_lock(kj_mutex_t* mutex)
+b32 kj_mutex_try_lock(kjMutex* mutex)
 {
     return TryEnterCriticalSection(mutex) > 0;
 }
 
-void kj_mutex_unlock(kj_mutex_t* mutex)
+void kj_mutex_unlock(kjMutex* mutex)
 {
     LeaveCriticalSection(mutex);
 }
 
-void kj_mutex_destroy(kj_mutex_t* mutex)
+void kj_mutex_destroy(kjMutex* mutex)
 {
     DeleteCriticalSection(mutex);
 }
 
 #elif defined(KJ_SYS_LINUX)
 
-kj_mutex_t kj_mutex(void)
+kjMutex kj_mutex(void)
 {
-    kj_mutex_t mutex;
+    kjMutex mutex;
     pthread_mutex_init(&mutex, NULL);
     return mutex;
 }
 
-void kj_mutex_lock(kj_mutex_t* mutex)
+void kj_mutex_lock(kjMutex* mutex)
 {
     pthread_mutex_lock(mutex);
 }
 
-b32 kj_mutex_try_lock(kj_mutex_t* mutex)
+b32 kj_mutex_try_lock(kjMutex* mutex)
 {
     return pthread_mutex_trylock(mutex) == 0;
 }
 
-void kj_mutex_unlock(kj_mutex_t* mutex)
+void kj_mutex_unlock(kjMutex* mutex)
 {
     pthread_mutex_unlock(mutex);
 }
 
-void kj_mutex_destroy(kj_mutex_t* mutex)
+void kj_mutex_destroy(kjMutex* mutex)
 {
     pthread_mutex_destroy(mutex);
 }

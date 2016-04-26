@@ -7,14 +7,14 @@
 
 typedef enum kj_thread_flags {
     KJ_THREAD_FLAG_NONE         = (0 << 0),
-} kj_thread_flags_t;
+} kj_thread_flags;
 
 #define kj_thread_fn(name) void* name(void* data)
 typedef kj_thread_fn(kj_thread_fn);
 
 #if defined(KJ_SYS_WIN32)
 #include <windows.h>
-typedef struct kj_thread {
+typedef struct kjThread {
     u32 id;
     u32 flags;
     HANDLE handle;
@@ -22,19 +22,19 @@ typedef struct kj_thread {
         kj_thread_fn* fn;
         void* data;
     } ctx;
-} kj_thread_t;
+} kjThread;
 #elif define(KJ_SYS_LINUX)
 #include <pthread.h>
-typedef struct kj_thread {
+typedef struct kjThread {
     u32 id;
     u32 flags;
-    pthread_t handle;
-    pthread_attr_t attr;
+    pthread handle;
+    pthread_attr attr;
     struct {
         kj_thread_fn* fn;
         void* data;
     } ctx;
-} kj_thread_t;
+} kjThread;
 #else
 #error KJ_THREAD_UNSUPPORTED
 #endif
@@ -43,9 +43,9 @@ typedef struct kj_thread {
 extern "C" {
 #endif
 
-kj_api kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags);
-kj_api void kj_thread_join(kj_thread_t* thread);
-kj_api void kj_thread_detach(kj_thread_t* thread);
+KJ_API kjThread kj_thread(kj_thread_fn* fn, void* data, u32 flags);
+KJ_API void kj_thread_join(kjThread* thread);
+KJ_API void kj_thread_detach(kjThread* thread);
 
 #if defined(__cplusplus)
 }
@@ -58,9 +58,9 @@ u32 THREAD_COUNTER = 0;
 
 #if defined(KJ_SYS_WIN32)
 
-kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags);
+kjThread kj_thread(kj_thread_fn* fn, void* data, u32 flags);
 {
-    kj_thread_t res;
+    kjThread res;
     res.id = _InterlockedIncrement(&THREAD_COUNTER);
     res.ctx.fn = fn;
     res.ctx.data = data;
@@ -68,13 +68,13 @@ kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags);
     res.handle = CreateThread(NULL, 0, cast(LPTHREAD_START_ROUTINE, fn), data, 0, NULL);
 }
 
-void kj_thread_join(kj_thread_t* thread)
+void kj_thread_join(kjThread* thread)
 {
     WaitForSingleObjectEx(thread->handle, INFINITE, FALSE);
     CloseHandle(thread->handle);
 }
 
-void kj_thread_detach(kj_thread_t* thread)
+void kj_thread_detach(kjThread* thread)
 {
     CloseHandle(thread->handle);
     thread->handle = NULL;
@@ -82,9 +82,9 @@ void kj_thread_detach(kj_thread_t* thread)
 
 #elif defined(KJ_SYS_LINUX)
 
-kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags)
+kjThread kj_thread(kj_thread_fn* fn, void* data, u32 flags)
 {
-    kj_thread_t res;
+    kjThread res;
     res.id = __sync_add_and_fetch(&THREAD_COUNTER, 1);
     res.ctx.fn = fn;
     res.ctx.data = data;
@@ -93,12 +93,12 @@ kj_thread_t kj_thread(kj_thread_fn* fn, void* data, u32 flags)
     return res;
 }
 
-void kj_thread_join(kj_thread_t* thread)
+void kj_thread_join(kjThread* thread)
 {
     pthread_join(thread->handle, NULL);
 }
 
-void kj_thread_detach(kj_thread_t* thread)
+void kj_thread_detach(kjThread* thread)
 {
     pthread_detach(thread->handle);
 }
