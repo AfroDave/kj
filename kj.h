@@ -328,7 +328,7 @@ typedef enum kjType {
     KJ_TYPE_COUNT
 } kjType;
 
-force_inline const char* kj_type_to_str(kjType type)
+KJ_API const char* kj_type_to_str(kjType type)
 {
     static const char* KJ_TYPE_STR[] = {
         "none",
@@ -351,7 +351,7 @@ force_inline const char* kj_type_to_str(kjType type)
     return KJ_TYPE_STR[type];
 }
 
-force_inline isize kj_type_to_size(kjType type)
+KJ_API isize kj_type_to_size(kjType type)
 {
     static const isize KJ_TYPE_SIZE[] = {
         0,
@@ -374,20 +374,9 @@ force_inline isize kj_type_to_size(kjType type)
     return KJ_TYPE_SIZE[type];
 }
 
-KJ_API inline u16 kj_swap16(u16 a)
-{
-    return cast_of(u16, (a << 8) | (a >> 8));
-}
-
-KJ_API inline u32 kj_swap32(u32 a)
-{
-    return cast_of(u32, (a << 24) | ((a << 8) & 0x00FF0000) | ((a >> 8) & 0x0000FF00) | (a >> 24));
-}
-
-KJ_API inline u64 kj_swap64(u64 a)
-{
-    return cast_of(u64, kj_swap32((a & 0xFFFFFFFF00000000) >> 32) | kj_swap32((a & 0x00000000FFFFFFFF) << 32));
-}
+KJ_API u16 kj_swap16(u16 a) { return cast_of(u16, (a << 8) | (a >> 8)); }
+KJ_API u32 kj_swap32(u32 a) { return cast_of(u32, (a << 24) | ((a << 8) & 0x00FF0000) | ((a >> 8) & 0x0000FF00) | (a >> 24)); }
+KJ_API u64 kj_swap64(u64 a) { return cast_of(u64, kj_swap32((a & 0xFFFFFFFF00000000) >> 32) | kj_swap32((a & 0x00000000FFFFFFFF) << 32)); }
 
 #if KJ_ENDIAN == KJ_LE
 #define kj_encode64(a, b, c, d, e, f, g, h) (((a) << 0) | ((b) << 8) | ((c) << 16) | ((d) << 24) | ((e) << 32) | ((f) << 40) | ((g) << 48) | ((h) << 56))
@@ -441,12 +430,12 @@ KJ_API i32 kj_printf(char const* fmt, ...) kj_printf_vargs(1);
 KJ_API i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v);
 KJ_API i32 kj_snprintf(char* buf, isize size, char const* fmt, ...) kj_printf_vargs(3);
 
-inline i32 kj_vprintf(char const* fmt, va_list v)
+i32 kj_vprintf(char const* fmt, va_list v)
 {
     return vfprintf(stdout, fmt, v);
 }
 
-inline i32 kj_printf(char const* fmt, ...)
+i32 kj_printf(char const* fmt, ...)
 {
     i32 res;
     va_list v;
@@ -456,7 +445,7 @@ inline i32 kj_printf(char const* fmt, ...)
     return res;
 }
 
-inline i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v)
+i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v)
 {
     i32 res;
 #if defined(KJ_COMPILER_MSVC)
@@ -470,7 +459,7 @@ inline i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v)
     return (res >= size || res < 0) ? -1 : res;
 }
 
-inline i32 kj_snprintf(char* buf, isize size, char const* fmt, ...)
+i32 kj_snprintf(char* buf, isize size, char const* fmt, ...)
 {
     int res;
     va_list v;
@@ -481,69 +470,20 @@ inline i32 kj_snprintf(char* buf, isize size, char const* fmt, ...)
 }
 #endif
 
-KJ_API inline b32 kj_char_is_eol(char c)
-{
-    return c == '\r' || c == '\n';
-}
+KJ_API b32 kj_char_is_eol(char c) { return c == '\r' || c == '\n'; }
+KJ_API b32 kj_char_is_ws(char c) { return c == ' ' || c == '\t' || c == '\v' || c == '\f' || c == '\r' || c == '\n'; }
+KJ_API b32 kj_char_is_alpha(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <='Z'); }
+KJ_API b32 kj_char_is_digit(char c) { return (c >= '0' && c <= '9'); }
+KJ_API b32 kj_char_is_alphanum(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <='Z') || (c >= '0' && c <= '9'); }
+KJ_API b32 kj_char_is_hex_letter(char c) { return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
+KJ_API b32 kj_char_is_hex_digit(char c) { return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || (c >= '0' && c <= '9'); }
+KJ_API char kj_char_is_lower(char c) { return (c >= 'a' && c <= 'z'); }
+KJ_API char kj_char_is_upper(char c) { return (c >= 'A' && c <= 'Z'); }
+KJ_API char kj_char_to_lower(char c) { return (c >= 'A' && c <= 'Z') ? 'a' + (c - 'A'): c; }
+KJ_API char kj_char_to_upper(char c) { return (c >= 'a' && c <= 'z') ? 'A' + (c - 'a'): c; }
+KJ_API isize kj_str_size(const char* s) { const char* e = s; while(*e) { e++; } return (e - s); }
 
-KJ_API inline b32 kj_char_is_ws(char c)
-{
-    return c == ' ' || c == '\t' || c == '\v' || c == '\f' || c == '\r' || c == '\n';
-}
-
-KJ_API inline b32 kj_char_is_alpha(char c)
-{
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <='Z');
-}
-
-KJ_API inline b32 kj_char_is_digit(char c)
-{
-    return (c >= '0' && c <= '9');
-}
-
-KJ_API inline b32 kj_char_is_alphanum(char c)
-{
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <='Z') || (c >= '0' && c <= '9');
-}
-
-KJ_API inline b32 kj_char_is_hex_letter(char c)
-{
-    return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-}
-
-KJ_API inline b32 kj_char_is_hex_digit(char c)
-{
-    return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || (c >= '0' && c <= '9');
-}
-
-KJ_API inline char kj_char_is_lower(char c)
-{
-    return (c >= 'a' && c <= 'z');
-}
-
-KJ_API inline char kj_char_is_upper(char c)
-{
-    return (c >= 'A' && c <= 'Z');
-}
-
-KJ_API inline char kj_char_to_lower(char c)
-{
-    return (c >= 'A' && c <= 'Z') ? 'a' + (c - 'A'): c;
-}
-
-KJ_API inline char kj_char_to_upper(char c)
-{
-    return (c >= 'a' && c <= 'z') ? 'A' + (c - 'a'): c;
-}
-
-KJ_API inline isize kj_str_size(const char* s)
-{
-    const char* e = s;
-    while(*e) { e++; }
-    return (e - s);
-}
-
-KJ_API inline isize kj_str_cmp_n(const char* s1, const char* s2, isize n)
+KJ_API isize kj_str_cmp_n(const char* s1, const char* s2, isize n)
 {
     while(*s1 && *s2 && n) {
         if(*s1 != *s2) {
@@ -556,7 +496,7 @@ KJ_API inline isize kj_str_cmp_n(const char* s1, const char* s2, isize n)
     return 0;
 }
 
-KJ_API inline isize kj_str_cmp(const char* s1, const char* s2)
+KJ_API isize kj_str_cmp(const char* s1, const char* s2)
 {
     while(*s1 && *s2) {
         if(*s1 != *s2) {

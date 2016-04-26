@@ -10,7 +10,7 @@
 typedef CRITICAL_SECTION kjMutex;
 #elif defined(KJ_SYS_LINUX)
 #include <pthread.h>
-typedef pthread_mutex kjMutex;
+typedef pthread_mutex_t kjMutex;
 #else
 #error KJ_MUTEX_UNSUPPORTED
 #endif

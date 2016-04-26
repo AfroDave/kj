@@ -254,25 +254,28 @@ KJ_API kjMat4f kj_mat4f_look_at(kjVec3f eye, kjVec3f target, kjVec3f up);
 KJ_API kjRect2f kj_rect2f(f32 x, f32 y, f32 w, f32 h);
 KJ_API kjRect2i kj_rect2i(i32 x, i32 y, i32 w, i32 h);
 KJ_API kjRect2u kj_rect2u(u32 x, u32 y, u32 w, u32 h);
-KJ_API b32 kj_rect2f_contains_xy(kjRect2f r, f32 x, f32 y);
-KJ_API b32 kj_rect2i_contains_xy(kjRect2i r, i32 x, i32 y);
-KJ_API b32 kj_rect2u_contains_xy(kjRect2u r, u32 x, u32 y);
+KJ_API b32 kj_rect2f_contains(kjRect2f r, f32 x, f32 y);
+KJ_API b32 kj_rect2i_contains(kjRect2i r, i32 x, i32 y);
+KJ_API b32 kj_rect2u_contains(kjRect2u r, u32 x, u32 y);
 KJ_API b32 kj_rect2f_contains_vec2f(kjRect2f r, kjVec2f xy);
 KJ_API b32 kj_rect2i_contains_vec2i(kjRect2i r, kjVec2i xy);
 KJ_API b32 kj_rect2u_contains_vec2u(kjRect2u r, kjVec2u xy);
-KJ_API i32 kj_rect2f_extend_xy(kjRect2f r, f32 x, f32 y);
-KJ_API i32 kj_rect2i_extend_xy(kjRect2i r, i32 x, i32 y);
-KJ_API i32 kj_rect2u_extend_xy(kjRect2u r, u32 x, u32 y);
+KJ_API i32 kj_rect2f_extend(kjRect2f r, f32 x, f32 y);
+KJ_API i32 kj_rect2i_extend(kjRect2i r, i32 x, i32 y);
+KJ_API i32 kj_rect2u_extend(kjRect2u r, u32 x, u32 y);
 KJ_API i32 kj_rect2f_extend_vec2f(kjRect2f r, kjVec2f xy);
 KJ_API i32 kj_rect2i_extend_vec2i(kjRect2i r, kjVec2i xy);
 KJ_API i32 kj_rect2u_extend_vec2u(kjRect2u r, kjVec2u xy);
+KJ_API kjVec2f kj_rect2f_centre(kjRect2f r);
+KJ_API kjVec2i kj_rect2i_centre(kjRect2i r);
+KJ_API kjVec2u kj_rect2u_centre(kjRect2u r);
 
 KJ_API kjRect3f kj_rect3f(f32 x, f32 y, f32 z, f32 w, f32 h, f32 d);
 KJ_API kjRect3i kj_rect3i(i32 x, i32 y, i32 z, i32 w, i32 h, i32 d);
 KJ_API kjRect3u kj_rect3u(u32 x, u32 y, u32 z, u32 w, u32 h, u32 d);
-KJ_API b32 kj_rect3f_contains_xyz(kjRect3f r, f32 x, f32 y, f32 z);
-KJ_API b32 kj_rect3i_contains_xyz(kjRect3i r, i32 x, i32 y, i32 z);
-KJ_API b32 kj_rect3u_contains_xyz(kjRect3u r, u32 x, u32 y, u32 z);
+KJ_API b32 kj_rect3f_contains(kjRect3f r, f32 x, f32 y, f32 z);
+KJ_API b32 kj_rect3i_contains(kjRect3i r, i32 x, i32 y, i32 z);
+KJ_API b32 kj_rect3u_contains(kjRect3u r, u32 x, u32 y, u32 z);
 KJ_API b32 kj_rect3f_contains_vec3f(kjRect3f r, kjVec3f xyz);
 KJ_API b32 kj_rect3i_contains_vec3i(kjRect3i r, kjVec3i xyz);
 KJ_API b32 kj_rect3u_contains_vec3u(kjRect3u r, kjVec3u xyz);
@@ -282,9 +285,9 @@ KJ_API b32 kj_rect3u_contains_xy(kjRect3u r, u32 x, u32 y);
 KJ_API b32 kj_rect3f_contains_vec2f(kjRect3f r, kjVec2f xy);
 KJ_API b32 kj_rect3i_contains_vec2i(kjRect3i r, kjVec2i xy);
 KJ_API b32 kj_rect3u_contains_vec2u(kjRect3u r, kjVec2u xy);
-KJ_API i32 kj_rect3f_extend_xyz(kjRect3f r, f32 x, f32 y, f32 z);
-KJ_API i32 kj_rect3i_extend_xyz(kjRect3i r, i32 x, i32 y, i32 z);
-KJ_API i32 kj_rect3u_extend_xyz(kjRect3u r, u32 x, u32 y, u32 z);
+KJ_API i32 kj_rect3f_extend(kjRect3f r, f32 x, f32 y, f32 z);
+KJ_API i32 kj_rect3i_extend(kjRect3i r, i32 x, i32 y, i32 z);
+KJ_API i32 kj_rect3u_extend(kjRect3u r, u32 x, u32 y, u32 z);
 KJ_API i32 kj_rect3f_extend_vec3f(kjRect3f r, kjVec3f xyz);
 KJ_API i32 kj_rect3i_extend_vec3i(kjRect3i r, kjVec3i xyz);
 KJ_API i32 kj_rect3u_extend_vec3u(kjRect3u r, kjVec3u xyz);
@@ -379,7 +382,7 @@ kjVec3u kj_vec3u_mul(kjVec3u a, kjVec3u b) { return kj_vec3u(a.x * b.x, a.y * b.
 kjVec3f kj_vec3f_mulf(kjVec3f a, f32 b) { return kj_vec3f(a.x * b, a.y * b, a.z * b); }
 kjVec3i kj_vec3i_muli(kjVec3i a, i32 b) { return kj_vec3i(a.x * b, a.y * b, a.z * b); }
 kjVec3u kj_vec3u_mulu(kjVec3u a, u32 b) { return kj_vec3u(a.x * b, a.y * b, a.z * b); }
-kjVec3f kj_vec3f_div(kjVec3f a, kjVec3f b) { return kj_vec3f(a.x / (b.x + F32_EPS), a.y / (b.y + F32_EPS), a.z / (b.z + F32_EPS)); }
+kjVec3f kj_vec3f_div(kjVec3f a, kjVec3f b) { return kj_vec3f(a.x / b.x, a.y / b.y, a.z / b.z); }
 kjVec3i kj_vec3i_div(kjVec3i a, kjVec3i b) { return kj_vec3i(a.x / b.x, a.y / b.y, a.z / b.z); }
 kjVec3u kj_vec3u_div(kjVec3u a, kjVec3u b) { return kj_vec3u(a.x / b.x, a.y / b.y, a.z / b.z); }
 f32 kj_vec3f_dot(kjVec3f a, kjVec3f b) { return (a.x * b.x + a.y * b.y + a.z * b.z); }
