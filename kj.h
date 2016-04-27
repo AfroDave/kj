@@ -7,7 +7,7 @@ extern "C" {
 
 #define KJ_VERSION_MAJOR 0
 #define KJ_VERSION_MINOR 1
-#define KJ_VERSION_PATCH 0
+#define KJ_VERSION_PATCH 1
 
 #if defined(_WIN32) || defined(_WIN64)
 #define KJ_SYS_WIN32
@@ -78,9 +78,9 @@ extern "C" {
 #endif
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
 #if defined(__cplusplus)
-#define extern "C" __attribute__((dllexport))
+#define KJ_EXPORT extern "C"
 #else
-#define __attribute__((dllexport))
+#define KJ_EXPORT
 #endif
 #else
 #error KJ_EXPORT_UNSUPPORTED
@@ -304,12 +304,11 @@ kj_static_assert(f64, isize_of(f64) == 8);
 #define kj_one(p, s) kj_set(p, s, 1)
 #define kj_move MoveMemory
 #else
-#include <string.h>
-#define kj_copy memcpy
-#define kj_set(p, s, v) memset((p), (v), (s))
+#define kj_copy __builtin_memcpy
+#define kj_set(p, s, v) __builtin_memset((p), (v), (s))
 #define kj_zero(p, s) kj_set(p, s, 0)
 #define kj_one(p, s) kj_set(p, s, 1)
-#define kj_move memmove
+#define kj_move __builtin_memmove
 #endif
 
 void kj_assert_handler(const char* expr, const char* file, u64 line, const char* msg);
@@ -357,56 +356,16 @@ typedef enum kjType {
     KJ_TYPE_COUNT
 } kjType;
 
-KJ_API inline const char* kj_type_to_str(kjType type) {
-    static const char* KJ_TYPE_STR[] = {
-        "none",
-        "char",
-        "i8",
-        "u8",
-        "i16",
-        "u16",
-        "i32",
-        "u32",
-        "b32",
-        "i64",
-        "u64",
-        "isize",
-        "usize",
-        "f32",
-        "f64",
-        "unknown",
-    };
-    return KJ_TYPE_STR[type];
-}
-
-KJ_API inline isize kj_type_to_size(kjType type) {
-    static const isize KJ_TYPE_SIZE[] = {
-        0,
-        isize_of(char),
-        isize_of(i8),
-        isize_of(u8),
-        isize_of(i16),
-        isize_of(u16),
-        isize_of(i32),
-        isize_of(u32),
-        isize_of(b32),
-        isize_of(i64),
-        isize_of(u64),
-        isize_of(isize),
-        isize_of(usize),
-        isize_of(f32),
-        isize_of(f64),
-        0,
-    };
-    return KJ_TYPE_SIZE[type];
-}
+KJ_API const char* kj_type_to_str(kjType type);
+KJ_API isize kj_type_to_size(kjType type);
 
 KJ_API u16 kj_swap16(u16 a);
 KJ_API u32 kj_swap32(u32 a);
 KJ_API u64 kj_swap64(u64 a);
 
 #if KJ_ENDIAN == KJ_LE
-#define kj_encode64(a, b, c, d, e, f, g, h) (((a) << 0) | ((b) << 8) | ((c) << 16) | ((d) << 24) | ((e) << 32) | ((f) << 40) | ((g) << 48) | ((h) << 56))
+#define kj_encode64(a, b, c, d, e, f, g, h)                                     \
+    (((a) << 0) | ((b) << 8) | ((c) << 16) | ((d) << 24) | ((e) << 32) | ((f) << 40) | ((g) << 48) | ((h) << 56))
 #define kj_encode32(a, b, c, d) (((a) << 0) | ((b) << 8) | ((c) << 16) | ((d) << 24))
 #define kj_encode16(a, b) (((a) << 0) | ((b) << 8))
 #define kj_swap16_le(a) (a)
@@ -416,7 +375,8 @@ KJ_API u64 kj_swap64(u64 a);
 #define kj_swap32_be(a) kj_swap32(a)
 #define kj_swap64_be(a) kj_swap64(a)
 #else
-#define kj_encode64(a, b, c, d, e, f, g, h) (((h) << 0) | ((g) << 8) | ((f) << 16) | ((e) << 24) | ((d) << 32) | ((c) << 40) | ((b) << 48) | ((a) << 56))
+#define kj_encode64(a, b, c, d, e, f, g, h)                                     \
+    (((h) << 0) | ((g) << 8) | ((f) << 16) | ((e) << 24) | ((d) << 32) | ((c) << 40) | ((b) << 48) | ((a) << 56))
 #define kj_encode32(a, b, c, d) (((d) << 0) | ((c) << 8) | ((b) << 16) | ((a) << 24))
 #define kj_encode16(a, b) (((b) << 0) | ((a) << 8))
 #define kj_swap16_le(a) kj_swap16(a)
@@ -429,9 +389,9 @@ KJ_API u64 kj_swap64(u64 a);
 
 #define kj_min(a, b) ((a) < (b) ? (a): (b))
 #define kj_max(a, b) ((a) > (b) ? (a): (b))
-#define kj_clamp(a, min, max) kj_max((min), kj_min((a), (max)))
+#define kj_clamp(a, min, max) (kj_max((min), kj_min((a), (max))))
 #define kj_range(a, fl, fu, tl, tu) ((a - fl) * (tu - tl) / ((fu - fl) + tl))
-#define kj_swap(T, a, b) { T tmp = a; a = b; b = a; }
+#define kj_swap(T, a, b) { T tmp_##__LINE__ = a; a = b; b = tmp_##__LINE__; }
 
 #define kj_kb(a) ((a) * 1024)
 #define kj_mb(a) (kj_kb((a)) * 1024)
@@ -447,6 +407,8 @@ KJ_API u64 kj_swap64(u64 a);
 #else
 #define kj_printf_vargs(a)
 #endif
+
+#include <stdarg.h>
 
 KJ_API i32 kj_vprintf(char const* fmt, va_list v);
 KJ_API i32 kj_printf(char const* fmt, ...) kj_printf_vargs(1);
@@ -483,15 +445,58 @@ typedef u32 kjErr;
 
 #if defined(KJ_IMPLEMENTATION)
 
+const char* kj_type_to_str(kjType type) {
+    static const char* KJ_TYPE_STR[] = {
+        "none",
+        "char",
+        "i8",
+        "u8",
+        "i16",
+        "u16",
+        "i32",
+        "u32",
+        "b32",
+        "i64",
+        "u64",
+        "isize",
+        "usize",
+        "f32",
+        "f64",
+        "unknown",
+    };
+    return KJ_TYPE_STR[type];
+}
+
+isize kj_type_to_size(kjType type) {
+    static const isize KJ_TYPE_SIZE[] = {
+        0,
+        isize_of(char),
+        isize_of(i8),
+        isize_of(u8),
+        isize_of(i16),
+        isize_of(u16),
+        isize_of(i32),
+        isize_of(u32),
+        isize_of(b32),
+        isize_of(i64),
+        isize_of(u64),
+        isize_of(isize),
+        isize_of(usize),
+        isize_of(f32),
+        isize_of(f64),
+        0,
+    };
+    return KJ_TYPE_SIZE[type];
+}
+
 u16 kj_swap16(u16 a) { return cast_of(u16, (a << 8) | (a >> 8)); }
 u32 kj_swap32(u32 a) { return cast_of(u32, (a << 24) | ((a << 8) & 0x00FF0000) | ((a >> 8) & 0x0000FF00) | (a >> 24)); }
 u64 kj_swap64(u64 a) { return cast_of(u64, kj_swap32((a & 0xFFFFFFFF00000000) >> 32) | kj_swap32((a & 0x00000000FFFFFFFF) << 32)); }
 
-#include <stdarg.h>
 #include <stdio.h>
 
 i32 kj_vprintf(char const* fmt, va_list v) {
-    return vfprintf(stdout, fmt, v);
+    return vprintf(fmt, v);
 }
 
 i32 kj_printf(char const* fmt, ...) {
