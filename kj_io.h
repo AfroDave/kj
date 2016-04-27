@@ -63,8 +63,10 @@ extern "C" {
 
 KJ_API kjIo kj_io_open(const char* path, u32 flags);
 KJ_API kjIoErr kj_io_close(kjIo* io);
-KJ_API isize kj_io_read(kjIo* io, void* buf, isize size, i64 offset);
-KJ_API isize kj_io_write(kjIo* io, void* buf, isize size, i64 offset);
+KJ_API isize kj_io_read(kjIo* io, void* buf, isize size);
+KJ_API isize kj_io_write(kjIo* io, void* buf, isize size);
+KJ_API isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset);
+KJ_API isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset);
 
 KJ_API kjIoStat kj_io_stat(kjIo* io);
 
@@ -172,7 +174,29 @@ kjIoErr kj_io_close(kjIo* io) {
     return res;
 }
 
-isize kj_io_read(kjIo* io, void* buf, isize size, i64 offset) {
+isize kj_io_read(kjIo* io, void* buf, isize size) {
+    isize res = -1;
+    DWORD read = 0;
+    if(ReadFile(io->handle, buf, cast_of(DWORD, size), cast_of(DWORD*, &read), NULL)) {
+        res = read;
+    } else {
+        io->err = kj_io_err_from_win32(GetLastError());
+    }
+    return res;
+}
+
+isize kj_io_write(kjIo* io, void* buf, isize size) {
+    isize res = -1;
+    DWORD wrote = 0;
+    if(WriteFile(io->handle, buf, cast_of(DWORD, size), cast_of(DWORD*, &wrote), NULL)) {
+        res = wrote;
+    } else {
+        io->err = kj_io_err_from_win32(GetLastError());
+    }
+    return res;
+}
+
+isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset) {
     isize res = -1;
     OVERLAPPED overlapped = {0};
     overlapped.Offset = cast_of(u32, ((offset >> 0) & 0xFFFFFFFF));
@@ -186,7 +210,7 @@ isize kj_io_read(kjIo* io, void* buf, isize size, i64 offset) {
     return res;
 }
 
-isize kj_io_write(kjIo* io, void* buf, isize size, i64 offset) {
+isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
     isize res = -1;
     OVERLAPPED overlapped = {0};
     overlapped.Offset = cast_of(u32, ((offset >> 0) & 0xFFFFFFFF));
@@ -298,7 +322,19 @@ kjIoErr kj_io_close(kjIo* io) {
     return res;
 }
 
-isize kj_io_read(kjIo* io, void* buf, isize size, i64 offset) {
+isize kj_io_read(kjIo* io, void* buf, isize size) {
+    isize res = read(io->handle, buf, size);
+    io->err = kj_io_err_from_errno(errno);
+    return res;
+}
+
+isize kj_io_write(kjIo* io, void* buf, isize size) {
+    isize res = write(io->handle, buf, size);
+    io->err = kj_io_err_from_errno(errno);
+    return res;
+}
+
+isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset) {
     isize res = -1;
 #if defined(KJ_ARCH_64_BIT)
     register i64 r10 __asm("r10") = offset;
@@ -314,11 +350,11 @@ isize kj_io_read(kjIo* io, void* buf, isize size, i64 offset) {
 #else
 #error KJ_IO_READ_UNSUPPORTED
 #endif
-    io->err = kj_io_err_from_errno(errno);
+    io->err = kj_io_err_from_errno(res < 0 ? -res: 0);
     return res;
 }
 
-isize kj_io_write(kjIo* io, void* buf, isize size, i64 offset) {
+isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
     isize res = -1;
 #if defined(KJ_ARCH_64_BIT)
     register i64 r10 __asm("r10") = offset;
@@ -334,7 +370,7 @@ isize kj_io_write(kjIo* io, void* buf, isize size, i64 offset) {
 #else
 #error KJ_IO_WRITE_UNSUPPORTED
 #endif
-    io->err = kj_io_err_from_errno(errno);
+    io->err = kj_io_err_from_errno(res < 0 ? -res: 0);
     return res;
 }
 
