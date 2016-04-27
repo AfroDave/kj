@@ -3,7 +3,7 @@
 
 #define KJ_IO_VERSION_MAJOR 0
 #define KJ_IO_VERSION_MINOR 1
-#define KJ_IO_VERSION_PATCH 0
+#define KJ_IO_VERSION_PATCH 1
 
 typedef enum kjIoErr {
     KJ_IO_ERR_NONE,
@@ -31,17 +31,12 @@ typedef enum kjIoFlag {
 } kjIoFlag;
 
 #if defined(KJ_SYS_WIN32)
-#include <windows.h>
 typedef struct kjIo {
-    HANDLE handle;
+    void* handle;
     u32 flags;
     kjIoErr err;
 } kjIo;
 #elif defined(KJ_SYS_LINUX)
-#include <errno.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
 typedef struct kjIo {
     i32 handle;
     u32 flags;
@@ -96,6 +91,8 @@ const char* kj_io_err_str(kjIo* io) {
 }
 
 #if defined(KJ_SYS_WIN32)
+
+#include <windows.h>
 
 internal kjIoErr kj_io_err_from_win32(u32 err) {
     switch(err) {
@@ -236,6 +233,11 @@ kjIoStat kj_io_stat(kjIo* io) {
 }
 
 #elif defined(KJ_SYS_LINUX)
+
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 internal kjIoErr kj_io_err_from_errno(u32 err) {
     switch(err) {

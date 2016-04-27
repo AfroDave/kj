@@ -3,7 +3,7 @@
 
 #define KJ_THREAD_VERSION_MAJOR 0
 #define KJ_THREAD_VERSION_MINOR 1
-#define KJ_THREAD_VERSION_PATCH 0
+#define KJ_THREAD_VERSION_PATCH 1
 
 typedef enum kj_thread_flags {
     KJ_THREAD_FLAG_NONE         = (0 << 0),
@@ -28,7 +28,7 @@ typedef struct kjThread {
 typedef struct kjThread {
     u32 id;
     u32 flags;
-    pthread handle;
+    pthread_t handle;
     struct {
         kj_thread_fn* fn;
         void* data;
