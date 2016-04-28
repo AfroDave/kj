@@ -36,6 +36,7 @@ KJ_API u64 kj_atomic_fetch_sub_u64(volatile u64* value, u64 sub);
 #if defined(KJ_ATOMIC_IMPLEMENTATION)
 
 #if defined(KJ_COMPILER_MSVC)
+
 #include <intrin.h>
 #include <windows.h>
 

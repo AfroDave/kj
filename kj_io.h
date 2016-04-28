@@ -31,12 +31,16 @@ typedef enum kjIoFlag {
 } kjIoFlag;
 
 #if defined(KJ_SYS_WIN32)
+#include <windows.h>
 typedef struct kjIo {
     void* handle;
     u32 flags;
     kjIoErr err;
 } kjIo;
 #elif defined(KJ_SYS_LINUX)
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 typedef struct kjIo {
     i32 handle;
     u32 flags;
@@ -91,8 +95,6 @@ const char* kj_io_err_str(kjIo* io) {
 }
 
 #if defined(KJ_SYS_WIN32)
-
-#include <windows.h>
 
 internal kjIoErr kj_io_err_from_win32(u32 err) {
     switch(err) {
@@ -234,11 +236,6 @@ kjIoStat kj_io_stat(kjIo* io) {
 
 #elif defined(KJ_SYS_LINUX)
 
-#include <errno.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
-
 internal kjIoErr kj_io_err_from_errno(u32 err) {
     switch(err) {
         case 0: return KJ_IO_ERR_NONE;
@@ -306,72 +303,50 @@ kjIo kj_io_open(const char* path, u32 flags) {
         res.err = KJ_IO_ERR_INVALID_INPUT;
     } else {
         u32 permissions = 0666;
-        res.handle = open(path, access | create, permissions);
+        kj_linux_syscall3(KJ_LINUX_SYSCALL_OPEN, res.handle, path, (access | create), permissions);
         res.flags = flags;
-        res.err = res.handle == -1 ? KJ_IO_ERR_BAD_HANDLE: kj_io_err_from_errno(errno);
+        res.err = kj_io_err_from_errno(res.handle < 0 ? -res.handle: 0);
     }
     return res;
 }
 
 kjIoErr kj_io_close(kjIo* io) {
     kjIoErr res = KJ_IO_ERR_NONE;
-    if(close(io->handle) == -1) {
-        io->err = kj_io_err_from_errno(errno);
-        res = io->err;
+    i32 out = 0;
+    kj_linux_syscall1(KJ_LINUX_SYSCALL_CLOSE, out, io->handle);
+    if(out < 0) {
+        res = kj_io_err_from_errno(out < 0 ? -out: 0);
     }
     io->handle = -1;
     io->flags = 0;
+    io->err = res;
     return res;
 }
 
 isize kj_io_read(kjIo* io, void* buf, isize size) {
-    isize res = read(io->handle, buf, size);
-    io->err = kj_io_err_from_errno(errno);
+    isize res = -1;
+    kj_linux_syscall3(KJ_LINUX_SYSCALL_READ, res, io->handle, buf, size);
+    io->err = kj_io_err_from_errno(res < 0 ? -res: 0);
     return res;
 }
 
 isize kj_io_write(kjIo* io, void* buf, isize size) {
-    isize res = write(io->handle, buf, size);
-    io->err = kj_io_err_from_errno(errno);
+    isize res = -1;
+    kj_linux_syscall3(KJ_LINUX_SYSCALL_WRITE, res, io->handle, buf, size);
+    io->err = kj_io_err_from_errno(res < 0 ? -res: 0);
     return res;
 }
 
 isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset) {
     isize res = -1;
-#if defined(KJ_ARCH_64_BIT)
-    register i64 r10 __asm("r10") = offset;
-    __asm volatile(
-        "syscall"
-        : "=a" (res)
-        : "0" (17), "D" (io->handle), "S" (buf), "d" (size), "r" (r10));
-#elif define(KJ_ARCH_32_BIT)
-    __asm volatile(
-        "int $0x80"
-        : "=a" (res)
-        : "0" (180), "b" (io->handle), "c" (buf), "d" (size), "s" (offset));
-#else
-#error KJ_IO_READ_UNSUPPORTED
-#endif
+    kj_linux_syscall4(KJ_LINUX_SYSCALL_PREAD, res, io->handle, buf, size, offset);
     io->err = kj_io_err_from_errno(res < 0 ? -res: 0);
     return res;
 }
 
 isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
     isize res = -1;
-#if defined(KJ_ARCH_64_BIT)
-    register i64 r10 __asm("r10") = offset;
-    __asm volatile(
-        "syscall"
-        : "=a" (res)
-        : "0" (18), "D" (io->handle), "S" (buf), "d" (size), "r" (r10));
-#elif define(KJ_ARCH_32_BIT)
-    __asm volatile(
-        "int $0x80"
-        : "=a" (res)
-        : "0" (181), "b" (io->handle), "c" (buf), "d" (size), "s" (offset));
-#else
-#error KJ_IO_WRITE_UNSUPPORTED
-#endif
+    kj_linux_syscall4(KJ_LINUX_SYSCALL_PWRITE, res, io->handle, buf, size, offset);
     io->err = kj_io_err_from_errno(res < 0 ? -res: 0);
     return res;
 }

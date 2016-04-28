@@ -38,7 +38,12 @@ KJ_API kjRgbaf kj_rgbaf_unpack(u32 packed);
 #if defined(KJ_COLOUR_IMPLEMENTATION)
 
 kjRgba kj_rgba(u8 r, u8 g, u8 b, u8 a) {
-    kjRgba res; res.r = r; res.b = b; res.g = g; res.a = a; return res;
+    kjRgba res;
+    res.r = r;
+    res.b = b;
+    res.g = g;
+    res.a = a;
+    return res;
 }
 
 kjRgba kj_rgba_4f(f32 r, f32 g, f32 b, f32 a) {
@@ -66,7 +71,12 @@ kjRgba kj_rgba_unpack(u32 packed) {
 }
 
 kjRgbaf kj_rgbaf(f32 r, f32 g, f32 b, f32 a) {
-    kjRgbaf res; res.r = r; res.b = b; res.g = g; res.a = a; return res;
+    kjRgbaf res;
+    res.r = r;
+    res.b = b;
+    res.g = g;
+    res.a = a;
+    return res;
 }
 
 kjRgbaf kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a) {

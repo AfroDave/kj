@@ -141,8 +141,8 @@ extern "C" {
 #endif
 
 #if !defined(isize_of)
-#define usize_of(a) (cast_of(usize, sizeof(a)))
 #define isize_of(a) (cast_of(isize, sizeof(a)))
+#define usize_of(a) (cast_of(usize, sizeof(a)))
 #endif
 
 #if !defined(count_of)
@@ -236,7 +236,10 @@ typedef unsigned long long u64;
 #define U64_MAX (0xFFFFFFFFFFFFFFFF)
 #endif
 
+typedef u8 b8;
+typedef u16 b16;
 typedef u32 b32;
+typedef u64 b64;
 
 #if defined(KJ_ARCH_64_BIT)
 typedef i64 isize;
@@ -363,6 +366,7 @@ KJ_API u16 kj_swap16(u16 a);
 KJ_API u32 kj_swap32(u32 a);
 KJ_API u64 kj_swap64(u64 a);
 
+#if !defined(kj_encode64)
 #if KJ_ENDIAN == KJ_LE
 #define kj_encode64(a, b, c, d, e, f, g, h)                                     \
     (((a) << 0) | ((b) << 8) | ((c) << 16) | ((d) << 24) | ((e) << 32) | ((f) << 40) | ((g) << 48) | ((h) << 56))
@@ -386,13 +390,19 @@ KJ_API u64 kj_swap64(u64 a);
 #define kj_swap32_be(a) (a)
 #define kj_swap64_be(a) (a)
 #endif
+#endif
 
+#if !defined(kj_min)
 #define kj_min(a, b) ((a) < (b) ? (a): (b))
 #define kj_max(a, b) ((a) > (b) ? (a): (b))
 #define kj_clamp(a, min, max) (kj_max((min), kj_min((a), (max))))
 #define kj_range(a, fl, fu, tl, tu) ((a - fl) * (tu - tl) / ((fu - fl) + tl))
 #define kj_swap(T, a, b) { T tmp_##__LINE__ = a; a = b; b = tmp_##__LINE__; }
+#define kj_abs(a) ((a) > 0 ? (a) : -(a))
+#define kj_sign(a) ((a) >= 0 ? 1 : -1)
+#endif
 
+#if !defined(kj_kb)
 #define kj_kb(a) ((a) * 1024)
 #define kj_mb(a) (kj_kb((a)) * 1024)
 #define kj_gb(a) (kj_mb((a)) * 1024)
@@ -401,6 +411,69 @@ KJ_API u64 kj_swap64(u64 a);
 #define kj_b_mb(a) (kj_b_kb((a)) / 1024)
 #define kj_b_gb(a) (kj_b_mb((a)) / 1024)
 #define kj_b_tb(a) (kj_b_gb((a)) / 1024)
+#endif
+
+#if defined(KJ_SYS_LINUX)
+#if !defined(kj_syscall1)
+#if defined(KJ_ARCH_64_BIT)
+#define KJ_LINUX_SYSCALL_READ 0
+#define KJ_LINUX_SYSCALL_WRITE 1
+#define KJ_LINUX_SYSCALL_OPEN 2
+#define KJ_LINUX_SYSCALL_CLOSE 3
+#define KJ_LINUX_SYSCALL_PREAD 17
+#define KJ_LINUX_SYSCALL_PWRITE 18
+#define kj_linux_syscall1(call, res, a)                                         \
+    __asm volatile(                                                             \
+        "syscall"                                                               \
+        : "=a" (res)                                                            \
+        : "0" ((call)), "D" ((a)))
+#define kj_linux_syscall2(call, res, a, b)                                      \
+    __asm volatile(                                                             \
+        "syscall"                                                               \
+        : "=a" (res)                                                            \
+        : "0" ((call)), "D" ((a)), "S" ((b)))
+#define kj_linux_syscall3(call, res, a, b, c)                                   \
+    __asm volatile(                                                             \
+        "syscall"                                                               \
+        : "=a" (res)                                                            \
+        : "0" ((call)), "D" ((a)), "S" ((b)), "d" ((c)))
+#define kj_linux_syscall4(call, res, a, b, c, d)                                \
+    __asm volatile(                                                             \
+        "syscall"                                                               \
+        : "=a" (res)                                                            \
+        : "0" ((call)), "D" ((a)), "S" ((b)), "d" ((c)), "r" ((d)))
+#elif define(KJ_ARCH_32_BIT)
+#define KJ_LINUX_SYSCALL_READ 3
+#define KJ_LINUX_SYSCALL_WRITE 4
+#define KJ_LINUX_SYSCALL_OPEN 5
+#define KJ_LINUX_SYSCALL_CLOSE 6
+#define KJ_LINUX_SYSCALL_PREAD 180
+#define KJ_LINUX_SYSCALL_PWRITE 181
+#define kj_linux_syscall1(call, res, a)                                         \
+    __asm volatile(                                                             \
+        "int $0x80"                                                             \
+        : "=a" ((res))                                                          \
+        : "0" ((call)), "b" ((a)))
+#define kj_linux_syscall2(call, res, a, b)                                      \
+    __asm volatile(                                                             \
+        "int $0x80"                                                             \
+        : "=a" ((res))                                                          \
+        : "0" ((call)), "b" ((a)), "c" ((b)))
+#define kj_linux_syscall3(call, res, a, b, c)                                   \
+    __asm volatile(                                                             \
+        "int $0x80"                                                             \
+        : "=a" ((res))                                                          \
+        : "0" ((call)), "b" ((a)), "c" ((b)), "d" ((c)))
+#define kj_linux_syscall4(call, res, a, b, c, d)                                \
+    __asm volatile(                                                             \
+        "int $0x80"                                                             \
+        : "=a" ((res))                                                          \
+        : "0" ((call)), "b" ((a)), "c" ((b)), "d" ((c)), "s" ((d)))
+#else
+#error KJ_LINUX_SYSCALL_UNSUPPORTED
+#endif
+#endif
+#endif
 
 #if defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
 #define kj_printf_vargs(a) __attribute__((format(printf, a, (a+1))))
@@ -435,7 +508,9 @@ KJ_API kjLib kj_lib_open(const char* path);
 KJ_API void* kj_lib_fn(kjLib lib, const char* name);
 KJ_API void kj_lib_close(kjLib lib);
 
+#if !defined(KJ_ERR_NONE)
 #define KJ_ERR_NONE (0)
+#endif
 typedef u32 kjErr;
 
 #if defined(__cplusplus)
@@ -467,8 +542,8 @@ const char* kj_type_to_str(kjType type) {
     return KJ_TYPE_STR[type];
 }
 
-isize kj_type_to_size(kjType type) {
-    static const isize KJ_TYPE_SIZE[] = {
+isize kj_type_to_isize(kjType type) {
+    static const isize KJ_TYPE_ISIZE[] = {
         0,
         isize_of(char),
         isize_of(i8),
@@ -486,7 +561,7 @@ isize kj_type_to_size(kjType type) {
         isize_of(f64),
         0,
     };
-    return KJ_TYPE_SIZE[type];
+    return KJ_TYPE_ISIZE[type];
 }
 
 u16 kj_swap16(u16 a) { return cast_of(u16, (a << 8) | (a >> 8)); }
