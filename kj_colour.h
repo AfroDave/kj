@@ -1,3 +1,6 @@
+// `kj_colour.h`
+// public domain - no offered or implied warranty, use at your own risk
+
 #ifndef KJ_COLOUR_H
 #define KJ_COLOUR_H
 

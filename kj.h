@@ -1,3 +1,6 @@
+// `kj.h`
+// public domain - no offered or implied warranty, use at your own risk
+
 #ifndef KJ_H
 #define KJ_H
 
@@ -6,7 +9,7 @@ extern "C" {
 #endif
 
 #define KJ_VERSION_MAJOR 0
-#define KJ_VERSION_MINOR 1
+#define KJ_VERSION_MINOR 2
 #define KJ_VERSION_PATCH 1
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -416,61 +419,97 @@ KJ_API u64 kj_swap64(u64 a);
 #if defined(KJ_SYS_LINUX)
 #if !defined(kj_syscall1)
 #if defined(KJ_ARCH_64_BIT)
-#define KJ_LINUX_SYSCALL_READ 0
-#define KJ_LINUX_SYSCALL_WRITE 1
-#define KJ_LINUX_SYSCALL_OPEN 2
-#define KJ_LINUX_SYSCALL_CLOSE 3
-#define KJ_LINUX_SYSCALL_PREAD 17
-#define KJ_LINUX_SYSCALL_PWRITE 18
-#define kj_linux_syscall1(call, res, a)                                         \
+#define KJ_SYSCALL_CLOSE 3
+#define KJ_SYSCALL_OPEN 2
+#define KJ_SYSCALL_READ 0
+#define KJ_SYSCALL_PREAD 17
+#define KJ_SYSCALL_WRITE 1
+#define KJ_SYSCALL_PWRITE 18
+#define KJ_SYSCALL_READLINK 89
+#define kj_syscall1(call, res, a) do {                                          \
     __asm volatile(                                                             \
         "syscall"                                                               \
         : "=a" (res)                                                            \
-        : "0" ((call)), "D" ((a)))
-#define kj_linux_syscall2(call, res, a, b)                                      \
+        : "0" ((call)), "D" ((a)));                                             \
+} while(0)
+#define kj_syscall2(call, res, a, b) do {                                       \
     __asm volatile(                                                             \
         "syscall"                                                               \
         : "=a" (res)                                                            \
-        : "0" ((call)), "D" ((a)), "S" ((b)))
-#define kj_linux_syscall3(call, res, a, b, c)                                   \
+        : "0" ((call)), "D" ((a)), "S" ((b)));                                  \
+} while(0)
+#define kj_syscall3(call, res, a, b, c) do {                                    \
     __asm volatile(                                                             \
         "syscall"                                                               \
         : "=a" (res)                                                            \
-        : "0" ((call)), "D" ((a)), "S" ((b)), "d" ((c)))
-#define kj_linux_syscall4(call, res, a, b, c, d)                                \
+        : "0" ((call)), "D" ((a)), "S" ((b)), "d" ((c)));                       \
+} while(0)
+#define kj_syscall4(call, res, a, b, c, d) do {                                 \
+    register i64 r10 __asm("r10") = (d);                                        \
     __asm volatile(                                                             \
         "syscall"                                                               \
         : "=a" (res)                                                            \
-        : "0" ((call)), "D" ((a)), "S" ((b)), "d" ((c)), "r" ((d)))
+        : "0" ((call)), "D" ((a)), "S" ((b)), "d" ((c)), "r" (r10));            \
+} while(0)
+#define kj_syscall5(call, res, a, b, c, d, e) do {                              \
+    register i64 r10 __asm("r10") = (d);                                        \
+    register i64 r8 __asm("r8") = (e);                                          \
+    __asm volatile(                                                             \
+        "syscall"                                                               \
+        : "=a" (res)                                                            \
+        : "0" ((call)), "D" ((a)), "S" ((b)), "d" ((c)), "r" (r10), "r", (r8)); \
+} while(0)
+#define kj_syscall6(call, res, a, b, c, d, e, f) do {                           \
+    register i64 r10 __asm("r10") = (d);                                        \
+    register i64 r8 __asm("r8") = (e);                                          \
+    register i64 r9 __asm("r9") = (f);                                          \
+    __asm volatile(                                                             \
+        "syscall"                                                               \
+        : "=a" (res)                                                            \
+        : "0" ((call)), "D" ((a)), "S" ((b)), "d" ((c)), "r" (r10), "r", (r8),  \
+          "r", (r9));                                                           \
+} while(0)
 #elif define(KJ_ARCH_32_BIT)
-#define KJ_LINUX_SYSCALL_READ 3
-#define KJ_LINUX_SYSCALL_WRITE 4
-#define KJ_LINUX_SYSCALL_OPEN 5
-#define KJ_LINUX_SYSCALL_CLOSE 6
-#define KJ_LINUX_SYSCALL_PREAD 180
-#define KJ_LINUX_SYSCALL_PWRITE 181
-#define kj_linux_syscall1(call, res, a)                                         \
+#define KJ_SYSCALL_CLOSE 6
+#define KJ_SYSCALL_OPEN 5
+#define KJ_SYSCALL_READ 3
+#define KJ_SYSCALL_PREAD 180
+#define KJ_SYSCALL_WRITE 4
+#define KJ_SYSCALL_PWRITE 181
+#define KJ_SYSCALL_READLINK 85
+#define kj_syscall1(call, res, a) do {                                          \
     __asm volatile(                                                             \
         "int $0x80"                                                             \
         : "=a" ((res))                                                          \
-        : "0" ((call)), "b" ((a)))
-#define kj_linux_syscall2(call, res, a, b)                                      \
+        : "0" ((call)), "b" ((a)));                                             \
+} while(0)
+#define kj_syscall2(call, res, a, b) do {                                       \
     __asm volatile(                                                             \
         "int $0x80"                                                             \
         : "=a" ((res))                                                          \
-        : "0" ((call)), "b" ((a)), "c" ((b)))
-#define kj_linux_syscall3(call, res, a, b, c)                                   \
+        : "0" ((call)), "b" ((a)), "c" ((b)));                                  \
+} while(0)
+#define kj_syscall3(call, res, a, b, c) do {                                    \
     __asm volatile(                                                             \
         "int $0x80"                                                             \
         : "=a" ((res))                                                          \
         : "0" ((call)), "b" ((a)), "c" ((b)), "d" ((c)))
-#define kj_linux_syscall4(call, res, a, b, c, d)                                \
+} while(0)
+#define kj_syscall4(call, res, a, b, c, d) do {                                 \
     __asm volatile(                                                             \
         "int $0x80"                                                             \
         : "=a" ((res))                                                          \
-        : "0" ((call)), "b" ((a)), "c" ((b)), "d" ((c)), "s" ((d)))
+        : "0" ((call)), "b" ((a)), "c" ((b)), "d" ((c)), "s" ((d)));            \
+} while(0)
+#define kj_syscall5(call, res, a, b, c, d, e) do {                              \
+    __asm volatile(                                                             \
+        "int $0x80"                                                             \
+        : "=a" ((res))                                                          \
+        : "0" ((call)), "b" ((a)), "c" ((b)), "d" ((c)), "s" ((d)), "D" ((e))); \
+} while(0)
+#define kj_syscall6(call, res, a, b, c, d, e, f)
 #else
-#error KJ_LINUX_SYSCALL_UNSUPPORTED
+#error KJ_SYSCALL_UNSUPPORTED
 #endif
 #endif
 #endif

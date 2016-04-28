@@ -1,3 +1,6 @@
+// `kj_sync.h`
+// public domain - no offered or implied warranty, use at your own risk
+
 #ifndef KJ_SYNC_H
 #define KJ_SYNC_H
 

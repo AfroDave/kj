@@ -1,3 +1,6 @@
+// `kj_sse.h`
+// public domain - no offered or implied warranty, use at your own risk
+
 #ifndef KJ_SSE_H
 #define KJ_SSE_H
 

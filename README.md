@@ -17,6 +17,22 @@ All the libraries target C/C++ for both win32 and linux.
 
 *Warning: Many are still very early in development.*
 
+## Usage
+
+All the libraries follow the same pattern:
+
+```
+#define KJ(_MATH|_SYNC|...)_IMPLEMENTATION
+#include "kj(_math|_sync|...).h"
+```
+
+The implementation part is only required *once* in a C/C++ file that includes
+the header. Otherwise include only the header:
+
+```
+#include "kj(_math|_sync|...).h"
+```
+
 ## License
 
 These libraries are in the public domain (or the equivalent where that is not

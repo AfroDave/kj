@@ -1,3 +1,6 @@
+// `kj_math.h`
+// public domain - no offered or implied warranty, use at your own risk
+
 #ifndef KJ_MATH_H
 #define KJ_MATH_H
 

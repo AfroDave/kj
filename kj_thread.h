@@ -1,3 +1,6 @@
+// `kj_thread.h`
+// public domain - no offered or implied warranty, use at your own risk
+
 #ifndef KJ_THREAD_H
 #define KJ_THREAD_H
 

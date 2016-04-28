@@ -1,8 +1,11 @@
+// `kj_io.h`
+// public domain - no offered or implied warranty, use at your own risk
+
 #ifndef KJ_IO_H
 #define KJ_IO_H
 
 #define KJ_IO_VERSION_MAJOR 0
-#define KJ_IO_VERSION_MINOR 1
+#define KJ_IO_VERSION_MINOR 2
 #define KJ_IO_VERSION_PATCH 1
 
 typedef enum kjIoErr {
@@ -15,6 +18,7 @@ typedef enum kjIoErr {
     KJ_IO_ERR_TIMED_OUT,
     KJ_IO_ERR_INVALID_INPUT,
     KJ_IO_ERR_INTERRUPED,
+    KJ_IO_ERR_ILLEGAL_SEEK,
     KJ_IO_ERR_UNKNOWN,
     KJ_IO_ERR_COUNT
 } kjIoErr;
@@ -69,6 +73,8 @@ KJ_API isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset);
 
 KJ_API kjIoStat kj_io_stat(kjIo* io);
 
+//KJ_API isize kj_io_name(kjIo* io, char* buf, isize size);
+
 KJ_API const char* kj_io_err_str(kjIo* io);
 
 #if defined(__cplusplus)
@@ -90,13 +96,14 @@ const char* kj_io_err_str(kjIo* io) {
         case KJ_IO_ERR_TIMED_OUT: return "Timed Out";
         case KJ_IO_ERR_INVALID_INPUT: return "Invalid Input";
         case KJ_IO_ERR_INTERRUPED: return "Interrupted";
+        case KJ_IO_ERR_ILLEGAL_SEEK: return "Illegal Seek";
         default: return "Unknown";
     }
 }
 
 #if defined(KJ_SYS_WIN32)
 
-internal kjIoErr kj_io_err_from_win32(u32 err) {
+internal kjIoErr kj_io_err_from_sys(u32 err) {
     switch(err) {
         case ERROR_SUCCESS: return KJ_IO_ERR_NONE;
         case ERROR_ACCESS_DENIED: return KJ_IO_ERR_PERMISSION_DENIED;
@@ -107,6 +114,9 @@ internal kjIoErr kj_io_err_from_win32(u32 err) {
         case ERROR_NO_DATA: return KJ_IO_ERR_BROKEN_PIPE;
         case ERROR_INVALID_PARAMETER: return KJ_IO_ERR_INVALID_INPUT;
         case ERROR_OPERATION_ABORTED: return KJ_IO_ERR_TIMED_OUT;
+        case ERROR_SEEK: return KJ_IO_ERR_ILLEGAL_SEEK;
+        case ERROR_NEGATIVE_SEEK: return KJ_IO_ERR_ILLEGAL_SEEK;
+        case ERROR_SEEK_ON_DEVICE: return KJ_IO_ERR_ILLEGAL_SEEK;
         default: return KJ_IO_ERR_UNKNOWN;
     }
 }
@@ -160,14 +170,14 @@ kjIo kj_io_open(const char* path, u32 flags) {
     u32 create = kj_io_gen_create_mode(flags);
     res.handle = CreateFile(path, access, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, create, 0, NULL);
     res.flags = flags;
-    res.err = res.handle == INVALID_HANDLE_VALUE ? KJ_IO_ERR_BAD_HANDLE: kj_io_err_from_win32(GetLastError());
+    res.err = res.handle == INVALID_HANDLE_VALUE ? KJ_IO_ERR_BAD_HANDLE: kj_io_err_from_sys(GetLastError());
     return res;
 }
 
 kjIoErr kj_io_close(kjIo* io) {
     kjIoErr res = KJ_IO_ERR_NONE;
     if(!CloseHandle(io->handle)) {
-        res = kj_io_err_from_win32(GetLastError());
+        res = kj_io_err_from_sys(GetLastError());
     }
     io->handle = NULL;
     return res;
@@ -179,7 +189,7 @@ isize kj_io_read(kjIo* io, void* buf, isize size) {
     if(ReadFile(io->handle, buf, cast_of(DWORD, size), cast_of(DWORD*, &read), NULL)) {
         res = read;
     } else {
-        io->err = kj_io_err_from_win32(GetLastError());
+        io->err = kj_io_err_from_sys(GetLastError());
     }
     return res;
 }
@@ -190,7 +200,7 @@ isize kj_io_write(kjIo* io, void* buf, isize size) {
     if(WriteFile(io->handle, buf, cast_of(DWORD, size), cast_of(DWORD*, &wrote), NULL)) {
         res = wrote;
     } else {
-        io->err = kj_io_err_from_win32(GetLastError());
+        io->err = kj_io_err_from_sys(GetLastError());
     }
     return res;
 }
@@ -204,7 +214,7 @@ isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset) {
     if(ReadFile(io->handle, buf, cast_of(DWORD, size), cast_of(DWORD*, &read), &overlapped)) {
         res = read;
     } else {
-        io->err = kj_io_err_from_win32(GetLastError());
+        io->err = kj_io_err_from_sys(GetLastError());
     }
     return res;
 }
@@ -218,7 +228,7 @@ isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
     if(WriteFile(io->handle, buf, cast_of(DWORD, size), cast_of(DWORD*, &wrote), &overlapped)) {
         res = wrote;
     } else {
-        io->err = kj_io_err_from_win32(GetLastError());
+        io->err = kj_io_err_from_sys(GetLastError());
     }
     return res;
 }
@@ -229,14 +239,14 @@ kjIoStat kj_io_stat(kjIo* io) {
     if(GetFileInformationByHandle(io->handle, &io_info)) {
         res.size = (cast_of(i64, io_info.nFileSizeHigh) << 32) | cast_of(i64, io_info.nFileSizeLow);
     } else {
-        io->err = kj_io_err_from_win32(GetLastError());
+        io->err = kj_io_err_from_sys(GetLastError());
     }
     return res;
 }
 
 #elif defined(KJ_SYS_LINUX)
 
-internal kjIoErr kj_io_err_from_errno(u32 err) {
+internal kjIoErr kj_io_err_from_sys(u32 err) {
     switch(err) {
         case 0: return KJ_IO_ERR_NONE;
         case EBADF: return KJ_IO_ERR_BAD_HANDLE;
@@ -248,6 +258,7 @@ internal kjIoErr kj_io_err_from_errno(u32 err) {
         case ETIMEDOUT: return KJ_IO_ERR_TIMED_OUT;
         case EINVAL: return KJ_IO_ERR_INVALID_INPUT;
         case EINTR: return KJ_IO_ERR_INTERRUPED;
+        case ESPIPE: return KJ_IO_ERR_ILLEGAL_SEEK;
         default: return KJ_IO_ERR_UNKNOWN;
     }
 }
@@ -303,9 +314,9 @@ kjIo kj_io_open(const char* path, u32 flags) {
         res.err = KJ_IO_ERR_INVALID_INPUT;
     } else {
         u32 permissions = 0666;
-        kj_linux_syscall3(KJ_LINUX_SYSCALL_OPEN, res.handle, path, (access | create), permissions);
+        kj_syscall3(KJ_SYSCALL_OPEN, res.handle, path, (access | create), permissions);
         res.flags = flags;
-        res.err = kj_io_err_from_errno(res.handle < 0 ? -res.handle: 0);
+        res.err = kj_io_err_from_sys(res.handle < 0 ? -res.handle: 0);
     }
     return res;
 }
@@ -313,9 +324,9 @@ kjIo kj_io_open(const char* path, u32 flags) {
 kjIoErr kj_io_close(kjIo* io) {
     kjIoErr res = KJ_IO_ERR_NONE;
     i32 out = 0;
-    kj_linux_syscall1(KJ_LINUX_SYSCALL_CLOSE, out, io->handle);
+    kj_syscall1(KJ_SYSCALL_CLOSE, out, io->handle);
     if(out < 0) {
-        res = kj_io_err_from_errno(out < 0 ? -out: 0);
+        res = kj_io_err_from_sys(out < 0 ? -out: 0);
     }
     io->handle = -1;
     io->flags = 0;
@@ -325,29 +336,29 @@ kjIoErr kj_io_close(kjIo* io) {
 
 isize kj_io_read(kjIo* io, void* buf, isize size) {
     isize res = -1;
-    kj_linux_syscall3(KJ_LINUX_SYSCALL_READ, res, io->handle, buf, size);
-    io->err = kj_io_err_from_errno(res < 0 ? -res: 0);
+    kj_syscall3(KJ_SYSCALL_READ, res, io->handle, buf, size);
+    io->err = kj_io_err_from_sys(res < 0 ? -res: 0);
     return res;
 }
 
 isize kj_io_write(kjIo* io, void* buf, isize size) {
     isize res = -1;
-    kj_linux_syscall3(KJ_LINUX_SYSCALL_WRITE, res, io->handle, buf, size);
-    io->err = kj_io_err_from_errno(res < 0 ? -res: 0);
+    kj_syscall3(KJ_SYSCALL_WRITE, res, io->handle, buf, size);
+    io->err = kj_io_err_from_sys(res < 0 ? -res: 0);
     return res;
 }
 
 isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset) {
     isize res = -1;
-    kj_linux_syscall4(KJ_LINUX_SYSCALL_PREAD, res, io->handle, buf, size, offset);
-    io->err = kj_io_err_from_errno(res < 0 ? -res: 0);
+    kj_syscall4(KJ_SYSCALL_PREAD, res, io->handle, buf, size, offset);
+    io->err = kj_io_err_from_sys(res < 0 ? -res: 0);
     return res;
 }
 
 isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
     isize res = -1;
-    kj_linux_syscall4(KJ_LINUX_SYSCALL_PWRITE, res, io->handle, buf, size, offset);
-    io->err = kj_io_err_from_errno(res < 0 ? -res: 0);
+    kj_syscall4(KJ_SYSCALL_PWRITE, res, io->handle, buf, size, offset);
+    io->err = kj_io_err_from_sys(res < 0 ? -res: 0);
     return res;
 }
 
@@ -355,11 +366,20 @@ kjIoStat kj_io_stat(kjIo* io) {
     kjIoStat res;
     struct stat buf;
     if(fstat(io->handle, &buf) == -1) {
-        io->err = kj_io_err_from_errno(errno);
+        io->err = kj_io_err_from_sys(errno);
         res.size = 0;
     } else {
         res.size = buf.st_size;
     }
+    return res;
+}
+
+isize kj_io_name(kjIo* io, char* buf, isize size) {
+    isize res = -1;
+    static char path[256] = {0};
+    kj_snprintf(path, isize_of(path), "/proc/self/fd/%d", io->handle);
+    kj_syscall3(KJ_SYSCALL_READLINK, res, path, buf, size);
+    io->err = kj_io_err_from_sys(res < 0 ? -res: 0);
     return res;
 }
 
