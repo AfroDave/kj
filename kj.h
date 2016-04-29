@@ -363,7 +363,7 @@ typedef enum kjType {
 } kjType;
 
 KJ_API const char* kj_type_to_str(kjType type);
-KJ_API isize kj_type_to_size(kjType type);
+KJ_API isize kj_type_to_isize(kjType type);
 
 KJ_API u16 kj_swap16(u16 a);
 KJ_API u32 kj_swap32(u32 a);
@@ -399,7 +399,9 @@ KJ_API u64 kj_swap64(u64 a);
 #define kj_min(a, b) ((a) < (b) ? (a): (b))
 #define kj_max(a, b) ((a) > (b) ? (a): (b))
 #define kj_clamp(a, min, max) (kj_max((min), kj_min((a), (max))))
-#define kj_range(a, fl, fu, tl, tu) ((a - fl) * (tu - tl) / ((fu - fl) + tl))
+#define kj_wrap(a, min, max) ((a) > (max) ? (min): (a) < (min) ? (max): (a))
+#define kj_lerp(t, min, max) ((1.0f - (t)) * (min) + (t) * (max))
+#define kj_range(a, fmin, fmax, tmin, tmax) (((a) - (fmin)) * ((tmax) - (tmin)) / (((fmax) - (fmin)) + (tmin)))
 #define kj_swap(T, a, b) { T tmp_##__LINE__ = a; a = b; b = tmp_##__LINE__; }
 #define kj_abs(a) ((a) > 0 ? (a) : -(a))
 #define kj_sign(a) ((a) >= 0 ? 1 : -1)

@@ -18,7 +18,7 @@ typedef kj_thread_fn(kjThreadFn);
 #if defined(KJ_SYS_WIN32)
 #include <windows.h>
 typedef struct kjThread {
-    u32 id;
+    i32 id;
     u32 flags;
     HANDLE handle;
     struct {
@@ -29,7 +29,7 @@ typedef struct kjThread {
 #elif defined(KJ_SYS_LINUX)
 #include <pthread.h>
 typedef struct kjThread {
-    u32 id;
+    i32 id;
     u32 flags;
     pthread_t handle;
     struct {

@@ -8,8 +8,10 @@
 #define KJ_MATH_VERSION_MINOR 1
 #define KJ_MATH_VERSION_PATCH 1
 
-#define kj_degrees(a) ((a) * 57.295779513082320f)
-#define kj_radians(a) ((a) * 0.017453292519943f)
+#define kj_to_degrees(a) ((a) * 57.295779513082320f)
+#define kj_to_radians(a) ((a) * 0.017453292519943f)
+#define kj_from_radians(a) ((a) * 57.295779513082320f)
+#define kj_from_degrees(a) ((a) * 0.017453292519943f)
 
 #define KJ_PI (3.141592653589793f)
 #define KJ_TAU (6.283185307179586f)
@@ -92,18 +94,20 @@ typedef struct kjRect3u {
 extern "C" {
 #endif
 
-KJ_API f32 kj_rsqrtf(f32 a);
-KJ_API f32 kj_sqrtf(f32 a);
-KJ_API f32 kj_sinf(f32 radians);
-KJ_API f32 kj_cosf(f32 radians);
-KJ_API f32 kj_tanf(f32 radians);
-KJ_API f32 kj_asinf(f32 a);
-KJ_API f32 kj_acosf(f32 a);
-KJ_API f32 kj_atanf(f32 a);
-KJ_API f32 kj_atan2f(f32 y, f32 x);
-KJ_API f32 kj_expf(f32 x);
-KJ_API f32 kj_logf(f32 x);
-KJ_API f32 kj_powf(f32 x, f32 y);
+KJ_API f32 kj_rsqrt(f32 a);
+KJ_API f32 kj_sqrt(f32 a);
+KJ_API f32 kj_sin(f32 radians);
+KJ_API f32 kj_cos(f32 radians);
+KJ_API f32 kj_tan(f32 radians);
+KJ_API f32 kj_asin(f32 a);
+KJ_API f32 kj_acos(f32 a);
+KJ_API f32 kj_atan(f32 a);
+KJ_API f32 kj_atan2(f32 y, f32 x);
+KJ_API f32 kj_exp(f32 x);
+KJ_API f32 kj_log(f32 x);
+KJ_API f32 kj_pow(f32 x, f32 y);
+KJ_API f32 kj_floor(f32 a);
+KJ_API f32 kj_ceil(f32 a);
 
 KJ_API kjVec2f kj_vec2f(f32 x, f32 y);
 KJ_API kjVec2i kj_vec2i(i32 x, i32 y);
@@ -337,32 +341,36 @@ KJ_API kjMat4f operator*(kjMat4f a, kjMat4f b);
 #if defined(KJ_MATH_IMPLEMENTATION)
 
 #if defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-f32 kj_rsqrtf(f32 a) { return 1.0f / __builtin_sqrtf(a); }
-f32 kj_sqrtf(f32 a) { return __builtin_sqrtf(a); }
-f32 kj_sinf(f32 a) { return __builtin_sinf(a); }
-f32 kj_cosf(f32 a) { return __builtin_cosf(a); }
-f32 kj_tanf(f32 a) { return __builtin_tanf(a); }
-f32 kj_asinf(f32 a) { return __builtin_asinf(a); }
-f32 kj_acosf(f32 a) { return __builtin_acosf(a); }
-f32 kj_atanf(f32 a) { return __builtin_atanf(a); }
-f32 kj_atan2f(f32 y, f32 x) { return __builtin_atan2f(y, x); }
-f32 kj_expf(f32 x)  { return __builtin_expf(x); }
-f32 kj_logf(f32 x)  { return __builtin_logf(x); }
-f32 kj_powf(f32 x, f32 y) { return __builtin_powf(x, y); }
+f32 kj_rsqrt(f32 a) { return 1.0f / __builtin_sqrtf(a); }
+f32 kj_sqrt(f32 a) { return __builtin_sqrtf(a); }
+f32 kj_sin(f32 a) { return __builtin_sinf(a); }
+f32 kj_cos(f32 a) { return __builtin_cosf(a); }
+f32 kj_tan(f32 a) { return __builtin_tanf(a); }
+f32 kj_asin(f32 a) { return __builtin_asinf(a); }
+f32 kj_acos(f32 a) { return __builtin_acosf(a); }
+f32 kj_atan(f32 a) { return __builtin_atanf(a); }
+f32 kj_atan2(f32 y, f32 x) { return __builtin_atan2f(y, x); }
+f32 kj_exp(f32 x)  { return __builtin_expf(x); }
+f32 kj_log(f32 x)  { return __builtin_logf(x); }
+f32 kj_pow(f32 x, f32 y) { return __builtin_powf(x, y); }
+f32 kj_floor(f32 a) { return __builtin_floorf(a); }
+f32 kj_ceil(f32 a) { return __builtin_ceilf(a); }
 #else
 #include <math.h>
-f32 kj_rsqrtf(f32 a) { return 1.0f / sqrtf(a); }
-f32 kj_sqrtf(f32 a) { return sqrtf(a); }
-f32 kj_sinf(f32 radians) { return sinf(radians); }
-f32 kj_cosf(f32 radians) { return cosf(radians); }
-f32 kj_tanf(f32 radians) { return tanf(radians); }
-f32 kj_asinf(f32 a) { return asinf(a); }
-f32 kj_acosf(f32 a) { return acosf(a); }
-f32 kj_atanf(f32 a) { return atanf(a); }
-f32 kj_atan2f(f32 y, f32 x) { return atan2f(y, x); }
-f32 kj_expf(f32 x)  { return expf(x); }
-f32 kj_logf(f32 x)  { return logf(x); }
-f32 kj_powf(f32 x, f32 y) { return powf(x, y); }
+f32 kj_rsqrt(f32 a) { return 1.0f / sqrtf(a); }
+f32 kj_sqrt(f32 a) { return sqrtf(a); }
+f32 kj_sin(f32 radians) { return sinf(radians); }
+f32 kj_cos(f32 radians) { return cosf(radians); }
+f32 kj_tan(f32 radians) { return tanf(radians); }
+f32 kj_asin(f32 a) { return asinf(a); }
+f32 kj_acos(f32 a) { return acosf(a); }
+f32 kj_atan(f32 a) { return atanf(a); }
+f32 kj_atan2(f32 y, f32 x) { return atan2f(y, x); }
+f32 kj_exp(f32 x)  { return expf(x); }
+f32 kj_log(f32 x)  { return logf(x); }
+f32 kj_pow(f32 x, f32 y) { return powf(x, y); }
+f32 kj_floor(f32 a) { return floorf(a); }
+f32 kj_ceil(f32 a) { return ceilf(a); }
 #endif
 
 kjVec2f kj_vec2f(f32 x, f32 y) { kjVec2f res; res.x = x; res.y = y; return res; }
@@ -404,9 +412,9 @@ u32 kj_vec2u_cross(kjVec2u a, kjVec2u b) { return (a.x * b.y - b.x * a.y); }
 f32 kj_vec2f_length_sq(kjVec2f a) { return kj_vec2f_dot(a, a); }
 i32 kj_vec2i_length_sq(kjVec2i a) { return kj_vec2i_dot(a, a); }
 u32 kj_vec2u_length_sq(kjVec2u a) { return kj_vec2u_dot(a, a); }
-f32 kj_vec2f_length(kjVec2f a) { return kj_sqrtf(kj_vec2f_length_sq(a)); }
-i32 kj_vec2i_length(kjVec2i a) { return cast_of(i32, kj_sqrtf(cast_of(f32, kj_vec2i_length_sq(a)))); }
-u32 kj_vec2u_length(kjVec2u a) { return cast_of(u32, kj_sqrtf(cast_of(f32, kj_vec2u_length_sq(a)))); }
+f32 kj_vec2f_length(kjVec2f a) { return kj_sqrt(kj_vec2f_length_sq(a)); }
+i32 kj_vec2i_length(kjVec2i a) { return cast_of(i32, kj_sqrt(cast_of(f32, kj_vec2i_length_sq(a)))); }
+u32 kj_vec2u_length(kjVec2u a) { return cast_of(u32, kj_sqrt(cast_of(f32, kj_vec2u_length_sq(a)))); }
 kjVec2f kj_vec2f_normalise(kjVec2f a) { return kj_vec2f_div(a, kj_vec2f_all(kj_vec2f_length(a))); }
 kjVec2i kj_vec2i_normalise(kjVec2i a) { return kj_vec2i_div(a, kj_vec2i_all(kj_vec2i_length(a))); }
 kjVec2u kj_vec2u_normalise(kjVec2u a) { return kj_vec2u_div(a, kj_vec2u_all(kj_vec2u_length(a))); }
@@ -450,9 +458,9 @@ kjVec3u kj_vec3u_cross(kjVec3u a, kjVec3u b) { return kj_vec3u(a.y * b.z - b.y *
 f32 kj_vec3f_length_sq(kjVec3f a) { return kj_vec3f_dot(a, a); }
 i32 kj_vec3i_length_sq(kjVec3i a) { return kj_vec3i_dot(a, a); }
 u32 kj_vec3u_length_sq(kjVec3u a) { return kj_vec3u_dot(a, a); }
-f32 kj_vec3f_length(kjVec3f a) { return kj_sqrtf(kj_vec3f_length_sq(a)); }
-i32 kj_vec3i_length(kjVec3i a) { return cast_of(i32, kj_sqrtf(cast_of(f32, kj_vec3i_length_sq(a)))); }
-u32 kj_vec3u_length(kjVec3u a) { return cast_of(u32, kj_sqrtf(cast_of(f32, kj_vec3u_length_sq(a)))); }
+f32 kj_vec3f_length(kjVec3f a) { return kj_sqrt(kj_vec3f_length_sq(a)); }
+i32 kj_vec3i_length(kjVec3i a) { return cast_of(i32, kj_sqrt(cast_of(f32, kj_vec3i_length_sq(a)))); }
+u32 kj_vec3u_length(kjVec3u a) { return cast_of(u32, kj_sqrt(cast_of(f32, kj_vec3u_length_sq(a)))); }
 kjVec3f kj_vec3f_normalise(kjVec3f a) { return kj_vec3f_div(a, kj_vec3f_all(kj_vec3f_length(a))); }
 kjVec3i kj_vec3i_normalise(kjVec3i a) { return kj_vec3i_div(a, kj_vec3i_all(kj_vec3i_length(a))); }
 kjVec3u kj_vec3u_normalise(kjVec3u a) { return kj_vec3u_div(a, kj_vec3u_all(kj_vec3u_length(a))); }
@@ -493,9 +501,9 @@ u32 kj_vec4u_dot(kjVec4u a, kjVec4u b) { return (a.x * b.x + a.y * b.y + a.z * b
 f32 kj_vec4f_length_sq(kjVec4f a) { return kj_vec4f_dot(a, a); }
 i32 kj_vec4i_length_sq(kjVec4i a) { return kj_vec4i_dot(a, a); }
 u32 kj_vec4u_length_sq(kjVec4u a) { return kj_vec4u_dot(a, a); }
-f32 kj_vec4f_length(kjVec4f a) { return kj_sqrtf(kj_vec4f_length_sq(a)); }
-i32 kj_vec4i_length(kjVec4i a) { return cast_of(i32, kj_sqrtf(cast_of(f32, kj_vec4i_length_sq(a)))); }
-u32 kj_vec4u_length(kjVec4u a) { return cast_of(u32, kj_sqrtf(cast_of(f32, kj_vec4u_length_sq(a)))); }
+f32 kj_vec4f_length(kjVec4f a) { return kj_sqrt(kj_vec4f_length_sq(a)); }
+i32 kj_vec4i_length(kjVec4i a) { return cast_of(i32, kj_sqrt(cast_of(f32, kj_vec4i_length_sq(a)))); }
+u32 kj_vec4u_length(kjVec4u a) { return cast_of(u32, kj_sqrt(cast_of(f32, kj_vec4u_length_sq(a)))); }
 kjVec4f kj_vec4f_normalise(kjVec4f a) { return kj_vec4f_div(a, kj_vec4f_all(kj_vec4f_length(a))); }
 kjVec4i kj_vec4i_normalise(kjVec4i a) { return kj_vec4i_div(a, kj_vec4i_all(kj_vec4i_length(a))); }
 kjVec4u kj_vec4u_normalise(kjVec4u a) { return kj_vec4u_div(a, kj_vec4u_all(kj_vec4u_length(a))); }
@@ -569,8 +577,8 @@ kjMat3f kj_mat3f_transpose(kjMat3f a) {
 
 kjMat3f kj_mat3f_rotate(f32 angle, f32 x, f32 y, f32 z) {
     kjMat3f res;
-    f32 c = kj_cosf(angle);
-    f32 s = kj_sinf(angle);
+    f32 c = kj_cos(angle);
+    f32 s = kj_sin(angle);
 
     kjVec3f axis = kj_vec3f_normalise(kj_vec3f(x, y, z));
     kjVec3f rot_axis = kj_vec3f_mul(axis, kj_vec3f_all(1.0f - c));
@@ -692,8 +700,8 @@ kjMat4f kj_mat4f_translate_vec3f(kjVec3f xyz) {
 
 kjMat4f kj_mat4f_rotate(f32 angle, f32 x, f32 y, f32 z) {
     kjMat4f res = kj_mat4f_ident();
-    f32 c = kj_cosf(angle);
-    f32 s = kj_sinf(angle);
+    f32 c = kj_cos(angle);
+    f32 s = kj_sin(angle);
 
     kjVec3f axis = kj_vec3f_normalise(kj_vec3f(x, y, z));
     kjVec3f rot_axis = kj_vec3f_mul(axis, kj_vec3f_all(1.0f - c));
@@ -755,7 +763,7 @@ kjMat4f kj_mat4f_ortho_inf(f32 left, f32 right, f32 top, f32 bottom) {
 kjMat4f kj_mat4f_perspective(f32 fovy, f32 aspect, f32 znear, f32 zfar) {
     kjMat4f res = kj_mat4f_zero();
     if(aspect > 0.0f) {
-        f32 tanfovy = kj_tanf(0.5f * fovy);
+        f32 tanfovy = kj_tan(0.5f * fovy);
         res.e[0][0] = 1.0f / (aspect * tanfovy);
         res.e[1][1] = 1.0f / tanfovy;
         res.e[2][2] = -(zfar + znear) / (zfar - znear);
@@ -768,7 +776,7 @@ kjMat4f kj_mat4f_perspective(f32 fovy, f32 aspect, f32 znear, f32 zfar) {
 kjMat4f kj_mat4f_perspective_inf(f32 fovy, f32 aspect, f32 znear) {
     kjMat4f res = kj_mat4f_zero();
     if(aspect > 0.0f) {
-        f32 range  = kj_tanf(0.5f * fovy) * znear;
+        f32 range  = kj_tan(0.5f * fovy) * znear;
         res.e[0][0] = (2.0f * znear) / ((range * aspect) - (-range * aspect));
         res.e[1][1] = (2.0f * znear) / (range - -range);
         res.e[2][2] = -1.0f;
