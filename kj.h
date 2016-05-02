@@ -164,14 +164,6 @@ extern "C" {
 #define align_of(type) (offset_of(struct { u8 c; type member; }, member))
 #endif
 
-#if !defined(unused)
-#if defined(KJ_COMPILER_MSVC)
-#define unused(a) __pragma(warning(suppress:4100)) (a)
-#else
-#define unused(a) cast_of(void, (a))
-#endif
-#endif
-
 #if !defined(align_to)
 #if defined(__GNUC__)
 #define align_to(a) __attribute__((aligned(a)))
@@ -181,6 +173,23 @@ extern "C" {
 #define align_to(a) __declspec(align(a))
 #else
 #error KJ_ALIGN_UNSUPPORTED
+#endif
+#endif
+
+#if !defined(align_on)
+#define align_on(p, a) (((p) + ((a) - 1)) & ~((a) - 1))
+#endif
+
+#if !defined(kj_concat)
+#define kj_concat(x, y) x##y
+#define kj_join(x, y) kj_concat(x, y)
+#endif
+
+#if !defined(unused)
+#if defined(KJ_COMPILER_MSVC)
+#define unused(a) __pragma(warning(suppress:4100)) (a)
+#else
+#define unused(a) cast_of(void, (a))
 #endif
 #endif
 
@@ -321,7 +330,7 @@ void kj_assert_handler(const char* expr, const char* file, u64 line, const char*
 
 #if defined(KJ_DEBUG)
 #if defined(KJ_COMPILER_MSVC)
-#define kj_break() __debugbreak()
+#define kj_break() do { if(IsDebuggerPresent()) { __debugbreak(); } else { ExitProcess(0); } } while(0)
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
 #define kj_break() __builtin_trap()
 #else
