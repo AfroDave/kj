@@ -66,7 +66,8 @@ kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags) {
     res.ctx.fn = fn;
     res.ctx.data = data;
     res.flags = flags;
-    res.handle = CreateThread(NULL, 0, cast_of(LPTHREAD_START_ROUTINE, fn), data, 0, NULL);
+    res.handle = CreateThread(
+            NULL, 0, cast_of(LPTHREAD_START_ROUTINE, fn), data, 0, NULL);
     return res;
 }
 

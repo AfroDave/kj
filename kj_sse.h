@@ -66,30 +66,54 @@ typedef __m128i i128;
 
 #define kj_sse_shuffle_mask(a, b, c, d) _MM_SHUFFLE(a, b, c, d)
 #define kj_sse_shufflef(a, b, m) _mm_shuffle_ps((a), (b), (m));
-#define kj_sse_shufflef_abcd(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(3, 2, 1, 0))
-#define kj_sse_shufflef_abdc(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(3, 2, 0, 1))
-#define kj_sse_shufflef_acbd(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(3, 1, 2, 0))
-#define kj_sse_shufflef_acdb(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(3, 1, 0, 2))
-#define kj_sse_shufflef_adbc(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(3, 0, 2, 1))
-#define kj_sse_shufflef_adcb(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(3, 0, 1, 2))
-#define kj_sse_shufflef_bacd(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(2, 3, 1, 0))
-#define kj_sse_shufflef_badc(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(2, 3, 0, 1))
-#define kj_sse_shufflef_bcad(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(2, 1, 3, 0))
-#define kj_sse_shufflef_bcda(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(2, 1, 0, 3))
-#define kj_sse_shufflef_bdac(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(2, 0, 3, 1))
-#define kj_sse_shufflef_bdca(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(2, 0, 1, 3))
-#define kj_sse_shufflef_cabd(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(1, 3, 2, 0))
-#define kj_sse_shufflef_cadb(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(1, 3, 0, 2))
-#define kj_sse_shufflef_cbad(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(1, 2, 3, 0))
-#define kj_sse_shufflef_cbda(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(1, 2, 0, 3))
-#define kj_sse_shufflef_cdab(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(1, 0, 3, 2))
-#define kj_sse_shufflef_cdba(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(1, 0, 2, 3))
-#define kj_sse_shufflef_dabc(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(0, 3, 2, 1))
-#define kj_sse_shufflef_dacb(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(0, 3, 1, 2))
-#define kj_sse_shufflef_dbac(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(0, 2, 3, 1))
-#define kj_sse_shufflef_dbca(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(0, 2, 1, 3))
-#define kj_sse_shufflef_dcab(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(0, 1, 3, 2))
-#define kj_sse_shufflef_dcba(a) kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(0, 1, 2, 3))
+#define kj_sse_shufflef_abcd(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(3, 2, 1, 0))
+#define kj_sse_shufflef_abdc(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(3, 2, 0, 1))
+#define kj_sse_shufflef_acbd(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(3, 1, 2, 0))
+#define kj_sse_shufflef_acdb(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(3, 1, 0, 2))
+#define kj_sse_shufflef_adbc(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(3, 0, 2, 1))
+#define kj_sse_shufflef_adcb(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(3, 0, 1, 2))
+#define kj_sse_shufflef_bacd(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(2, 3, 1, 0))
+#define kj_sse_shufflef_badc(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(2, 3, 0, 1))
+#define kj_sse_shufflef_bcad(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(2, 1, 3, 0))
+#define kj_sse_shufflef_bcda(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(2, 1, 0, 3))
+#define kj_sse_shufflef_bdac(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(2, 0, 3, 1))
+#define kj_sse_shufflef_bdca(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(2, 0, 1, 3))
+#define kj_sse_shufflef_cabd(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(1, 3, 2, 0))
+#define kj_sse_shufflef_cadb(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(1, 3, 0, 2))
+#define kj_sse_shufflef_cbad(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(1, 2, 3, 0))
+#define kj_sse_shufflef_cbda(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(1, 2, 0, 3))
+#define kj_sse_shufflef_cdab(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(1, 0, 3, 2))
+#define kj_sse_shufflef_cdba(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(1, 0, 2, 3))
+#define kj_sse_shufflef_dabc(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(0, 3, 2, 1))
+#define kj_sse_shufflef_dacb(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(0, 3, 1, 2))
+#define kj_sse_shufflef_dbac(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(0, 2, 3, 1))
+#define kj_sse_shufflef_dbca(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(0, 2, 1, 3))
+#define kj_sse_shufflef_dcab(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(0, 1, 3, 2))
+#define kj_sse_shufflef_dcba(a)                                                 \
+    kj_sse_shufflef((a), (a), kj_sse_shuffle_mask(0, 1, 2, 3))
 
 #if defined(__cplusplus)
 }
