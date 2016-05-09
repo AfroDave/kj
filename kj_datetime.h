@@ -6,7 +6,7 @@
 
 #define KJ_DATETIME_VERSION_MAJOR 0
 #define KJ_DATETIME_VERSION_MINOR 1
-#define KJ_DATETIME_VERSION_PATCH 0
+#define KJ_DATETIME_VERSION_PATCH 1
 
 #define KJ_DATETIME_UTC_ISO_FMT "%04d-%02d-%02dT%02d:%02d:%02dZ"
 #define KJ_DATETIME_LOCAL_ISO_FMT "%04d-%02d-%02dT%02d:%02d:%02d%c%02d:%02d"
@@ -69,16 +69,9 @@ kjDateTime kj_datetime_local(void) {
     GetLocalTime(&st);
     TIME_ZONE_INFORMATION tz = {0};
     switch(GetTimeZoneInformation(&tz)) {
-        case 0: {
-            res.tz = cast_of(i16, tz.Bias);
-        } break;
-        case 1: {
-            res.tz = cast_of(i16, tz.StandardBias);
-        } break;
-        case 2: {
-            res.tz = cast_of(i16, tz.DaylightBias);
-        } break;
-
+        case 0: { res.tz = cast_of(i16, tz.Bias); } break;
+        case 1: { res.tz = cast_of(i16, tz.StandardBias); } break;
+        case 2: { res.tz = cast_of(i16, tz.DaylightBias); } break;
     }
     res.year = st.wYear;
     res.month = st.wMonth;
@@ -90,30 +83,14 @@ kjDateTime kj_datetime_local(void) {
     return res;
 }
 
-internal u64 kj_time_freq(void) {
-    static b32 has_freq = false;
+u64 kj_time_ms(void) {
     static LARGE_INTEGER freq = {0};
-    if(!has_freq) {
+    if(freq.QuadPart == 0) {
         QueryPerformanceFrequency(&freq);
-        has_freq = true;
-    }
-    return cast_of(u64, freq.QuadPart);
-}
-
-internal u64 kj_time(void) {
-    static b32 has_base = false;
-    static LARGE_INTEGER base = {0};
-    if(!has_base) {
-        QueryPerformanceCounter(&base);
-        has_base = true;
     }
     LARGE_INTEGER counter;
     QueryPerformanceCounter(&counter);
-    return (counter.QuadPart - base.QuadPart);
-}
-
-u64 kj_time_ms(void) {
-    return (kj_time() * 1000) / kj_time_freq();
+    return (cast_of(u64, counter.QuadPart) * 1000) / cast_of(u64, freq.QuadPart);;
 }
 
 #elif defined(KJ_SYS_LINUX)
@@ -152,15 +129,9 @@ kjDateTime kj_datetime_local(void) {
 }
 
 u64 kj_time_ms(void) {
-    static b32 has_base = false;
-    static struct timespec base = {0};
-    if(!has_base) {
-        clock_gettime(CLOCK_MONOTONIC, &base);
-        has_base = true;
-    }
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ((ts.tv_sec + ts.tv_nsec) - (base.tv_sec + base.tv_nsec)) / 1000000;
+    return (ts.tv_sec + ts.tv_nsec) / 1000000;
 }
 
 #else

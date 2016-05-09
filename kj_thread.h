@@ -12,8 +12,8 @@ typedef enum kj_thread_flags {
     KJ_THREAD_FLAG_NONE         = (0 << 0),
 } kj_thread_flags;
 
-#define kj_thread_fn(name) void name(void* data)
-typedef kj_thread_fn(kjThreadFn);
+#define KJ_THREAD_FN(name) void name(void* data)
+typedef KJ_THREAD_FN(kjThreadFn);
 
 #if defined(KJ_SYS_WIN32)
 #include <windows.h>
