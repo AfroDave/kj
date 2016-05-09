@@ -127,12 +127,12 @@ extern "C" {
 #endif
 #endif
 
-#if !defined(global)
-#define global static
+#if !defined(KJ_GLOBAL)
+#define KJ_GLOBAL static
 #endif
 
-#if !defined(internal)
-#define internal static
+#if !defined(KJ_INTERNAL)
+#define KJ_INTERNAL static
 #endif
 
 #if !defined(elif)
@@ -222,8 +222,8 @@ typedef signed short i16;
 typedef unsigned short u16;
 typedef signed int i32;
 typedef unsigned int u32;
-typedef signed long long i64;
-typedef unsigned long long u64;
+typedef signed long i64;
+typedef unsigned long u64;
 #endif
 
 #if !defined(I8_MIN)
@@ -814,9 +814,9 @@ void kj_assert_handler(
         const char* expr, const char* file, u64 line, const char* msg) {
     static char buf[4096];
     if(msg) {
-        kj_snprintf(buf, isize_of(buf), "%s:%llu - %s %s", file, line, expr, msg);
+        kj_snprintf(buf, isize_of(buf), "%s:%lu - %s %s", file, line, expr, msg);
     } else {
-        kj_snprintf(buf, isize_of(buf), "%s:%llu - %s", file, line, expr);
+        kj_snprintf(buf, isize_of(buf), "%s:%lu - %s", file, line, expr);
     }
     MessageBox(GetActiveWindow(), buf, "Assertion", MB_OK);
 }
@@ -824,9 +824,9 @@ void kj_assert_handler(
 void kj_assert_handler(
         const char* expr, const char* file, u64 line, const char* msg) {
     if(msg) {
-        kj_printf("%s:%llu - %s %s", file, line, expr, msg);
+        kj_printf("%s:%lu - %s %s", file, line, expr, msg);
     } else {
-        kj_printf("%s:%llu - %s", file, line, expr);
+        kj_printf("%s:%lu - %s", file, line, expr);
     }
 }
 #endif

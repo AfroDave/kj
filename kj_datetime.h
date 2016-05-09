@@ -99,9 +99,9 @@ u64 kj_time_ms(void) {
 
 kjDateTime kj_datetime_utc(void) {
     kjDateTime res;
-    time_t time;
-    time(&time);
-    struct tm* tm = gmtime(&time);
+    time_t t;
+    time(&t);
+    struct tm* tm = gmtime(&t);
     res.year = 1900 + tm->tm_year;
     res.month = tm->tm_mon + 1;
     res.day = tm->tm_mday;
@@ -115,9 +115,9 @@ kjDateTime kj_datetime_utc(void) {
 
 kjDateTime kj_datetime_local(void) {
     kjDateTime res;
-    time_t time;
-    time(&time);
-    struct tm* tm = localtime(&time);
+    time_t t;
+    time(&t);
+    struct tm* tm = localtime(&t);
     res.year = 1900 + tm->tm_year;
     res.month = tm->tm_mon + 1;
     res.day = tm->tm_mday;
