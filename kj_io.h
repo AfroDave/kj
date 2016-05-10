@@ -146,20 +146,24 @@ KJ_INTERNAL u32 kj_io_gen_create_mode(u32 flags) {
         }
     }
     if(res == 0) {
-        if((flags & KJ_IO_FLAG_CREATE) &&
-          !(flags & KJ_IO_FLAG_TRUNCATE) &&
-          !(flags & KJ_IO_FLAG_CREATE_NEW)) {
-            res = O_CREAT;
+        if(!(flags & KJ_IO_FLAG_CREATE) &&
+           !(flags & KJ_IO_FLAG_TRUNCATE) &&
+           !(flags & KJ_IO_FLAG_CREATE_NEW)) {
+            res = OPEN_EXISTING;
+        } elif((flags & KJ_IO_FLAG_CREATE) &&
+              !(flags & KJ_IO_FLAG_TRUNCATE) &&
+              !(flags & KJ_IO_FLAG_CREATE_NEW)) {
+            res = OPEN_ALWAYS;
         } elif(!(flags & KJ_IO_FLAG_CREATE) &&
                 (flags & KJ_IO_FLAG_TRUNCATE) &&
                !(flags & KJ_IO_FLAG_CREATE_NEW)) {
-            res = O_TRUNC;
+            res = TRUNCATE_EXISTING;
         } elif((flags & KJ_IO_FLAG_CREATE) &&
                (flags & KJ_IO_FLAG_TRUNCATE) &&
               !(flags & KJ_IO_FLAG_CREATE_NEW)) {
-            res = O_CREAT | O_TRUNC;
+            res = CREATE_ALWAYS;
         } elif(flags & KJ_IO_FLAG_CREATE_NEW) {
-            res = O_CREAT | O_EXCL;
+            res = CREATE_NEW;
         }
     }
     return res;
@@ -170,7 +174,7 @@ kjIo kj_io_open(const char* path, u32 flags) {
     u32 access = kj_io_gen_access_mode(flags);
     u32 create = kj_io_gen_create_mode(flags);
     if((access | create) == U32_MAX) {
-        res.handle = -1;
+        res.handle = NULL;
         res.flags = 0;
         res.err = KJ_ERR_INVALID_INPUT;
     } else {

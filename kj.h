@@ -168,20 +168,20 @@ extern "C" {
 #define align_of(type) (offset_of(struct { u8 c; type member; }, member))
 #endif
 
-#if !defined(align_to)
+#if !defined(kj_align)
 #if defined(__GNUC__)
-#define align_to(a) __attribute__((aligned(a)))
+#define kj_align(a) __attribute__((aligned(a)))
 #elif defined(__clang__)
-#define align_to(a) __attribute__((align_value((a)))
+#define kj_align(a) __attribute__((align_value((a)))
 #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
-#define align_to(a) __declspec(align(a))
+#define kj_align(a) __declspec(align(a))
 #else
 #error KJ_ALIGN_UNSUPPORTED
 #endif
 #endif
 
-#if !defined(align_on)
-#define align_on(p, a) (((p) + ((a) - 1)) & ~((a) - 1))
+#if !defined(kj_align_on)
+#define kj_align_on(p, a) (((p) + ((a) - 1)) & ~((a) - 1))
 #endif
 
 #if !defined(kj_concat)
@@ -189,11 +189,11 @@ extern "C" {
 #define kj_join(x, y) kj_concat(x, y)
 #endif
 
-#if !defined(unused)
+#if !defined(kj_unused)
 #if defined(KJ_COMPILER_MSVC)
-#define unused(a) __pragma(warning(suppress:4100)) (a)
+#define kj_unused(a) __pragma(warning(suppress:4100)) (a)
 #else
-#define unused(a) cast_of(void, (a))
+#define kj_unused(a) cast_of(void, (a))
 #endif
 #endif
 
@@ -216,40 +216,41 @@ typedef unsigned __int32 u32;
 typedef signed __int64 i64;
 typedef unsigned __int64 u64;
 #else
-typedef signed char i8;
-typedef unsigned char u8;
-typedef signed short i16;
-typedef unsigned short u16;
-typedef signed int i32;
-typedef unsigned int u32;
-typedef signed long i64;
-typedef unsigned long u64;
+#include <stdint.h>
+typedef int8_t i8;
+typedef uint8_t u8;
+typedef int16_t i16;
+typedef uint16_t u16;
+typedef int32_t i32;
+typedef uint32_t u32;
+typedef int64_t i64;
+typedef uint64_t u64;
 #endif
 
 #if !defined(I8_MIN)
-#define I8_MIN (-128)
-#define I8_MAX (127)
+#define I8_MIN cast_of(i8, -128)
+#define I8_MAX cast_of(i8, 127)
 
-#define I16_MIN (-32768)
-#define I16_MAX (32767)
+#define I16_MIN cast_of(i16, -32768)
+#define I16_MAX cast_of(i16, 32767)
 
-#define I32_MIN (-2147483648)
-#define I32_MAX (2147483647)
+#define I32_MIN cast_of(i32, -2147483648)
+#define I32_MAX cast_of(i32, 2147483647)
 
-#define I64_MIN (-9223372036854775808)
-#define I64_MAX (9223372036854775807)
+#define I64_MIN cast_of(i64, -9223372036854775808)
+#define I64_MAX cast_of(i64, 9223372036854775807)
 
-#define U8_MIN (0x00)
-#define U8_MAX (0xFF)
+#define U8_MIN cast_of(u8, 0x00)
+#define U8_MAX cast_of(u8, 0xFF)
 
-#define U16_MIN (0x0000)
-#define U16_MAX (0xFFFF)
+#define U16_MIN cast_of(u16, 0x0000)
+#define U16_MAX cast_of(u16, 0xFFFF)
 
-#define U32_MIN (0x00000000)
-#define U32_MAX (0xFFFFFFFF)
+#define U32_MIN cast_of(u32, 0x00000000)
+#define U32_MAX cast_of(u32, 0xFFFFFFFF)
 
-#define U64_MIN (0x0000000000000000)
-#define U64_MAX (0xFFFFFFFFFFFFFFFF)
+#define U64_MIN cast_of(u64, 0x0000000000000000)
+#define U64_MAX cast_of(u64, 0xFFFFFFFFFFFFFFFF)
 #endif
 
 typedef u8 b8;
@@ -263,6 +264,8 @@ typedef u64 usize;
 #elif defined(KJ_ARCH_32_BIT)
 typedef i32 isize;
 typedef u32 usize;
+#else
+#error KJ_ARCH_UNSUPPORTED
 #endif
 
 #if !defined(ISIZE_MIN)
@@ -278,6 +281,8 @@ typedef u32 usize;
 
 #define USIZE_MIN U32_MIN
 #define USIZE_MAX U32_MAX
+#else
+#error KJ_ARCH_UNSUPPORTED
 #endif
 #endif
 
