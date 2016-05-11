@@ -78,7 +78,7 @@ KJ_API const char* kj_io_err_str(kjIo* io);
 
 #endif
 
-#if defined(KJ_IO_IMPLEMENTATION)
+#if defined(KJ_IO_IMPL)
 
 const char* kj_io_err_str(kjIo* io) {
     switch(io->err) {
@@ -429,7 +429,7 @@ kjIoStat kj_io_stat(kjIo* io) {
 isize kj_io_name(kjIo* io, char* buf, isize size) {
     isize res = -1;
     static char path[256] = {0};
-    kj_snprintf(path, isize_of(path), "/proc/self/fd/%d", io->handle);
+    kj_snprintf(path, kj_isize_of(path), "/proc/self/fd/%d", io->handle);
     kj_syscall3(KJ_SYSCALL_READLINK, res, path, buf, size);
     io->err = kj_io_err_from_sys(res < 0 ? -res: 0);
     return res;

@@ -45,7 +45,7 @@ KJ_API void kj_semaphore_destroy(kjSemaphore* semaphore);
 
 #endif
 
-#if defined(KJ_SYNC_IMPLEMENTATION)
+#if defined(KJ_SYNC_IMPL)
 
 #if defined(KJ_SYS_WIN32)
 
@@ -122,7 +122,7 @@ void kj_mutex_destroy(kjMutex* mutex) {
 
 kjSemaphore kj_semaphore(u32 count, u32 max) {
     kjSemaphore res;
-    unused(max);
+    kj_unused(max);
     sem_init(&res, 0, count);
     return res;
 }

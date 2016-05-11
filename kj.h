@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 #define KJ_VERSION_MAJOR 0
-#define KJ_VERSION_MINOR 2
+#define KJ_VERSION_MINOR 3
 #define KJ_VERSION_PATCH 1
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -64,7 +64,7 @@ extern "C" {
 #elif defined(KJ_COMPILER_GNU)
 #define NULL __null
 #else
-#define NULL (cast_of(void*, 0))
+#define NULL (kj_cast(void*, 0))
 #endif
 #endif
 
@@ -143,29 +143,29 @@ extern "C" {
 #define loop for(;;)
 #endif
 
-#if !defined(cast_of)
-#define cast_of(t, e) ((t) (e))
+#if !defined(kj_cast)
+#define kj_cast(t, e) ((t) (e))
 #endif
 
-#if !defined(isize_of)
-#define isize_of(a) (cast_of(isize, sizeof(a)))
-#define usize_of(a) (cast_of(usize, sizeof(a)))
+#if !defined(kj_isize_of)
+#define kj_isize_of(a) (kj_cast(isize, sizeof(a)))
+#define kj_usize_of(a) (kj_cast(usize, sizeof(a)))
 #endif
 
-#if !defined(count_of)
-#define count_of(a) (isize_of(a) / isize_of((a)[0]))
+#if !defined(kj_count_of)
+#define kj_count_of(a) (kj_isize_of(a) / kj_isize_of((a)[0]))
 #endif
 
-#if !defined(string_of)
-#define string_of(a) #a
+#if !defined(kj_string_of)
+#define kj_string_of(a) #a
 #endif
 
-#if !defined(offset_of)
-#define offset_of(s, m) (cast_of(isize, (&(cast_of(s*, 0)->m))))
+#if !defined(kj_offset_of)
+#define kj_offset_of(s, m) (kj_cast(isize, (&(kj_cast(s*, 0)->m))))
 #endif
 
-#if !defined(align_of)
-#define align_of(type) (offset_of(struct { u8 c; type member; }, member))
+#if !defined(kj_align_of)
+#define kj_align_of(type) (kj_offset_of(struct { u8 c; type member; }, member))
 #endif
 
 #if !defined(kj_align)
@@ -193,7 +193,7 @@ extern "C" {
 #if defined(KJ_COMPILER_MSVC)
 #define kj_unused(a) __pragma(warning(suppress:4100)) (a)
 #else
-#define kj_unused(a) cast_of(void, (a))
+#define kj_unused(a) kj_cast(void, (a))
 #endif
 #endif
 
@@ -228,29 +228,29 @@ typedef uint64_t u64;
 #endif
 
 #if !defined(I8_MIN)
-#define I8_MIN cast_of(i8, -128)
-#define I8_MAX cast_of(i8, 127)
+#define I8_MIN kj_cast(i8, -128)
+#define I8_MAX kj_cast(i8, 127)
 
-#define I16_MIN cast_of(i16, -32768)
-#define I16_MAX cast_of(i16, 32767)
+#define I16_MIN kj_cast(i16, -32768)
+#define I16_MAX kj_cast(i16, 32767)
 
-#define I32_MIN cast_of(i32, -2147483648)
-#define I32_MAX cast_of(i32, 2147483647)
+#define I32_MIN kj_cast(i32, -2147483648)
+#define I32_MAX kj_cast(i32, 2147483647)
 
-#define I64_MIN cast_of(i64, -9223372036854775808)
-#define I64_MAX cast_of(i64, 9223372036854775807)
+#define I64_MIN kj_cast(i64, -9223372036854775808)
+#define I64_MAX kj_cast(i64, 9223372036854775807)
 
-#define U8_MIN cast_of(u8, 0x00)
-#define U8_MAX cast_of(u8, 0xFF)
+#define U8_MIN kj_cast(u8, 0x00)
+#define U8_MAX kj_cast(u8, 0xFF)
 
-#define U16_MIN cast_of(u16, 0x0000)
-#define U16_MAX cast_of(u16, 0xFFFF)
+#define U16_MIN kj_cast(u16, 0x0000)
+#define U16_MAX kj_cast(u16, 0xFFFF)
 
-#define U32_MIN cast_of(u32, 0x00000000)
-#define U32_MAX cast_of(u32, 0xFFFFFFFF)
+#define U32_MIN kj_cast(u32, 0x00000000)
+#define U32_MAX kj_cast(u32, 0xFFFFFFFF)
 
-#define U64_MIN cast_of(u64, 0x0000000000000000)
-#define U64_MAX cast_of(u64, 0xFFFFFFFFFFFFFFFF)
+#define U64_MIN kj_cast(u64, 0x0000000000000000)
+#define U64_MAX kj_cast(u64, 0xFFFFFFFFFFFFFFFF)
 #endif
 
 typedef u8 b8;
@@ -294,26 +294,26 @@ typedef float f32;
 typedef double f64;
 
 #if !defined(F32_MIN)
-#define F32_MIN cast_of(f32, -3.402823e+38)
-#define F32_MAX cast_of(f32, 3.402823e+38)
-#define F32_EPS cast_of(f32, 1.192093e-07)
+#define F32_MIN kj_cast(f32, -3.402823e+38)
+#define F32_MAX kj_cast(f32, 3.402823e+38)
+#define F32_EPS kj_cast(f32, 1.192093e-07)
 
-#define F64_MIN cast_of(f64, -1.797693e+308)
-#define F64_MAX cast_of(f64, 1.797693e+308)
-#define F64_EPS cast_of(f64, 2.220446e-16)
+#define F64_MIN kj_cast(f64, -1.797693e+308)
+#define F64_MAX kj_cast(f64, 1.797693e+308)
+#define F64_EPS kj_cast(f64, 2.220446e-16)
 #endif
 
 #define kj_static_assert(n, a) typedef void* kj_static_assert_##n[(a) * 2 - 1]
-kj_static_assert(i8, isize_of(i8) == 1);
-kj_static_assert(u8, isize_of(u8) == 1);
-kj_static_assert(i16, isize_of(i16) == 2);
-kj_static_assert(u16, isize_of(u16) == 2);
-kj_static_assert(i32, isize_of(i32) == 4);
-kj_static_assert(u32, isize_of(u32) == 4);
-kj_static_assert(i64, isize_of(i64) == 8);
-kj_static_assert(u64, isize_of(u64) == 8);
-kj_static_assert(f32, isize_of(f32) == 4);
-kj_static_assert(f64, isize_of(f64) == 8);
+kj_static_assert(i8, kj_isize_of(i8) == 1);
+kj_static_assert(u8, kj_isize_of(u8) == 1);
+kj_static_assert(i16, kj_isize_of(i16) == 2);
+kj_static_assert(u16, kj_isize_of(u16) == 2);
+kj_static_assert(i32, kj_isize_of(i32) == 4);
+kj_static_assert(u32, kj_isize_of(u32) == 4);
+kj_static_assert(i64, kj_isize_of(i64) == 8);
+kj_static_assert(u64, kj_isize_of(u64) == 8);
+kj_static_assert(f32, kj_isize_of(f32) == 4);
+kj_static_assert(f64, kj_isize_of(f64) == 8);
 
 #if defined(KJ_SYS_WIN32)
 #define KJ_PATH_SEPARATOR '\\'
@@ -325,15 +325,16 @@ kj_static_assert(f64, isize_of(f64) == 8);
 #define kj_copy CopyMemory
 #define kj_set FillMemory
 #define kj_zero ZeroMemory
-#define kj_one(p, s) kj_set(p, s, 1)
 #define kj_move MoveMemory
 #else
 #define kj_copy __builtin_memcpy
 #define kj_set(p, s, v) __builtin_memset((p), (v), (s))
 #define kj_zero(p, s) kj_set(p, s, 0)
-#define kj_one(p, s) kj_set(p, s, 1)
 #define kj_move __builtin_memmove
 #endif
+
+#define kj_one(p, s) kj_set(p, s, 1)
+#define kj_fill(p, s) kj_set(p, s, 0xFF)
 
 KJ_API void kj_assert_handler(
         const char* expr, const char* file, u64 line, const char* msg);
@@ -351,7 +352,7 @@ KJ_API void kj_assert_handler(
 
 #define kj_assert_msg(expr, msg) do {                                           \
     if(!(expr)) {                                                               \
-        kj_assert_handler(string_of(expr), __FILE__, __LINE__, msg);            \
+        kj_assert_handler(kj_string_of(expr), __FILE__, __LINE__, msg);         \
         kj_break();                                                             \
     }                                                                           \
 } while(0)
@@ -557,7 +558,8 @@ KJ_API u64 kj_swap64(u64 a);
 KJ_API i32 kj_vprintf(char const* fmt, va_list v);
 KJ_API i32 kj_printf(char const* fmt, ...) KJ_FMT_VARGS(1);
 KJ_API i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v);
-KJ_API i32 kj_snprintf(char* buf, isize size, char const* fmt, ...) KJ_FMT_VARGS(3);
+KJ_API i32 kj_snprintf(
+        char* buf, isize size, char const* fmt, ...) KJ_FMT_VARGS(3);
 #endif
 
 KJ_API b32 kj_char_is_eol(char c);
@@ -616,14 +618,15 @@ KJ_API KJ_SWAP_FN(kj_swap_usize);
 KJ_API KJ_SWAP_FN(kj_swap_f32);
 KJ_API KJ_SWAP_FN(kj_swap_f64);
 
-KJ_API void kj_sort_insertion(void* arr, isize count, kjCmpFn cmp, kjSwapFn swap);
+KJ_API void kj_sort_insertion(
+        void* arr, isize count, kjCmpFn cmp, kjSwapFn swap);
 
 #if defined(__cplusplus)
 }
 #endif
 #endif
 
-#if defined(KJ_IMPLEMENTATION)
+#if defined(KJ_IMPL)
 
 const char* kj_type_to_str(kjType type) {
     static const char* KJ_TYPE_STR[] = {
@@ -647,45 +650,47 @@ const char* kj_type_to_str(kjType type) {
         "b64",
         "unknown",
     };
-    return KJ_TYPE_STR[type];
+    return type < KJ_TYPE_NONE || type > KJ_TYPE_UNKNOWN ?
+        KJ_TYPE_UNKNOWN: KJ_TYPE_STR[type];
 }
 
 isize kj_type_to_isize(kjType type) {
     static const isize KJ_TYPE_ISIZE[] = {
         0,
-        isize_of(char),
-        isize_of(i8),
-        isize_of(u8),
-        isize_of(i16),
-        isize_of(u16),
-        isize_of(i32),
-        isize_of(u32),
-        isize_of(i64),
-        isize_of(u64),
-        isize_of(isize),
-        isize_of(usize),
-        isize_of(f32),
-        isize_of(f64),
-        isize_of(b8),
-        isize_of(b16),
-        isize_of(b32),
-        isize_of(b64),
+        kj_isize_of(char),
+        kj_isize_of(i8),
+        kj_isize_of(u8),
+        kj_isize_of(i16),
+        kj_isize_of(u16),
+        kj_isize_of(i32),
+        kj_isize_of(u32),
+        kj_isize_of(i64),
+        kj_isize_of(u64),
+        kj_isize_of(isize),
+        kj_isize_of(usize),
+        kj_isize_of(f32),
+        kj_isize_of(f64),
+        kj_isize_of(b8),
+        kj_isize_of(b16),
+        kj_isize_of(b32),
+        kj_isize_of(b64),
         0,
     };
-    return KJ_TYPE_ISIZE[type];
+    return type < KJ_TYPE_NONE || type > KJ_TYPE_UNKNOWN ?
+        0: KJ_TYPE_ISIZE[type];
 }
 
 u16 kj_swap16(u16 a) {
-    return cast_of(u16, (a << 8) | (a >> 8));
+    return kj_cast(u16, (a << 8) | (a >> 8));
 }
 
 u32 kj_swap32(u32 a) {
-    return cast_of(u32, (a << 24) | ((a << 8) & 0x00FF0000) |
+    return kj_cast(u32, (a << 24) | ((a << 8) & 0x00FF0000) |
                        ((a >> 8) & 0x0000FF00) | (a >> 24));
 }
 
 u64 kj_swap64(u64 a) {
-    return cast_of(u64, kj_swap32((a & 0xFFFFFFFF00000000) >> 32) |
+    return kj_cast(u64, kj_swap32((a & 0xFFFFFFFF00000000) >> 32) |
                         kj_swap32((a & 0x00000000FFFFFFFF) << 32));
 }
 
@@ -791,7 +796,7 @@ isize kj_str_size(const char* s) {
 isize kj_str_cmp_n(const char* s1, const char* s2, isize n) {
     while(*s1 && *s2 && n) {
         if(*s1 != *s2) {
-            return cast_of(uptr, *s1) < cast_of(uptr, *s2) ? -1: +1;
+            return kj_cast(uptr, *s1) < kj_cast(uptr, *s2) ? -1: +1;
         }
         s1++;
         s2++;
@@ -803,7 +808,7 @@ isize kj_str_cmp_n(const char* s1, const char* s2, isize n) {
 isize kj_str_cmp(const char* s1, const char* s2) {
     while(*s1 && *s2) {
         if(*s1 != *s2) {
-            return cast_of(uptr, *s1) < cast_of(uptr, *s2) ? -1: +1;
+            return kj_cast(uptr, *s1) < kj_cast(uptr, *s2) ? -1: +1;
         }
         s1++;
         s2++;
@@ -813,24 +818,24 @@ isize kj_str_cmp(const char* s1, const char* s2) {
 
 #if defined(KJ_SYS_WIN32)
 kjLib kj_lib_open(const char* path) {
-    return cast_of(kjLib, LoadLibrary(path));
+    return kj_cast(kjLib, LoadLibrary(path));
 }
 
 void* kj_lib_fn(kjLib lib, const char* name) {
-    return cast_of(void*, GetProcAddress(cast_of(HMODULE, lib), name));
+    return kj_cast(void*, GetProcAddress(kj_cast(HMODULE, lib), name));
 }
 
 void kj_lib_close(kjLib lib) {
-    FreeLibrary(cast_of(HMODULE, lib));
+    FreeLibrary(kj_cast(HMODULE, lib));
 }
 #elif defined(KJ_SYS_LINUX)
 #include <dlfcn.h>
 kjLib kj_lib_open(const char* path) {
-    return cast_of(kjLib, dlopen(path, RTLD_LAZY));
+    return kj_cast(kjLib, dlopen(path, RTLD_LAZY));
 }
 
 void* kj_lib_fn(kjLib lib, const char* name) {
-    return cast_of(void*, dlsym(lib, name));
+    return kj_cast(void*, dlsym(lib, name));
 }
 
 void kj_lib_close(kjLib lib) {
@@ -846,9 +851,10 @@ void kj_assert_handler(
         const char* expr, const char* file, u64 line, const char* msg) {
     static char buf[4096];
     if(msg) {
-        kj_snprintf(buf, isize_of(buf), "%s:%lu - %s %s", file, line, expr, msg);
+        kj_snprintf(
+                buf, kj_isize_of(buf), "%s:%lu - %s %s", file, line, expr, msg);
     } else {
-        kj_snprintf(buf, isize_of(buf), "%s:%lu - %s", file, line, expr);
+        kj_snprintf(buf, kj_isize_of(buf), "%s:%lu - %s", file, line, expr);
     }
     MessageBox(GetActiveWindow(), buf, "Assertion", MB_OK);
 }
@@ -865,43 +871,43 @@ void kj_assert_handler(
 #endif
 
 #define KJ_CMP_FN_T(T) KJ_CMP_FN(kj_join(kj_cmp_, T)) {                         \
-    T a = cast_of(T*, arr)[i];                                                  \
-    T b = cast_of(T*, arr)[j];                                                  \
-    return cast_of(i32, a < b ? -1: a > b);                                     \
+    T a = kj_cast(T*, arr)[i];                                                  \
+    T b = kj_cast(T*, arr)[j];                                                  \
+    return kj_cast(i32, a < b ? -1: a > b);                                     \
 }
 
-KJ_CMP_FN_T(i8);
-KJ_CMP_FN_T(u8);
-KJ_CMP_FN_T(i16);
-KJ_CMP_FN_T(u16);
-KJ_CMP_FN_T(i32);
-KJ_CMP_FN_T(u32);
-KJ_CMP_FN_T(i64);
-KJ_CMP_FN_T(u64);
-KJ_CMP_FN_T(isize);
-KJ_CMP_FN_T(usize);
-KJ_CMP_FN_T(f32);
-KJ_CMP_FN_T(f64);
+KJ_CMP_FN_T(i8)
+KJ_CMP_FN_T(u8)
+KJ_CMP_FN_T(i16)
+KJ_CMP_FN_T(u16)
+KJ_CMP_FN_T(i32)
+KJ_CMP_FN_T(u32)
+KJ_CMP_FN_T(i64)
+KJ_CMP_FN_T(u64)
+KJ_CMP_FN_T(isize)
+KJ_CMP_FN_T(usize)
+KJ_CMP_FN_T(f32)
+KJ_CMP_FN_T(f64)
 
 #define KJ_SWAP_FN_T(T) KJ_SWAP_FN(kj_join(kj_swap_, T)) {                      \
-    T* values = cast_of(T*, arr);                                               \
+    T* values = kj_cast(T*, arr);                                               \
     T tmp = values[i];                                                          \
     values[i] = values[j];                                                      \
     values[j] = tmp;                                                            \
 }
 
-KJ_SWAP_FN_T(i8);
-KJ_SWAP_FN_T(u8);
-KJ_SWAP_FN_T(i16);
-KJ_SWAP_FN_T(u16);
-KJ_SWAP_FN_T(i32);
-KJ_SWAP_FN_T(u32);
-KJ_SWAP_FN_T(i64);
-KJ_SWAP_FN_T(u64);
-KJ_SWAP_FN_T(isize);
-KJ_SWAP_FN_T(usize);
-KJ_SWAP_FN_T(f32);
-KJ_SWAP_FN_T(f64);
+KJ_SWAP_FN_T(i8)
+KJ_SWAP_FN_T(u8)
+KJ_SWAP_FN_T(i16)
+KJ_SWAP_FN_T(u16)
+KJ_SWAP_FN_T(i32)
+KJ_SWAP_FN_T(u32)
+KJ_SWAP_FN_T(i64)
+KJ_SWAP_FN_T(u64)
+KJ_SWAP_FN_T(isize)
+KJ_SWAP_FN_T(usize)
+KJ_SWAP_FN_T(f32)
+KJ_SWAP_FN_T(f64)
 
 void kj_sort_insertion(void* arr, isize count, kjCmpFn cmp, kjSwapFn swap) {
     for(u32 i = 1; i < count; i++) {

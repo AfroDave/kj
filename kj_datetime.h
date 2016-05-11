@@ -42,7 +42,7 @@ KJ_API u64 kj_time_ms(void);
 
 #endif
 
-#if defined(KJ_DATETIME_IMPLEMENTATION)
+#if defined(KJ_DATETIME_IMPL)
 
 #if defined(KJ_SYS_WIN32)
 
@@ -69,9 +69,9 @@ kjDateTime kj_datetime_local(void) {
     GetLocalTime(&st);
     TIME_ZONE_INFORMATION tz = {0};
     switch(GetTimeZoneInformation(&tz)) {
-        case 0: { res.tz = cast_of(i16, tz.Bias); } break;
-        case 1: { res.tz = cast_of(i16, tz.StandardBias); } break;
-        case 2: { res.tz = cast_of(i16, tz.DaylightBias); } break;
+        case 0: { res.tz = kj_cast(i16, tz.Bias); } break;
+        case 1: { res.tz = kj_cast(i16, tz.StandardBias); } break;
+        case 2: { res.tz = kj_cast(i16, tz.DaylightBias); } break;
     }
     res.year = st.wYear;
     res.month = st.wMonth;
@@ -90,7 +90,7 @@ u64 kj_time_ms(void) {
     }
     LARGE_INTEGER counter;
     QueryPerformanceCounter(&counter);
-    return (cast_of(u64, counter.QuadPart) * 1000) / cast_of(u64, freq.QuadPart);
+    return (kj_cast(u64, counter.QuadPart) * 1000) / kj_cast(u64, freq.QuadPart);
 }
 
 #elif defined(KJ_SYS_LINUX)

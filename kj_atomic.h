@@ -6,7 +6,7 @@
 
 #define KJ_ATOMIC_VERSION_MAJOR 0
 #define KJ_ATOMIC_VERSION_MINOR 1
-#define KJ_ATOMIC_VERSION_PATCH 0
+#define KJ_ATOMIC_VERSION_PATCH 1
 
 #if defined(__cplusplus)
 extern "C" {
@@ -39,7 +39,7 @@ KJ_API u64 kj_atomic_fetch_sub_u64(volatile u64* value, u64 sub);
 
 #endif
 
-#if defined(KJ_ATOMIC_IMPLEMENTATION)
+#if defined(KJ_ATOMIC_IMPL)
 
 #if defined(KJ_COMPILER_MSVC)
 
@@ -66,13 +66,13 @@ u32 kj_atomic_cmp_swap_u32(
 u64 kj_atomic_cmp_swap_u64(
         volatile u64* value, u64 expected_value, u64 new_value) {
     return _InterlockedCompareExchange64(
-            cast_of(volatile LONGLONG*, value), new_value, expected_value);
+            kj_cast(volatile LONGLONG*, value), new_value, expected_value);
 }
 
 void* kj_atomic_cmp_swap_ptr(
         volatile void** value, void* expected_value, void* new_value) {
     return _InterlockedCompareExchangePointer(
-            cast_of(volatile PVOID*, value), new_value, expected_value);
+            kj_cast(volatile PVOID*, value), new_value, expected_value);
 }
 
 u32 kj_atomic_swap_u32(volatile u32* value, u32 new_value) {
@@ -81,12 +81,12 @@ u32 kj_atomic_swap_u32(volatile u32* value, u32 new_value) {
 
 u64 kj_atomic_swap_u64(volatile u64* value, u64 new_value) {
     return _InterlockedExchange64(
-            cast_of(volatile LONGLONG*, value), new_value);
+            kj_cast(volatile LONGLONG*, value), new_value);
 }
 
 void* kj_atomic_swap_ptr(volatile void** value, void* new_value) {
     return _InterlockedExchangePointer(
-            cast_of(volatile PVOID*, value), new_value);
+            kj_cast(volatile PVOID*, value), new_value);
 }
 
 u32 kj_atomic_inc_u32(volatile u32* value) {
@@ -94,7 +94,7 @@ u32 kj_atomic_inc_u32(volatile u32* value) {
 }
 
 u64 kj_atomic_inc_u64(volatile u64* value) {
-    return _InterlockedIncrement64(cast_of(volatile LONGLONG*, value));
+    return _InterlockedIncrement64(kj_cast(volatile LONGLONG*, value));
 }
 
 u32 kj_atomic_dec_u32(volatile u32* value) {
@@ -102,7 +102,7 @@ u32 kj_atomic_dec_u32(volatile u32* value) {
 }
 
 u64 kj_atomic_dec_u64(volatile u64* value) {
-    return _InterlockedDecrement64(cast_of(volatile LONGLONG*, value));
+    return _InterlockedDecrement64(kj_cast(volatile LONGLONG*, value));
 }
 
 u32 kj_atomic_fetch_add_u32(volatile u32* value, u32 add) {
@@ -110,16 +110,16 @@ u32 kj_atomic_fetch_add_u32(volatile u32* value, u32 add) {
 }
 
 u64 kj_atomic_fetch_add_u64(volatile u64* value, u64 add) {
-    return _InterlockedExchangeAdd64(cast_of(volatile LONGLONG*, value), add);
+    return _InterlockedExchangeAdd64(kj_cast(volatile LONGLONG*, value), add);
 }
 
 u32 kj_atomic_fetch_sub_u32(volatile u32* value, u32 sub) {
-    return InterlockedExchangeAdd(value, -cast_of(i32, sub));
+    return InterlockedExchangeAdd(value, -kj_cast(i32, sub));
 }
 
 u64 kj_atomic_fetch_sub_u64(volatile u64* value, u64 sub) {
     return _InterlockedExchangeAdd64(
-            cast_of(volatile LONGLONG*, value), -cast_of(i64, sub));
+            kj_cast(volatile LONGLONG*, value), -kj_cast(i64, sub));
 }
 
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
@@ -148,7 +148,8 @@ u64 kj_atomic_cmp_swap_u64(
 
 void* kj_atomic_cmp_swap_ptr(
         volatile void** value, void* expected_value, void* new_value) {
-    return __sync_val_compare_and_swap(value, expected_value, new_value);
+    return kj_cast(void*,
+            __sync_val_compare_and_swap(value, expected_value, new_value));
 }
 
 u32 kj_atomic_swap_u32(volatile u32* value, u32 new_value) {
@@ -160,7 +161,7 @@ u64 kj_atomic_swap_u64(volatile u64* value, u64 new_value) {
 }
 
 void* kj_atomic_swap_ptr(volatile void** value, void* new_value) {
-    return __sync_lock_test_and_set(value, new_value);
+    return kj_cast(void*, __sync_lock_test_and_set(value, new_value));
 }
 
 u32 kj_atomic_inc_u32(volatile u32* value) {

@@ -55,7 +55,7 @@ KJ_API void kj_thread_detach(kjThread* thread);
 
 #endif
 
-#if defined(KJ_THREAD_IMPLEMENTATION)
+#if defined(KJ_THREAD_IMPL)
 u32 THREAD_COUNTER = 0;
 
 #if defined(KJ_SYS_WIN32)
@@ -67,7 +67,7 @@ kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags) {
     res.ctx.data = data;
     res.flags = flags;
     res.handle = CreateThread(
-            NULL, 0, cast_of(LPTHREAD_START_ROUTINE, fn), data, 0, NULL);
+            NULL, 0, kj_cast(LPTHREAD_START_ROUTINE, fn), data, 0, NULL);
     return res;
 }
 
@@ -89,7 +89,7 @@ kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags) {
     res.ctx.fn = fn;
     res.ctx.data = data;
     res.flags = flags;
-    pthread_create(&res.handle, NULL, cast_of(void* (*)(void*), fn), data);
+    pthread_create(&res.handle, NULL, kj_cast(void* (*)(void*), fn), data);
     return res;
 }
 

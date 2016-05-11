@@ -336,7 +336,7 @@ KJ_API kjMat4f operator*(kjMat4f a, kjMat4f b);
 
 #endif
 
-#if defined(KJ_MATH_IMPLEMENTATION)
+#if defined(KJ_MATH_IMPL)
 
 #if defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
 f32 kj_rsqrt(f32 a) { return 1.0f / __builtin_sqrtf(a); }
@@ -437,7 +437,7 @@ kjVec2i kj_vec2i_negate(kjVec2i a) {
 }
 
 kjVec2u kj_vec2u_negate(kjVec2u a) {
-    return kj_vec2u(-cast_of(i32, a.x), -cast_of(i32, a.y));
+    return kj_vec2u(-kj_cast(i32, a.x), -kj_cast(i32, a.y));
 }
 
 kjVec2f kj_vec2f_add(kjVec2f a, kjVec2f b) {
@@ -541,11 +541,11 @@ f32 kj_vec2f_length(kjVec2f a) {
 }
 
 i32 kj_vec2i_length(kjVec2i a) {
-    return cast_of(i32, kj_sqrt(cast_of(f32, kj_vec2i_length_sq(a))));
+    return kj_cast(i32, kj_sqrt(kj_cast(f32, kj_vec2i_length_sq(a))));
 }
 
 u32 kj_vec2u_length(kjVec2u a) {
-    return cast_of(u32, kj_sqrt(cast_of(f32, kj_vec2u_length_sq(a))));
+    return kj_cast(u32, kj_sqrt(kj_cast(f32, kj_vec2u_length_sq(a))));
 }
 
 kjVec2f kj_vec2f_normalise(kjVec2f a) {
@@ -630,7 +630,7 @@ kjVec3i kj_vec3i_negate(kjVec3i a) {
 
 
 kjVec3u kj_vec3u_negate(kjVec3u a) {
-    return kj_vec3u(-cast_of(i32, a.x), -cast_of(i32, a.y), -cast_of(i32, a.z));
+    return kj_vec3u(-kj_cast(i32, a.x), -kj_cast(i32, a.y), -kj_cast(i32, a.z));
 }
 
 kjVec3f kj_vec3f_add(kjVec3f a, kjVec3f b) {
@@ -738,11 +738,11 @@ f32 kj_vec3f_length(kjVec3f a) {
 
 
 i32 kj_vec3i_length(kjVec3i a) {
-    return cast_of(i32, kj_sqrt(cast_of(f32, kj_vec3i_length_sq(a))));
+    return kj_cast(i32, kj_sqrt(kj_cast(f32, kj_vec3i_length_sq(a))));
 }
 
 u32 kj_vec3u_length(kjVec3u a) {
-    return cast_of(u32, kj_sqrt(cast_of(f32, kj_vec3u_length_sq(a))));
+    return kj_cast(u32, kj_sqrt(kj_cast(f32, kj_vec3u_length_sq(a))));
 }
 
 kjVec3f kj_vec3f_normalise(kjVec3f a) {
@@ -830,8 +830,8 @@ kjVec4i kj_vec4i_negate(kjVec4i a) {
 
 kjVec4u kj_vec4u_negate(kjVec4u a) {
     return kj_vec4u(
-            -cast_of(i32, a.x), -cast_of(i32, a.y),
-            -cast_of(i32, a.z), -cast_of(i32, a.w));
+            -kj_cast(i32, a.x), -kj_cast(i32, a.y),
+            -kj_cast(i32, a.z), -kj_cast(i32, a.w));
 }
 
 kjVec4f kj_vec4f_add(kjVec4f a, kjVec4f b) {
@@ -923,11 +923,11 @@ f32 kj_vec4f_length(kjVec4f a) {
 }
 
 i32 kj_vec4i_length(kjVec4i a) {
-    return cast_of(i32, kj_sqrt(cast_of(f32, kj_vec4i_length_sq(a))));
+    return kj_cast(i32, kj_sqrt(kj_cast(f32, kj_vec4i_length_sq(a))));
 }
 
 u32 kj_vec4u_length(kjVec4u a) {
-    return cast_of(u32, kj_sqrt(cast_of(f32, kj_vec4u_length_sq(a))));
+    return kj_cast(u32, kj_sqrt(kj_cast(f32, kj_vec4u_length_sq(a))));
 }
 
 kjVec4f kj_vec4f_normalise(kjVec4f a) {
@@ -967,13 +967,13 @@ kjMat3f kj_mat3f_ident(void) { return kj_mat3f_diag(1.0f, 1.0f, 1.0f); }
 
 kjMat3f kj_mat3f_zero(void) {
     kjMat3f res;
-    kj_zero(&res, isize_of(kjMat3f));
+    kj_zero(&res, kj_isize_of(kjMat3f));
     return res;
 }
 
 kjMat3f kj_mat3f_one(void) {
     kjMat3f res;
-    kj_one(&res, isize_of(kjMat3f));
+    kj_one(&res, kj_isize_of(kjMat3f));
     return res;
 }
 
@@ -1071,13 +1071,13 @@ kjMat4f kj_mat4f_ident(void) {
 
 kjMat4f kj_mat4f_zero(void) {
     kjMat4f res;
-    kj_zero(&res, isize_of(kjMat4f));
+    kj_zero(&res, kj_isize_of(kjMat4f));
     return res;
 }
 
 kjMat4f kj_mat4f_one(void) {
     kjMat4f res;
-    kj_one(&res, isize_of(kjMat4f));
+    kj_one(&res, kj_isize_of(kjMat4f));
     return res;
 }
 
