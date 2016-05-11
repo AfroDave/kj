@@ -651,7 +651,7 @@ const char* kj_type_to_str(kjType type) {
         "unknown",
     };
     return type < KJ_TYPE_NONE || type > KJ_TYPE_UNKNOWN ?
-        KJ_TYPE_UNKNOWN: KJ_TYPE_STR[type];
+        KJ_TYPE_STR[KJ_TYPE_UNKNOWN]: KJ_TYPE_STR[type];
 }
 
 isize kj_type_to_isize(kjType type) {
