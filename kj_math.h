@@ -21,27 +21,35 @@
 typedef struct kjVec2f {
     f32 x, y;
 } kjVec2f;
+
 typedef struct kjVec2i {
     i32 x, y;
 } kjVec2i;
+
 typedef struct kjVec2u {
     u32 x, y;
 } kjVec2u;
+
 typedef struct kjVec3f {
     f32 x, y, z;
 } kjVec3f;
+
 typedef struct kjVec3i {
     i32 x, y, z;
 } kjVec3i;
+
 typedef struct kjVec3u {
     u32 x, y, z;
 } kjVec3u;
+
 typedef struct kjVec4f {
     f32 x, y, z, w;
 } kjVec4f;
+
 typedef struct kjVec4i {
     i32 x, y, z, w;
 } kjVec4i;
+
 typedef struct kjVec4u {
     u32 x, y, z, w;
 } kjVec4u;
@@ -61,18 +69,23 @@ typedef union kjMat4f {
 typedef struct kjRect2f {
     f32 x, y, w, h;
 } kjRect2f;
+
 typedef struct kjRect2i {
     i32 x, y, w, h;
 } kjRect2i;
+
 typedef struct kjRect2u {
     u32 x, y, w, h;
 } kjRect2u;
+
 typedef struct kjRect3f {
     f32 x, y, z, w, h, d;
 } kjRect3f;
+
 typedef struct kjRect3i {
     i32 x, y, z, w, h, d;
 } kjRect3i;
+
 typedef struct kjRect3u {
     u32 x, y, z, w, h, d;
 } kjRect3u;

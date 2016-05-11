@@ -90,7 +90,7 @@ u64 kj_time_ms(void) {
     }
     LARGE_INTEGER counter;
     QueryPerformanceCounter(&counter);
-    return (cast_of(u64, counter.QuadPart) * 1000) / cast_of(u64, freq.QuadPart);;
+    return (cast_of(u64, counter.QuadPart) * 1000) / cast_of(u64, freq.QuadPart);
 }
 
 #elif defined(KJ_SYS_LINUX)

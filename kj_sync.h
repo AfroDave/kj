@@ -121,7 +121,7 @@ void kj_mutex_destroy(kjMutex* mutex) {
 
 
 kjSemaphore kj_semaphore(u32 count, u32 max) {
-    kjSemaphore res; 
+    kjSemaphore res;
     unused(max);
     sem_init(&res, 0, count);
     return res;

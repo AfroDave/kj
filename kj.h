@@ -127,12 +127,12 @@ extern "C" {
 #endif
 #endif
 
-#if !defined(KJ_GLOBAL)
-#define KJ_GLOBAL static
+#if !defined(kj_global)
+#define kj_global static
 #endif
 
-#if !defined(KJ_INTERNAL)
-#define KJ_INTERNAL static
+#if !defined(kj_internal)
+#define kj_internal static
 #endif
 
 #if !defined(elif)
@@ -335,7 +335,7 @@ kj_static_assert(f64, isize_of(f64) == 8);
 #define kj_move __builtin_memmove
 #endif
 
-void kj_assert_handler(
+KJ_API void kj_assert_handler(
         const char* expr, const char* file, u64 line, const char* msg);
 
 #if defined(KJ_DEBUG)
@@ -545,18 +545,20 @@ KJ_API u64 kj_swap64(u64 a);
 #endif
 #endif
 
+#if !defined(KJ_NO_STDIO)
 #if defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#define kj_printf_vargs(a) __attribute__((format(printf, a, (a+1))))
+#define KJ_FMT_VARGS(a) __attribute__((format(printf, a, (a+1))))
 #else
-#define kj_printf_vargs(a)
+#define KJ_FMT_VARGS(a)
 #endif
 
 #include <stdarg.h>
 
 KJ_API i32 kj_vprintf(char const* fmt, va_list v);
-KJ_API i32 kj_printf(char const* fmt, ...) kj_printf_vargs(1);
+KJ_API i32 kj_printf(char const* fmt, ...) KJ_FMT_VARGS(1);
 KJ_API i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v);
-KJ_API i32 kj_snprintf(char* buf, isize size, char const* fmt, ...) kj_printf_vargs(3);
+KJ_API i32 kj_snprintf(char* buf, isize size, char const* fmt, ...) KJ_FMT_VARGS(3);
+#endif
 
 KJ_API b32 kj_char_is_eol(char c);
 KJ_API b32 kj_char_is_ws(char c);
@@ -578,20 +580,43 @@ KJ_API kjLib kj_lib_open(const char* path);
 KJ_API void* kj_lib_fn(kjLib lib, const char* name);
 KJ_API void kj_lib_close(kjLib lib);
 
-typedef enum kjErr {
-    KJ_ERR_NONE = 0,
-    KJ_ERR_BAD_HANDLE,
-    KJ_ERR_PERMISSION_DENIED,
-    KJ_ERR_NOT_FOUND,
-    KJ_ERR_BROKEN_PIPE,
-    KJ_ERR_ALREADY_EXISTS,
-    KJ_ERR_TIMED_OUT,
-    KJ_ERR_INVALID_INPUT,
-    KJ_ERR_INTERRUPED,
-    KJ_ERR_ILLEGAL_SEEK,
-    KJ_ERR_UNKNOWN,
-    KJ_ERR_COUNT,
-} kjErr;
+typedef i32 kjErr;
+#define KJ_ERR_NONE 0
+#define KJ_ERR_UNKNOWN -1
+
+#define KJ_CMP_FN(name) i32 name(void* arr, u32 i, u32 j)
+typedef KJ_CMP_FN(kjCmpFn);
+
+KJ_API KJ_CMP_FN(kj_cmp_i8);
+KJ_API KJ_CMP_FN(kj_cmp_u8);
+KJ_API KJ_CMP_FN(kj_cmp_i16);
+KJ_API KJ_CMP_FN(kj_cmp_u16);
+KJ_API KJ_CMP_FN(kj_cmp_i32);
+KJ_API KJ_CMP_FN(kj_cmp_u32);
+KJ_API KJ_CMP_FN(kj_cmp_i64);
+KJ_API KJ_CMP_FN(kj_cmp_u64);
+KJ_API KJ_CMP_FN(kj_cmp_isize);
+KJ_API KJ_CMP_FN(kj_cmp_usize);
+KJ_API KJ_CMP_FN(kj_cmp_f32);
+KJ_API KJ_CMP_FN(kj_cmp_f64);
+
+#define KJ_SWAP_FN(name) void name(void* arr, u32 i, u32 j)
+typedef KJ_SWAP_FN(kjSwapFn);
+
+KJ_API KJ_SWAP_FN(kj_swap_i8);
+KJ_API KJ_SWAP_FN(kj_swap_u8);
+KJ_API KJ_SWAP_FN(kj_swap_i16);
+KJ_API KJ_SWAP_FN(kj_swap_u16);
+KJ_API KJ_SWAP_FN(kj_swap_i32);
+KJ_API KJ_SWAP_FN(kj_swap_u32);
+KJ_API KJ_SWAP_FN(kj_swap_i64);
+KJ_API KJ_SWAP_FN(kj_swap_u64);
+KJ_API KJ_SWAP_FN(kj_swap_isize);
+KJ_API KJ_SWAP_FN(kj_swap_usize);
+KJ_API KJ_SWAP_FN(kj_swap_f32);
+KJ_API KJ_SWAP_FN(kj_swap_f64);
+
+KJ_API void kj_sort_insertion(void* arr, isize count, kjCmpFn cmp, kjSwapFn swap);
 
 #if defined(__cplusplus)
 }
@@ -664,6 +689,7 @@ u64 kj_swap64(u64 a) {
                         kj_swap32((a & 0x00000000FFFFFFFF) << 32));
 }
 
+#if !defined(KJ_NO_STDIO)
 #include <stdio.h>
 
 i32 kj_vprintf(char const* fmt, va_list v) {
@@ -700,6 +726,7 @@ i32 kj_snprintf(char* buf, isize size, char const* fmt, ...) {
     va_end(v);
     return res;
 }
+#endif
 
 b32 kj_char_is_eol(char c) {
     return c == '\r' ||
@@ -836,5 +863,54 @@ void kj_assert_handler(
 }
 #endif
 #endif
+
+#define KJ_CMP_FN_T(T) KJ_CMP_FN(kj_join(kj_cmp_, T)) {                         \
+    T a = cast_of(T*, arr)[i];                                                  \
+    T b = cast_of(T*, arr)[j];                                                  \
+    return cast_of(i32, a < b ? -1: a > b);                                     \
+}
+
+KJ_CMP_FN_T(i8);
+KJ_CMP_FN_T(u8);
+KJ_CMP_FN_T(i16);
+KJ_CMP_FN_T(u16);
+KJ_CMP_FN_T(i32);
+KJ_CMP_FN_T(u32);
+KJ_CMP_FN_T(i64);
+KJ_CMP_FN_T(u64);
+KJ_CMP_FN_T(isize);
+KJ_CMP_FN_T(usize);
+KJ_CMP_FN_T(f32);
+KJ_CMP_FN_T(f64);
+
+#define KJ_SWAP_FN_T(T) KJ_SWAP_FN(kj_join(kj_swap_, T)) {                      \
+    T* values = cast_of(T*, arr);                                               \
+    T tmp = values[i];                                                          \
+    values[i] = values[j];                                                      \
+    values[j] = tmp;                                                            \
+}
+
+KJ_SWAP_FN_T(i8);
+KJ_SWAP_FN_T(u8);
+KJ_SWAP_FN_T(i16);
+KJ_SWAP_FN_T(u16);
+KJ_SWAP_FN_T(i32);
+KJ_SWAP_FN_T(u32);
+KJ_SWAP_FN_T(i64);
+KJ_SWAP_FN_T(u64);
+KJ_SWAP_FN_T(isize);
+KJ_SWAP_FN_T(usize);
+KJ_SWAP_FN_T(f32);
+KJ_SWAP_FN_T(f64);
+
+void kj_sort_insertion(void* arr, isize count, kjCmpFn cmp, kjSwapFn swap) {
+    for(u32 i = 1; i < count; i++) {
+        for(i32 j = i - 1; j >= 0; j--) {
+            if(cmp(arr, j, j + 1) > 0) {
+                swap(arr, j, j + 1);
+            }
+        }
+    }
+}
 
 #endif

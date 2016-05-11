@@ -8,6 +8,16 @@
 #define KJ_IO_VERSION_MINOR 2
 #define KJ_IO_VERSION_PATCH 1
 
+#define KJ_ERR_BAD_HANDLE 1
+#define KJ_ERR_PERMISSION_DENIED 2
+#define KJ_ERR_NOT_FOUND 3
+#define KJ_ERR_BROKEN_PIPE 4
+#define KJ_ERR_ALREADY_EXISTS 5
+#define KJ_ERR_TIMED_OUT 6
+#define KJ_ERR_INVALID_INPUT 7
+#define KJ_ERR_INTERRUPED 8
+#define KJ_ERR_ILLEGAL_SEEK 9
+
 typedef enum kjIoFlag {
     KJ_IO_FLAG_INVALID = (0 << 0),
     KJ_IO_FLAG_READ = (1 << 0),
@@ -88,7 +98,7 @@ const char* kj_io_err_str(kjIo* io) {
 
 #if defined(KJ_SYS_WIN32)
 
-KJ_INTERNAL kjErr kj_io_err_from_sys(u32 err) {
+kj_internal kjErr kj_io_err_from_sys(u32 err) {
     switch(err) {
         case ERROR_SUCCESS: return KJ_ERR_NONE;
         case ERROR_ACCESS_DENIED: return KJ_ERR_PERMISSION_DENIED;
@@ -106,7 +116,7 @@ KJ_INTERNAL kjErr kj_io_err_from_sys(u32 err) {
     }
 }
 
-KJ_INTERNAL u32 kj_io_gen_access_mode(u32 flags) {
+kj_internal u32 kj_io_gen_access_mode(u32 flags) {
     u32 res = 0;
     if((flags & KJ_IO_FLAG_READ) &&
       !(flags & KJ_IO_FLAG_WRITE) &&
@@ -130,7 +140,7 @@ KJ_INTERNAL u32 kj_io_gen_access_mode(u32 flags) {
     return res;
 }
 
-KJ_INTERNAL u32 kj_io_gen_create_mode(u32 flags) {
+kj_internal u32 kj_io_gen_create_mode(u32 flags) {
     u32 res = 0;
     if(!(flags & KJ_IO_FLAG_WRITE) &&
        !(flags & KJ_IO_FLAG_APPEND)) {
@@ -270,7 +280,7 @@ kjIoStat kj_io_stat(kjIo* io) {
 
 #elif defined(KJ_SYS_LINUX)
 
-KJ_INTERNAL kjErr kj_io_err_from_sys(u32 err) {
+kj_internal kjErr kj_io_err_from_sys(u32 err) {
     switch(err) {
         case 0: return KJ_ERR_NONE;
         case EBADF: return KJ_ERR_BAD_HANDLE;
@@ -287,7 +297,7 @@ KJ_INTERNAL kjErr kj_io_err_from_sys(u32 err) {
     }
 }
 
-KJ_INTERNAL u32 kj_io_gen_access_mode(u32 flags) {
+kj_internal u32 kj_io_gen_access_mode(u32 flags) {
     u32 res = 0;
     if((flags & KJ_IO_FLAG_READ) &&
       !(flags & KJ_IO_FLAG_WRITE) &&
@@ -311,7 +321,7 @@ KJ_INTERNAL u32 kj_io_gen_access_mode(u32 flags) {
     return res;
 }
 
-KJ_INTERNAL u32 kj_io_gen_create_mode(u32 flags) {
+kj_internal u32 kj_io_gen_create_mode(u32 flags) {
     u32 res = 0;
     if(!(flags & KJ_IO_FLAG_WRITE) &&
        !(flags & KJ_IO_FLAG_APPEND)) {
