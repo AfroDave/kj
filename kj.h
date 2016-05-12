@@ -578,8 +578,9 @@ KJ_API isize kj_str_cmp_n(const char* s1, const char* s2, isize n);
 KJ_API isize kj_str_cmp(const char* s1, const char* s2);
 
 typedef void* kjLib;
+typedef void (*kjLibFn)(void);
 KJ_API kjLib kj_lib_open(const char* path);
-KJ_API void* kj_lib_fn(kjLib lib, const char* name);
+KJ_API kjLibFn kj_lib_fn(kjLib lib, const char* name);
 KJ_API void kj_lib_close(kjLib lib);
 
 typedef i32 kjErr;
@@ -821,8 +822,8 @@ kjLib kj_lib_open(const char* path) {
     return kj_cast(kjLib, LoadLibrary(path));
 }
 
-void* kj_lib_fn(kjLib lib, const char* name) {
-    return kj_cast(void*, GetProcAddress(kj_cast(HMODULE, lib), name));
+kjLibFn kj_lib_fn(kjLib lib, const char* name) {
+    return kj_cast(kjLibFn, GetProcAddress(kj_cast(HMODULE, lib), name));
 }
 
 void kj_lib_close(kjLib lib) {
@@ -834,8 +835,8 @@ kjLib kj_lib_open(const char* path) {
     return kj_cast(kjLib, dlopen(path, RTLD_LAZY));
 }
 
-void* kj_lib_fn(kjLib lib, const char* name) {
-    return kj_cast(void*, dlsym(lib, name));
+kjLibFn kj_lib_fn(kjLib lib, const char* name) {
+    return kj_cast(kjLibFn, dlsym(lib, name));
 }
 
 void kj_lib_close(kjLib lib) {
