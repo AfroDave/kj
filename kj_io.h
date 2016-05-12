@@ -212,8 +212,8 @@ isize kj_io_read(kjIo* io, void* buf, isize size) {
     isize res = -1;
     DWORD read = 0;
     if(ReadFile(
-        io->handle, buf, cast_of(DWORD, size),
-        cast_of(DWORD*, &read), NULL)) {
+        io->handle, buf, kj_cast(DWORD, size),
+        kj_cast(DWORD*, &read), NULL)) {
         res = read;
     } else {
         io->err = kj_io_err_from_sys(GetLastError());
@@ -225,8 +225,8 @@ isize kj_io_write(kjIo* io, void* buf, isize size) {
     isize res = -1;
     DWORD wrote = 0;
     if(WriteFile(
-        io->handle, buf, cast_of(DWORD, size),
-        cast_of(DWORD*, &wrote), NULL)) {
+        io->handle, buf, kj_cast(DWORD, size),
+        kj_cast(DWORD*, &wrote), NULL)) {
         res = wrote;
     } else {
         io->err = kj_io_err_from_sys(GetLastError());
@@ -237,12 +237,12 @@ isize kj_io_write(kjIo* io, void* buf, isize size) {
 isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset) {
     isize res = -1;
     OVERLAPPED overlapped = {0};
-    overlapped.Offset = cast_of(u32, ((offset >> 0) & 0xFFFFFFFF));
-    overlapped.OffsetHigh = cast_of(u32, ((offset >> 32) & 0xFFFFFFFF));
+    overlapped.Offset = kj_cast(u32, ((offset >> 0) & 0xFFFFFFFF));
+    overlapped.OffsetHigh = kj_cast(u32, ((offset >> 32) & 0xFFFFFFFF));
     DWORD read = 0;
     if(ReadFile(
-        io->handle, buf, cast_of(DWORD, size),
-        cast_of(DWORD*, &read), &overlapped)) {
+        io->handle, buf, kj_cast(DWORD, size),
+        kj_cast(DWORD*, &read), &overlapped)) {
         res = read;
     } else {
         io->err = kj_io_err_from_sys(GetLastError());
@@ -253,12 +253,12 @@ isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset) {
 isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
     isize res = -1;
     OVERLAPPED overlapped = {0};
-    overlapped.Offset = cast_of(u32, ((offset >> 0) & 0xFFFFFFFF));
-    overlapped.OffsetHigh = cast_of(u32, ((offset >> 32) & 0xFFFFFFFF));
+    overlapped.Offset = kj_cast(u32, ((offset >> 0) & 0xFFFFFFFF));
+    overlapped.OffsetHigh = kj_cast(u32, ((offset >> 32) & 0xFFFFFFFF));
     DWORD wrote = 0;
     if(WriteFile(
-        io->handle, buf, cast_of(DWORD, size),
-        cast_of(DWORD*, &wrote), &overlapped)) {
+        io->handle, buf, kj_cast(DWORD, size),
+        kj_cast(DWORD*, &wrote), &overlapped)) {
         res = wrote;
     } else {
         io->err = kj_io_err_from_sys(GetLastError());
@@ -270,8 +270,8 @@ kjIoStat kj_io_stat(kjIo* io) {
     kjIoStat res = {0};
     BY_HANDLE_FILE_INFORMATION io_info = {0};
     if(GetFileInformationByHandle(io->handle, &io_info)) {
-        res.size = (cast_of(i64, io_info.nFileSizeHigh) << 32) |
-                    cast_of(i64, io_info.nFileSizeLow);
+        res.size = (kj_cast(i64, io_info.nFileSizeHigh) << 32) |
+                    kj_cast(i64, io_info.nFileSizeLow);
     } else {
         io->err = kj_io_err_from_sys(GetLastError());
     }
