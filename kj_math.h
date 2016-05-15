@@ -104,7 +104,9 @@ KJ_API f32 kj_acos(f32 a);
 KJ_API f32 kj_atan(f32 a);
 KJ_API f32 kj_atan2(f32 y, f32 x);
 KJ_API f32 kj_exp(f32 x);
-KJ_API f32 kj_log(f32 x);
+KJ_API f32 kj_ln(f32 x);
+KJ_API f32 kj_log10(f32 x);
+KJ_API f32 kj_log2(f32 x);
 KJ_API f32 kj_pow(f32 x, f32 y);
 KJ_API f32 kj_floor(f32 a);
 KJ_API f32 kj_ceil(f32 a);
@@ -349,7 +351,9 @@ f32 kj_acos(f32 a) { return __builtin_acosf(a); }
 f32 kj_atan(f32 a) { return __builtin_atanf(a); }
 f32 kj_atan2(f32 y, f32 x) { return __builtin_atan2f(y, x); }
 f32 kj_exp(f32 x) { return __builtin_expf(x); }
-f32 kj_log(f32 x) { return __builtin_logf(x); }
+f32 kj_ln(f32 x) { return __builtin_logf(x); }
+f32 kj_log10(f32 x) { return __builtin_log10f(x); }
+f32 kj_log2(f32 x) { return __builtin_log2f(x); }
 f32 kj_pow(f32 x, f32 y) { return __builtin_powf(x, y); }
 f32 kj_floor(f32 a) { return __builtin_floorf(a); }
 f32 kj_ceil(f32 a) { return __builtin_ceilf(a); }
@@ -365,7 +369,9 @@ f32 kj_acos(f32 a) { return acosf(a); }
 f32 kj_atan(f32 a) { return atanf(a); }
 f32 kj_atan2(f32 y, f32 x) { return atan2f(y, x); }
 f32 kj_exp(f32 x) { return expf(x); }
-f32 kj_log(f32 x) { return logf(x); }
+f32 kj_ln(f32 x) { return logf(x); }
+f32 kj_log10(f32 x) { return log10f(x); }
+f32 kj_log2(f32 x) { return log2f(x); }
 f32 kj_pow(f32 x, f32 y) { return powf(x, y); }
 f32 kj_floor(f32 a) { return floorf(a); }
 f32 kj_ceil(f32 a) { return ceilf(a); }

@@ -622,12 +622,15 @@ KJ_API KJ_SWAP_FN(kj_swap_f64);
 KJ_API void kj_sort_insertion(
         void* arr, isize count, kjCmpFn cmp, kjSwapFn swap);
 
+KJ_API const char* kj_path_extension(const char* path);
+
 #if defined(__cplusplus)
 }
 #endif
 #endif
 
-#if defined(KJ_IMPL)
+#if defined(KJ_IMPL) && !defined(KJ_IMPLEMENTED)
+#define KJ_IMPLEMENTED
 
 const char* kj_type_to_str(kjType type) {
     static const char* KJ_TYPE_STR[] = {
@@ -817,6 +820,8 @@ isize kj_str_cmp(const char* s1, const char* s2) {
     return 0;
 }
 
+#if defined(KJ_LIB_IMPL) && !defined(KJ_LIB_IMPLEMENTED)
+#define KJ_LIB_IMPLEMENTED
 #if defined(KJ_SYS_WIN32)
 kjLib kj_lib_open(const char* path) {
     return kj_cast(kjLib, LoadLibrary(path));
@@ -845,8 +850,10 @@ void kj_lib_close(kjLib lib) {
 #else
 #error KJ_LIB_UNSUPPORTED
 #endif
+#endif
 
-#if !defined(KJ_NO_DEFAULT_ASSERT_HANDLER)
+#if defined(KJ_ASSERT_IMPL) && !defined(KJ_ASSERT_IMPLEMENTED)
+#define KJ_ASSERT_IMPLEMENTED
 #if defined(KJ_SYS_WIN32)
 void kj_assert_handler(
         const char* expr, const char* file, u64 line, const char* msg) {
@@ -890,6 +897,8 @@ KJ_CMP_FN_T(usize)
 KJ_CMP_FN_T(f32)
 KJ_CMP_FN_T(f64)
 
+#undef KJ_CMP_FN_T
+
 #define KJ_SWAP_FN_T(T) KJ_SWAP_FN(kj_join(kj_swap_, T)) {                      \
     T* values = kj_cast(T*, arr);                                               \
     T tmp = values[i];                                                          \
@@ -910,6 +919,8 @@ KJ_SWAP_FN_T(usize)
 KJ_SWAP_FN_T(f32)
 KJ_SWAP_FN_T(f64)
 
+#undef KJ_SWAP_FN_T
+
 void kj_sort_insertion(void* arr, isize count, kjCmpFn cmp, kjSwapFn swap) {
     for(u32 i = 1; i < count; i++) {
         for(i32 j = i - 1; j >= 0; j--) {
@@ -918,6 +929,27 @@ void kj_sort_insertion(void* arr, isize count, kjCmpFn cmp, kjSwapFn swap) {
             }
         }
     }
+}
+
+const char* kj_path_extension(const char* path) {
+    const char* res = NULL;
+    if(path) {
+        isize size = kj_str_size(path);
+        if(size > 3) {
+            for(isize i = size - 1; i >= 0; i--) {
+                if(path[i] == KJ_PATH_SEPARATOR) {
+                    res = NULL;
+                    break;
+                } elif(path[i] == '.' &&
+                       i > 0 &&
+                       path[i - 1] != KJ_PATH_SEPARATOR) {
+                        res = &path[i + 1];
+                    break;
+                }
+            }
+        }
+    }
+    return res;
 }
 
 #endif
