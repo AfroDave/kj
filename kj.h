@@ -1,5 +1,9 @@
 // `kj.h`
 // public domain - no offered or implied warranty, use at your own risk
+//
+// usage:
+//      #define KJ_IMPL
+//      #include "kj.h"
 
 #ifndef KJ_H
 #define KJ_H

@@ -1,5 +1,9 @@
 // `kj_atomic.h`
 // public domain - no offered or implied warranty, use at your own risk
+//
+// usage:
+//      #define KJ_ATOMIC_IMPL
+//      #include "kj_atomic.h"
 
 #ifndef KJ_ATOMIC_H
 #define KJ_ATOMIC_H

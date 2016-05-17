@@ -1,5 +1,9 @@
 // `kj_thread.h`
 // public domain - no offered or implied warranty, use at your own risk
+//
+// usage:
+//      #define KJ_THREAD_IMPL
+//      #include "kj_thread.h"
 
 #ifndef KJ_THREAD_H
 #define KJ_THREAD_H
@@ -56,7 +60,7 @@ KJ_API void kj_thread_detach(kjThread* thread);
 #endif
 
 #if defined(KJ_THREAD_IMPL)
-u32 THREAD_COUNTER = 0;
+volatile u32 THREAD_COUNTER = 0;
 
 #if defined(KJ_SYS_WIN32)
 

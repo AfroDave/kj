@@ -1,5 +1,9 @@
 // `kj_sse.h`
 // public domain - no offered or implied warranty, use at your own risk
+//
+// usage:
+//      #define KJ_SSE_IMPL
+//      #include "kj_sse.h"
 
 #ifndef KJ_SSE_H
 #define KJ_SSE_H

@@ -1,5 +1,9 @@
 // `kj_datetime.h`
 // public domain - no offered or implied warranty, use at your own risk
+//
+// usage:
+//      #define KJ_DATETIME_IMPL
+//      #include "kj_datetime.h"
 
 #ifndef KJ_DATETIME_H
 #define KJ_DATETIME_H

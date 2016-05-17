@@ -1,6 +1,6 @@
 # kj
 
-`kj` is a small collection of [stb](https://github.com/nothings/stb) style libs.
+`kj` is a small collection of [stb](https://github.com/nothings/stb) inspired libs.
 
 library             | category
 --------------------|----------
@@ -12,17 +12,18 @@ library             | category
 **kj_atomic.h**     | multithreading
 **kj_sse.h**        | simd
 **kj_colour.h**     | graphics
+**kj_datetime.h**   | date and time
 
 All the libraries target C/C++ for both win32 and linux.
 
-*Warning: Many are still very early in development.*
+*Warning: Still very early in development.*
 
 ## Usage
 
 All the libraries follow the same pattern:
 
 ```
-#define KJ(_MATH|_SYNC|...)_IMPLEMENTATION
+#define KJ(_MATH|_SYNC|...)_IMPL
 #include "kj(_math|_sync|...).h"
 ```
 
