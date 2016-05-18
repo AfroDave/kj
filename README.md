@@ -5,14 +5,14 @@
 library             | category
 --------------------|----------
 **kj.h**            | misc
-**kj_math.h**       | maths
-**kj_io.h**         | io
-**kj_sync.h**       | multithreading
-**kj_thread.h**     | multithreading
 **kj_atomic.h**     | multithreading
-**kj_sse.h**        | simd
 **kj_colour.h**     | graphics
 **kj_datetime.h**   | date and time
+**kj_io.h**         | io
+**kj_math.h**       | maths
+**kj_sse.h**        | simd
+**kj_sync.h**       | multithreading
+**kj_thread.h**     | multithreading
 
 All the libraries target C/C++ for both win32 and linux.
 

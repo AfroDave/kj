@@ -437,8 +437,8 @@ KJ_API u64 kj_swap64(u64 a);
 #define kj_range(a, fmin, fmax, tmin, tmax)                                     \
     (((a) - (fmin)) * ((tmax) - (tmin)) / (((fmax) - (fmin)) + (tmin)))
 #define kj_swap(T, a, b) { T tmp_##__LINE__ = a; a = b; b = tmp_##__LINE__; }
-#define kj_abs(a) ((a) > 0 ? (a) : -(a))
-#define kj_sign(a) ((a) >= 0 ? 1 : -1)
+#define kj_abs(a) ((a) > 0 ? (a): -(a))
+#define kj_sign(a) ((a) >= 0 ? 1: -1)
 #endif
 
 #if !defined(kj_kb)
@@ -552,7 +552,7 @@ KJ_API u64 kj_swap64(u64 a);
 
 #if !defined(KJ_NO_STDIO)
 #if defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#define KJ_FMT_VARGS(a) __attribute__((format(printf, a, (a+1))))
+#define KJ_FMT_VARGS(a) __attribute__((format(printf, (a), ((a) + 1))))
 #else
 #define KJ_FMT_VARGS(a)
 #endif
@@ -591,7 +591,7 @@ typedef i32 kjErr;
 #define KJ_ERR_NONE 0
 #define KJ_ERR_UNKNOWN -1
 
-#define KJ_CMP_FN(name) i32 name(void* arr, u32 i, u32 j)
+#define KJ_CMP_FN(name) i32 name(void* arr, isize i, isize j)
 typedef KJ_CMP_FN(kjCmpFn);
 
 KJ_API KJ_CMP_FN(kj_cmp_i8);
@@ -607,7 +607,7 @@ KJ_API KJ_CMP_FN(kj_cmp_usize);
 KJ_API KJ_CMP_FN(kj_cmp_f32);
 KJ_API KJ_CMP_FN(kj_cmp_f64);
 
-#define KJ_SWAP_FN(name) void name(void* arr, u32 i, u32 j)
+#define KJ_SWAP_FN(name) void name(void* arr, isize i, isize j)
 typedef KJ_SWAP_FN(kjSwapFn);
 
 KJ_API KJ_SWAP_FN(kj_swap_i8);
@@ -926,8 +926,8 @@ KJ_SWAP_FN_T(f64)
 #undef KJ_SWAP_FN_T
 
 void kj_sort_insertion(void* arr, isize count, kjCmpFn cmp, kjSwapFn swap) {
-    for(u32 i = 1; i < count; i++) {
-        for(i32 j = i - 1; j >= 0; j--) {
+    for(isize i = 1; i < count; i++) {
+        for(isize j = i - 1; j >= 0; j--) {
             if(cmp(arr, j, j + 1) > 0) {
                 swap(arr, j, j + 1);
             }
