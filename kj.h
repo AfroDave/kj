@@ -135,8 +135,8 @@ extern "C" {
 #define kj_global static
 #endif
 
-#if !defined(kj_internal)
-#define kj_internal static
+#if !defined(kj_intern)
+#define kj_intern static
 #endif
 
 #if !defined(elif)
@@ -457,6 +457,7 @@ KJ_API u64 kj_swap64(u64 a);
 #if defined(KJ_ARCH_64_BIT)
 #define KJ_SYSCALL_CLOSE 3
 #define KJ_SYSCALL_OPEN 2
+#define KJ_SYSCALL_LSEEK 8
 #define KJ_SYSCALL_READ 0
 #define KJ_SYSCALL_PREAD 17
 #define KJ_SYSCALL_WRITE 1
@@ -508,6 +509,7 @@ KJ_API u64 kj_swap64(u64 a);
 #elif define(KJ_ARCH_32_BIT)
 #define KJ_SYSCALL_CLOSE 6
 #define KJ_SYSCALL_OPEN 5
+#define KJ_SYSCALL_LSEEK 19
 #define KJ_SYSCALL_READ 3
 #define KJ_SYSCALL_PREAD 180
 #define KJ_SYSCALL_WRITE 4
