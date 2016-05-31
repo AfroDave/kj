@@ -1,5 +1,5 @@
 // `kj_thread.h`
-// public domain - no offered or implied warranty, use at your own risk
+// public domain - no warranty implied; use at your own risk
 //
 // usage:
 //      #define KJ_THREAD_IMPL
@@ -12,9 +12,9 @@
 #define KJ_THREAD_VERSION_MINOR 1
 #define KJ_THREAD_VERSION_PATCH 1
 
-typedef enum kj_thread_flags {
-    KJ_THREAD_FLAG_NONE         = (0 << 0),
-} kj_thread_flags;
+enum {
+    KJ_THREAD_FLAG_NONE = KJ_BIT_ZERO,
+};
 
 #define KJ_THREAD_FN(name) void name(void* data)
 typedef KJ_THREAD_FN(kjThreadFn);
@@ -45,17 +45,13 @@ typedef struct kjThread {
 #error KJ_THREAD_UNSUPPORTED
 #endif
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+KJ_EXTERN_BEGIN
 
 KJ_API kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags);
 KJ_API void kj_thread_join(kjThread* thread);
 KJ_API void kj_thread_detach(kjThread* thread);
 
-#if defined(__cplusplus)
-}
-#endif
+KJ_EXTERN_END
 
 #endif
 
@@ -63,7 +59,6 @@ KJ_API void kj_thread_detach(kjThread* thread);
 volatile u32 THREAD_COUNTER = 0;
 
 #if defined(KJ_SYS_WIN32)
-
 kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags) {
     kjThread res;
     res.id = _InterlockedIncrement(&THREAD_COUNTER);
@@ -86,7 +81,6 @@ void kj_thread_detach(kjThread* thread) {
 }
 
 #elif defined(KJ_SYS_LINUX)
-
 kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags) {
     kjThread res;
     res.id = __sync_add_and_fetch(&THREAD_COUNTER, 1);
@@ -104,7 +98,6 @@ void kj_thread_join(kjThread* thread) {
 void kj_thread_detach(kjThread* thread) {
     pthread_detach(thread->handle);
 }
-
 #else
 #error KJ_MUTEX_UNSUPPORTED
 #endif

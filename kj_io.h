@@ -1,5 +1,5 @@
 // `kj_io.h`
-// public domain - no offered or implied warranty, use at your own risk
+// public domain - no warranty implied; use at your own risk
 //
 // usage:
 //      #define KJ_IO_IMPL
@@ -22,16 +22,16 @@
 #define KJ_ERR_INTERRUPED 8
 #define KJ_ERR_ILLEGAL_SEEK 9
 
-typedef enum kjIoFlag {
-    KJ_IO_FLAG_INVALID = (0 << 0),
-    KJ_IO_FLAG_READ = (1 << 0),
-    KJ_IO_FLAG_WRITE = (1 << 1),
+enum {
+    KJ_IO_FLAG_INVALID = KJ_BIT_ZERO,
+    KJ_IO_FLAG_READ = KJ_BIT_FLAG(0),
+    KJ_IO_FLAG_WRITE = KJ_BIT_FLAG(1),
     KJ_IO_FLAG_RDWR = KJ_IO_FLAG_READ | KJ_IO_FLAG_WRITE,
-    KJ_IO_FLAG_CREATE = (1 << 2),
-    KJ_IO_FLAG_CREATE_NEW = (1 << 3),
-    KJ_IO_FLAG_APPEND = (1 << 4),
-    KJ_IO_FLAG_TRUNCATE = (1 << 5)
-} kjIoFlag;
+    KJ_IO_FLAG_CREATE = KJ_BIT_FLAG(2),
+    KJ_IO_FLAG_CREATE_NEW = KJ_BIT_FLAG(3),
+    KJ_IO_FLAG_APPEND = KJ_BIT_FLAG(4),
+    KJ_IO_FLAG_TRUNCATE = KJ_BIT_FLAG(5)
+};
 
 typedef enum kjIoSeek {
     KJ_SEEK_BEGIN = 0,
@@ -63,9 +63,7 @@ typedef struct kjIoStat {
     i64 size;
 } kjIoStat;
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+KJ_EXTERN_BEGIN
 
 #define kj_io_has_err(io) ((io)->err != KJ_ERR_NONE)
 
@@ -81,9 +79,7 @@ KJ_API kjIoStat kj_io_stat(kjIo* io);
 
 KJ_API const char* kj_io_err_str(kjIo* io);
 
-#if defined(__cplusplus)
-}
-#endif
+KJ_EXTERN_END
 
 #endif
 
@@ -108,8 +104,7 @@ const char* kj_io_err_str(kjIo* io) {
 }
 
 #if defined(KJ_SYS_WIN32)
-
-kj_intern kjErr kj_io_err_from_sys(u32 err) {
+KJ_INTERN kjErr kj_io_err_from_sys(u32 err) {
     switch(err) {
         case ERROR_SUCCESS: return KJ_ERR_NONE;
         case ERROR_ACCESS_DENIED: return KJ_ERR_PERMISSION_DENIED;
@@ -127,7 +122,7 @@ kj_intern kjErr kj_io_err_from_sys(u32 err) {
     }
 }
 
-kj_intern u32 kj_io_gen_access_mode(u32 flags) {
+KJ_INTERN u32 kj_io_gen_access_mode(u32 flags) {
     u32 res = 0;
     if((flags & KJ_IO_FLAG_READ) &&
       !(flags & KJ_IO_FLAG_WRITE) &&
@@ -151,7 +146,7 @@ kj_intern u32 kj_io_gen_access_mode(u32 flags) {
     return res;
 }
 
-kj_intern u32 kj_io_gen_create_mode(u32 flags) {
+KJ_INTERN u32 kj_io_gen_create_mode(u32 flags) {
     u32 res = 0;
     if(!(flags & KJ_IO_FLAG_WRITE) &&
        !(flags & KJ_IO_FLAG_APPEND)) {
@@ -301,8 +296,7 @@ kjIoStat kj_io_stat(kjIo* io) {
 }
 
 #elif defined(KJ_SYS_LINUX)
-
-kj_intern kjErr kj_io_err_from_sys(u32 err) {
+KJ_INTERN kjErr kj_io_err_from_sys(u32 err) {
     switch(err) {
         case 0: return KJ_ERR_NONE;
         case EBADF: return KJ_ERR_BAD_HANDLE;
@@ -319,7 +313,7 @@ kj_intern kjErr kj_io_err_from_sys(u32 err) {
     }
 }
 
-kj_intern u32 kj_io_gen_access_mode(u32 flags) {
+KJ_INTERN u32 kj_io_gen_access_mode(u32 flags) {
     u32 res = 0;
     if((flags & KJ_IO_FLAG_READ) &&
       !(flags & KJ_IO_FLAG_WRITE) &&
@@ -343,7 +337,7 @@ kj_intern u32 kj_io_gen_access_mode(u32 flags) {
     return res;
 }
 
-kj_intern u32 kj_io_gen_create_mode(u32 flags) {
+KJ_INTERN u32 kj_io_gen_create_mode(u32 flags) {
     u32 res = 0;
     if(!(flags & KJ_IO_FLAG_WRITE) &&
        !(flags & KJ_IO_FLAG_APPEND)) {
@@ -456,7 +450,6 @@ kjIoStat kj_io_stat(kjIo* io) {
     }
     return res;
 }
-
 #else
 #error KJ_IO_UNSUPPORTED
 #endif

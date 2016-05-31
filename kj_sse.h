@@ -1,5 +1,5 @@
 // `kj_sse.h`
-// public domain - no offered or implied warranty, use at your own risk
+// public domain - no warranty implied; use at your own risk
 //
 // usage:
 //      #define KJ_SSE_IMPL
@@ -7,10 +7,6 @@
 
 #ifndef KJ_SSE_H
 #define KJ_SSE_H
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
 
 #define KJ_SSE_VERSION_MAJOR 0
 #define KJ_SSE_VERSION_MINOR 1
@@ -25,6 +21,8 @@ extern "C" {
 typedef __m128 f128;
 typedef __m128i i128;
 typedef __m128i u128;
+
+KJ_EXTERN_BEGIN
 
 #define kj_sse_read_fence() _mm_lfence()
 #define kj_sse_write_fence() _mm_sfence()
@@ -135,8 +133,6 @@ typedef __m128i u128;
 #define kj_ssei_and(a, b) _mm_and_si128(a, b)
 #define kj_ssei_xor(a, b) _mm_xor_si128(a, b)
 
-#if defined(__cplusplus)
-}
-#endif
+KJ_EXTERN_END
 
 #endif

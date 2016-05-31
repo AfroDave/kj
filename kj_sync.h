@@ -1,5 +1,5 @@
 // `kj_sync.h`
-// public domain - no offered or implied warranty, use at your own risk
+// public domain - no warranty implied; use at your own risk
 //
 // usage:
 //      #define KJ_SYNC_IMPL
@@ -15,9 +15,7 @@
 #if defined(KJ_SYS_WIN32)
 #include <windows.h>
 typedef CRITICAL_SECTION kjMutex;
-typedef struct kjSemaphore {
-    HANDLE handle;
-} kjSemaphore;
+typedef HANDLE kjSemaphore;
 #elif defined(KJ_SYS_LINUX)
 #include <pthread.h>
 #include <semaphore.h>
@@ -27,9 +25,7 @@ typedef sem_t kjSemaphore;
 #error KJ_SYNC_UNSUPPORTED
 #endif
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+KJ_EXTERN_BEGIN
 
 KJ_API kjMutex kj_mutex(void);
 KJ_API void kj_mutex_lock(kjMutex* mutex);
@@ -43,16 +39,13 @@ KJ_API b32 kj_semaphore_try_wait(kjSemaphore* semaphore);
 KJ_API void kj_semaphore_signal(kjSemaphore* semaphore, i32 count);
 KJ_API void kj_semaphore_destroy(kjSemaphore* semaphore);
 
-#if defined(__cplusplus)
-}
-#endif
+KJ_EXTERN_END
 
 #endif
 
 #if defined(KJ_SYNC_IMPL)
 
 #if defined(KJ_SYS_WIN32)
-
 kjMutex kj_mutex(void) {
     kjMutex mutex;
     InitializeCriticalSectionAndSpinCount(&mutex, 1000);
@@ -77,30 +70,28 @@ void kj_mutex_destroy(kjMutex* mutex) {
 
 kjSemaphore kj_semaphore(u32 count, u32 max) {
     kjSemaphore res;
-    res.handle = CreateSemaphore(NULL, count, max, NULL);
+    res = CreateSemaphore(NULL, count, max, NULL);
     return res;
 }
 
 b32 kj_semaphore_wait(kjSemaphore* semaphore) {
-    u32 res = WaitForSingleObject(semaphore->handle, INFINITE);
+    u32 res = WaitForSingleObject(semaphore, INFINITE);
     return res == WAIT_OBJECT_0 || res == WAIT_TIMEOUT;
 }
 
 b32 kj_semaphore_try_wait(kjSemaphore* semaphore) {
-    u32 res = WaitForSingleObject(semaphore->handle, 0);
+    u32 res = WaitForSingleObject(semaphore, 0);
     return res == WAIT_OBJECT_0;
 }
 
 void kj_semaphore_signal(kjSemaphore* semaphore, i32 count) {
-    ReleaseSemaphore(semaphore->handle, count, NULL);
+    ReleaseSemaphore(semaphore, count, NULL);
 }
 
 void kj_semaphore_destroy(kjSemaphore* semaphore) {
-    CloseHandle(semaphore->handle); semaphore->handle = NULL;
+    CloseHandle(semaphore); semaphore = NULL;
 }
-
 #elif defined(KJ_SYS_LINUX)
-
 kjMutex kj_mutex(void) {
     kjMutex mutex;
     pthread_mutex_init(&mutex, NULL);
@@ -148,7 +139,6 @@ void kj_semaphore_signal(kjSemaphore* semaphore, i32 count) {
 void kj_semaphore_destroy(kjSemaphore* semaphore) {
     sem_destroy(semaphore);
 }
-
 #else
 #error KJ_SYNC_UNSUPPORTED
 #endif

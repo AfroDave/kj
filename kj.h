@@ -1,5 +1,5 @@
 // `kj.h`
-// public domain - no offered or implied warranty, use at your own risk
+// public domain - no warranty implied; use at your own risk
 //
 // usage:
 //      #define KJ_IMPL
@@ -9,11 +9,15 @@
 #define KJ_H
 
 #if defined(__cplusplus)
-extern "C" {
+#define KJ_EXTERN_BEGIN extern "C" {
+#define KJ_EXTERN_END }
+#else
+#define KJ_EXTERN_BEGIN
+#define KJ_EXTERN_END
 #endif
 
 #define KJ_VERSION_MAJOR 0
-#define KJ_VERSION_MINOR 3
+#define KJ_VERSION_MINOR 4
 #define KJ_VERSION_PATCH 1
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -80,18 +84,18 @@ extern "C" {
 #endif
 #endif
 
-#if !defined(KJ_EXPORT)
+#if !defined(KJ_EXTERN)
 #if defined(KJ_COMPILER_MSVC)
 #if defined(__cplusplus)
-#define KJ_EXPORT extern "C" __declspec(dllexport)
+#define KJ_EXTERN extern "C" __declspec(dllexport)
 #else
-#define KJ_EXPORT __declspec(dllexport)
+#define KJ_EXTERN __declspec(dllexport)
 #endif
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
 #if defined(__cplusplus)
-#define KJ_EXPORT extern "C"
+#define KJ_EXTERN extern "C"
 #else
-#define KJ_EXPORT
+#define KJ_EXTERN
 #endif
 #else
 #error KJ_EXPORT_UNSUPPORTED
@@ -131,12 +135,16 @@ extern "C" {
 #endif
 #endif
 
-#if !defined(kj_global)
-#define kj_global static
+#if !defined(KJ_GLOBAL)
+#define KJ_GLOBAL static
 #endif
 
-#if !defined(kj_intern)
-#define kj_intern static
+#if !defined(KJ_INTERN)
+#define KJ_INTERN static
+#endif
+
+#if !defined(KJ_STATIC)
+#define KJ_STATIC static
 #endif
 
 #if !defined(elif)
@@ -172,13 +180,13 @@ extern "C" {
 #define kj_align_of(type) (kj_offset_of(struct { u8 c; type member; }, member))
 #endif
 
-#if !defined(kj_align)
+#if !defined(KJ_ALIGN)
 #if defined(__GNUC__)
-#define kj_align(a) __attribute__((aligned(a)))
+#define KJ_ALIGN(a) __attribute__((aligned(a)))
 #elif defined(__clang__)
-#define kj_align(a) __attribute__((align_value((a)))
+#define KJ_ALIGN(a) __attribute__((align_value((a)))
 #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
-#define kj_align(a) __declspec(align(a))
+#define KJ_ALIGN(a) __declspec(align(a))
 #else
 #error KJ_ALIGN_UNSUPPORTED
 #endif
@@ -189,16 +197,26 @@ extern "C" {
 #endif
 
 #if !defined(kj_concat)
-#define kj_concat(x, y) x##y
-#define kj_join(x, y) kj_concat(x, y)
+#define kj_concat(a, b) a##b
+#define kj_join(a, b) kj_concat(a, b)
 #endif
 
 #if !defined(kj_unused)
 #if defined(KJ_COMPILER_MSVC)
 #define kj_unused(a) __pragma(warning(suppress:4100)) (a)
+#elif defined(KJ_COMPILER_GNU)
+#define kj_unused(a) __attribute__((__unused__)) (a)
 #else
 #define kj_unused(a) kj_cast(void, (a))
 #endif
+#endif
+
+#if !defined(KJ_BIT_FLAG)
+#define KJ_BIT_ZERO (0x00 << 0x00)
+#define KJ_BIT_FLAG(a) (0x01 << (a))
+#define KJ_BIT_SET(a, n) (((a) >> (n)) & 0x01)
+#define KJ_BIT_GET(a, n) ((a) |  (0x01 << (n)))
+#define KJ_BIT_CLEAR(a, n) ((a) & ~(0x01 << (n)))
 #endif
 
 #if !defined(__cplusplus)
@@ -391,12 +409,14 @@ typedef enum kjType {
     KJ_TYPE_COUNT
 } kjType;
 
+KJ_EXTERN_BEGIN
+
 KJ_API const char* kj_type_to_str(kjType type);
 KJ_API isize kj_type_to_isize(kjType type);
 
-KJ_API u16 kj_swap16(u16 a);
-KJ_API u32 kj_swap32(u32 a);
-KJ_API u64 kj_swap64(u64 a);
+KJ_API u16 kj_byte_swap_u16(u16 a);
+KJ_API u32 kj_byte_swap_u32(u32 a);
+KJ_API u64 kj_byte_swap_u64(u64 a);
 
 #if !defined(kj_encode64)
 #if KJ_ENDIAN == KJ_LE
@@ -406,12 +426,12 @@ KJ_API u64 kj_swap64(u64 a);
 #define kj_encode32(a, b, c, d)                                                 \
     (((a) << 0) | ((b) << 8) | ((c) << 16) | ((d) << 24))
 #define kj_encode16(a, b) (((a) << 0) | ((b) << 8))
-#define kj_swap16_le(a) (a)
-#define kj_swap32_le(a) (a)
-#define kj_swap64_le(a) (a)
-#define kj_swap16_be(a) kj_swap16(a)
-#define kj_swap32_be(a) kj_swap32(a)
-#define kj_swap64_be(a) kj_swap64(a)
+#define kj_byte_swap_u16_le(a) (a)
+#define kj_byte_swap_u32_le(a) (a)
+#define kj_byte_swap_u64_le(a) (a)
+#define kj_byte_swap_u16_be(a) kj_byte_swap_u16(a)
+#define kj_byte_swap_u32_be(a) kj_byte_swap_u32(a)
+#define kj_byte_swap_u64_be(a) kj_byte_swap_u64(a)
 #else
 #define kj_encode64(a, b, c, d, e, f, g, h)                                     \
     (((h) << 0) | ((g) << 8) | ((f) << 16) | ((e) << 24) |                      \
@@ -419,12 +439,12 @@ KJ_API u64 kj_swap64(u64 a);
 #define kj_encode32(a, b, c, d)                                                 \
     (((d) << 0) | ((c) << 8) | ((b) << 16) | ((a) << 24))
 #define kj_encode16(a, b) (((b) << 0) | ((a) << 8))
-#define kj_swap16_le(a) kj_swap16(a)
-#define kj_swap32_le(a) kj_swap32(a)
-#define kj_swap64_le(a) kj_swap64(a)
-#define kj_swap16_be(a) (a)
-#define kj_swap32_be(a) (a)
-#define kj_swap64_be(a) (a)
+#define kj_byte_swap_u16_le(a) kj_byte_swap_u16(a)
+#define kj_byte_swap_u32_le(a) kj_byte_swap_u32(a)
+#define kj_byte_swap_u64_le(a) kj_byte_swap_u64(a)
+#define kj_byte_swap_u16_be(a) (a)
+#define kj_byte_swap_u32_be(a) (a)
+#define kj_byte_swap_u64_be(a) (a)
 #endif
 #endif
 
@@ -630,9 +650,37 @@ KJ_API void kj_sort_insertion(
 
 KJ_API const char* kj_path_extension(const char* path);
 
-#if defined(__cplusplus)
-}
-#endif
+#define KJ_DATETIME_UTC_ISO_FMT "%04d-%02d-%02dT%02d:%02d:%02dZ"
+#define KJ_DATETIME_LOCAL_ISO_FMT "%04d-%02d-%02dT%02d:%02d:%02d%c%02d:%02d"
+#define KJ_DATETIME_UTC_EXPAND(dt)                                              \
+    (dt)->year, (dt)->month, (dt)->day, (dt)->hour, (dt)->minute, (dt)->second
+#define KJ_DATETIME_LOCAL_EXPAND(dt)                                            \
+    (dt)->year, (dt)->month, (dt)->day, (dt)->hour, (dt)->minute, (dt)->second, \
+    (dt)->tz < 0 ? '-': '+', kj_abs(((dt)->tz / 60)), kj_abs(((dt)->tz % 60))
+
+typedef struct kjDateTime {
+    i16 year;
+    i16 month;
+    i16 day;
+    i16 hour;
+    i16 minute;
+    i16 second;
+    i16 millisecond;
+    i16 tz;
+} kjDateTime;
+
+KJ_EXTERN_BEGIN
+
+KJ_API kjDateTime kj_datetime_utc(void);
+KJ_API kjDateTime kj_datetime_local(void);
+
+KJ_API u64 kj_time_ms(void);
+
+KJ_API u32 kj_hash_str_n(const char* s, isize size);
+KJ_API u32 kj_hash_str(const char* s);
+
+KJ_EXTERN_END
+
 #endif
 
 #if defined(KJ_IMPL) && !defined(KJ_IMPLEMENTED)
@@ -690,18 +738,18 @@ isize kj_type_to_isize(kjType type) {
         0: KJ_TYPE_ISIZE[type];
 }
 
-u16 kj_swap16(u16 a) {
+force_inline u16 kj_byte_swap_u16(u16 a) {
     return kj_cast(u16, (a << 8) | (a >> 8));
 }
 
-u32 kj_swap32(u32 a) {
+force_inline u32 kj_byte_swap_u32(u32 a) {
     return kj_cast(u32, (a << 24) | ((a << 8) & 0x00FF0000) |
                        ((a >> 8) & 0x0000FF00) | (a >> 24));
 }
 
-u64 kj_swap64(u64 a) {
-    return kj_cast(u64, kj_swap32((a & 0xFFFFFFFF00000000) >> 32) |
-                        kj_swap32((a & 0x00000000FFFFFFFF) << 32));
+force_inline u64 kj_byte_swap_u64(u64 a) {
+    return kj_cast(u64, kj_byte_swap_u32((a & 0xFFFFFFFF00000000) >> 32) |
+                        kj_byte_swap_u32((a & 0x00000000FFFFFFFF) << 32));
 }
 
 #if !defined(KJ_NO_STDIO)
@@ -743,12 +791,12 @@ i32 kj_snprintf(char* buf, isize size, char const* fmt, ...) {
 }
 #endif
 
-b32 kj_char_is_eol(char c) {
+force_inline b32 kj_char_is_eol(char c) {
     return c == '\r' ||
            c == '\n';
 }
 
-b32 kj_char_is_ws(char c) {
+force_inline b32 kj_char_is_ws(char c) {
     return c == ' '  ||
            c == '\t' ||
            c == '\v' ||
@@ -757,43 +805,43 @@ b32 kj_char_is_ws(char c) {
            c == '\n';
 }
 
-b32 kj_char_is_alpha(char c) {
+force_inline b32 kj_char_is_alpha(char c) {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <='Z'); }
 
-b32 kj_char_is_digit(char c) {
+force_inline b32 kj_char_is_digit(char c) {
     return (c >= '0' && c <= '9');
 }
 
-b32 kj_char_is_alphanum(char c) {
+force_inline b32 kj_char_is_alphanum(char c) {
     return (c >= 'a' && c <= 'z') ||
            (c >= 'A' && c <= 'Z') ||
            (c >= '0' && c <= '9');
 }
 
-b32 kj_char_is_hex_letter(char c) {
+force_inline b32 kj_char_is_hex_letter(char c) {
     return (c >= 'a' && c <= 'f') ||
            (c >= 'A' && c <= 'F');
 }
 
-b32 kj_char_is_hex_digit(char c) {
+force_inline b32 kj_char_is_hex_digit(char c) {
     return (c >= 'a' && c <= 'f') ||
            (c >= 'A' && c <= 'F') ||
            (c >= '0' && c <= '9');
 }
 
-char kj_char_is_lower(char c) {
+force_inline char kj_char_is_lower(char c) {
     return (c >= 'a' && c <= 'z');
 }
 
-char kj_char_is_upper(char c) {
+force_inline char kj_char_is_upper(char c) {
     return (c >= 'A' && c <= 'Z');
 }
 
-char kj_char_to_lower(char c) {
+force_inline char kj_char_to_lower(char c) {
     return (c >= 'A' && c <= 'Z') ? 'a' + (c - 'A'): c;
 }
 
-char kj_char_to_upper(char c) {
+force_inline char kj_char_to_upper(char c) {
     return (c >= 'a' && c <= 'z') ? 'A' + (c - 'a'): c;
 }
 
@@ -829,28 +877,28 @@ isize kj_str_cmp(const char* s1, const char* s2) {
 #if defined(KJ_LIB_IMPL) && !defined(KJ_LIB_IMPLEMENTED)
 #define KJ_LIB_IMPLEMENTED
 #if defined(KJ_SYS_WIN32)
-kjLib kj_lib_open(const char* path) {
+force_inline kjLib kj_lib_open(const char* path) {
     return kj_cast(kjLib, LoadLibrary(path));
 }
 
-kjLibFn kj_lib_fn(kjLib lib, const char* name) {
+force_inline kjLibFn kj_lib_fn(kjLib lib, const char* name) {
     return kj_cast(kjLibFn, GetProcAddress(kj_cast(HMODULE, lib), name));
 }
 
-void kj_lib_close(kjLib lib) {
+force_inline void kj_lib_close(kjLib lib) {
     FreeLibrary(kj_cast(HMODULE, lib));
 }
 #elif defined(KJ_SYS_LINUX)
 #include <dlfcn.h>
-kjLib kj_lib_open(const char* path) {
+force_inline kjLib kj_lib_open(const char* path) {
     return kj_cast(kjLib, dlopen(path, RTLD_LAZY));
 }
 
-kjLibFn kj_lib_fn(kjLib lib, const char* name) {
+force_inline kjLibFn kj_lib_fn(kjLib lib, const char* name) {
     return kj_cast(kjLibFn, dlsym(lib, name));
 }
 
-void kj_lib_close(kjLib lib) {
+force_inline void kj_lib_close(kjLib lib) {
     dlclose(lib);
 }
 #else
@@ -870,7 +918,7 @@ void kj_assert_handler(
     } else {
         kj_snprintf(buf, kj_isize_of(buf), "%s:%lu - %s", file, line, expr);
     }
-    MessageBox(GetActiveWindow(), buf, "Assertion", MB_OK);
+    MessageBox(NULL, buf, "Assertion", MB_OK);
 }
 #else
 void kj_assert_handler(
@@ -884,7 +932,7 @@ void kj_assert_handler(
 #endif
 #endif
 
-#define KJ_CMP_FN_T(T) KJ_CMP_FN(kj_join(kj_cmp_, T)) {                         \
+#define KJ_CMP_FN_T(T) force_inline KJ_CMP_FN(kj_join(kj_cmp_, T)) {            \
     T a = kj_cast(T*, arr)[i];                                                  \
     T b = kj_cast(T*, arr)[j];                                                  \
     return kj_cast(i32, a < b ? -1: a > b);                                     \
@@ -905,7 +953,7 @@ KJ_CMP_FN_T(f64)
 
 #undef KJ_CMP_FN_T
 
-#define KJ_SWAP_FN_T(T) KJ_SWAP_FN(kj_join(kj_swap_, T)) {                      \
+#define KJ_SWAP_FN_T(T) force_inline KJ_SWAP_FN(kj_join(kj_swap_, T)) {         \
     T* values = kj_cast(T*, arr);                                               \
     T tmp = values[i];                                                          \
     values[i] = values[j];                                                      \
@@ -956,6 +1004,108 @@ const char* kj_path_extension(const char* path) {
         }
     }
     return res;
+}
+
+#if defined(KJ_SYS_WIN32)
+#include <windows.h>
+
+kjDateTime kj_datetime_utc(void) {
+    kjDateTime res;
+    SYSTEMTIME st = {0};
+    GetSystemTime(&st);
+    res.year = st.wYear;
+    res.month = st.wMonth;
+    res.day = st.wDay;
+    res.hour = st.wHour;
+    res.minute = st.wMinute;
+    res.second = st.wSecond;
+    res.millisecond = st.wMilliseconds;
+    res.tz = 0;
+    return res;
+}
+
+kjDateTime kj_datetime_local(void) {
+    kjDateTime res;
+    SYSTEMTIME st = {0};
+    GetLocalTime(&st);
+    TIME_ZONE_INFORMATION tz = {0};
+    switch(GetTimeZoneInformation(&tz)) {
+        case 0: { res.tz = kj_cast(i16, tz.Bias); } break;
+        case 1: { res.tz = kj_cast(i16, tz.StandardBias); } break;
+        case 2: { res.tz = kj_cast(i16, tz.DaylightBias); } break;
+    }
+    res.year = st.wYear;
+    res.month = st.wMonth;
+    res.day = st.wDay;
+    res.hour = st.wHour;
+    res.minute = st.wMinute;
+    res.second = st.wSecond;
+    res.millisecond = st.wMilliseconds;
+    return res;
+}
+
+u64 kj_time_ms(void) {
+    static LARGE_INTEGER freq = {0};
+    if(freq.QuadPart == 0) {
+        QueryPerformanceFrequency(&freq);
+    }
+    LARGE_INTEGER counter;
+    QueryPerformanceCounter(&counter);
+    return (kj_cast(u64, counter.QuadPart) * 1000) / kj_cast(u64, freq.QuadPart);
+}
+#elif defined(KJ_SYS_LINUX)
+#include <time.h>
+
+kjDateTime kj_datetime_utc(void) {
+    kjDateTime res;
+    time_t t;
+    time(&t);
+    struct tm* tm = gmtime(&t);
+    res.year = 1900 + tm->tm_year;
+    res.month = tm->tm_mon + 1;
+    res.day = tm->tm_mday;
+    res.hour = tm->tm_hour;
+    res.minute = tm->tm_min;
+    res.second = tm->tm_sec;
+    res.millisecond = 0;
+    res.tz = 0;
+    return res;
+}
+
+kjDateTime kj_datetime_local(void) {
+    kjDateTime res;
+    time_t t;
+    time(&t);
+    struct tm* tm = localtime(&t);
+    res.year = 1900 + tm->tm_year;
+    res.month = tm->tm_mon + 1;
+    res.day = tm->tm_mday;
+    res.hour = tm->tm_hour;
+    res.minute = tm->tm_min;
+    res.second = tm->tm_sec;
+    res.millisecond = 0;
+    return res;
+}
+
+u64 kj_time_ms(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (ts.tv_sec + ts.tv_nsec) / 1000000;
+}
+#else
+#error KJ_DATETIME_UNSUPPORTED
+#endif
+
+u32 kj_hash_str_n(const char* s, isize size) {
+    u32 res = 0;
+    for(isize i = 0; i < size; i++) {
+        res += (*s++) * (i + 119);
+    }
+    return res;
+}
+
+u32 kj_hash_str(const char* s) {
+    return kj_hash_str_n(s, kj_str_size(s));
 }
 
 #endif

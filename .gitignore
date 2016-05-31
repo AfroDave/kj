@@ -18,3 +18,4 @@ test*.*
 *.so
 
 kj_image.h
+kj_gl.h

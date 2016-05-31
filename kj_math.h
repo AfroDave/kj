@@ -1,5 +1,5 @@
 // `kj_math.h`
-// public domain - no offered or implied warranty, use at your own risk
+// public domain - no warranty implied; use at your own risk
 //
 // usage:
 //      #define KJ_MATH_IMPL
@@ -94,9 +94,15 @@ typedef struct kjRect3u {
     u32 x, y, z, w, h, d;
 } kjRect3u;
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+typedef struct kjRgba {
+    u8 r, g, b, a;
+} kjRgba;
+
+typedef struct kjRgbaf {
+    f32 r, g, b, a;
+} kjRgbaf;
+
+KJ_EXTERN_BEGIN
 
 KJ_API f32 kj_rsqrt(f32 a);
 KJ_API f32 kj_sqrt(f32 a);
@@ -287,6 +293,11 @@ KJ_API kjMat4f kj_mat4f_perspective(f32 fovy, f32 aspect, f32 znear, f32 zfar);
 KJ_API kjMat4f kj_mat4f_perspective_inf(f32 fovy, f32 aspect, f32 znear);
 KJ_API kjMat4f kj_mat4f_look_at(kjVec3f eye, kjVec3f target, kjVec3f up);
 
+#if defined(__cplusplus)
+KJ_API kjMat3f operator*(kjMat3f a, kjMat3f b);
+KJ_API kjMat4f operator*(kjMat4f a, kjMat4f b);
+#endif
+
 KJ_API kjRect2f kj_rect2f(f32 x, f32 y, f32 w, f32 h);
 KJ_API kjRect2i kj_rect2i(i32 x, i32 y, i32 w, i32 h);
 KJ_API kjRect2u kj_rect2u(u32 x, u32 y, u32 w, u32 h);
@@ -331,14 +342,19 @@ KJ_API kjVec3f kj_rect3f_centre(kjRect3f r);
 KJ_API kjVec3i kj_rect3i_centre(kjRect3i r);
 KJ_API kjVec3u kj_rect3u_centre(kjRect3u r);
 
-#if defined(__cplusplus)
-}
-#endif
+KJ_API kjRgba kj_rgba(u8 r, u8 g, u8 b, u8 a);
+KJ_API kjRgba kj_rgba_4f(f32 r, f32 g, f32 b, f32 a);
+KJ_API kjRgba kj_rgba_rgbaf(kjRgbaf rgbaf);
+KJ_API u32 kj_rgba_pack(kjRgba rgba);
+KJ_API kjRgba kj_rgba_unpack(u32 packed);
 
-#if defined(__cplusplus)
-KJ_API kjMat3f operator*(kjMat3f a, kjMat3f b);
-KJ_API kjMat4f operator*(kjMat4f a, kjMat4f b);
-#endif
+KJ_API kjRgbaf kj_rgbaf(f32 r, f32 g, f32 b, f32 a);
+KJ_API kjRgbaf kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a);
+KJ_API kjRgbaf kj_rgbaf_rgba(kjRgba rgba);
+KJ_API u32 kj_rgbaf_pack(kjRgbaf rgba);
+KJ_API kjRgbaf kj_rgbaf_unpack(u32 packed);
+
+KJ_EXTERN_END
 
 #endif
 
@@ -1256,6 +1272,12 @@ kjMat4f kj_mat4f_look_at(kjVec3f eye, kjVec3f target, kjVec3f up) {
     return res;
 }
 
+
+#if defined(__cplusplus)
+kjMat3f operator*(kjMat3f a, kjMat3f b) { return kj_mat3f_mul(a, b); }
+kjMat4f operator*(kjMat4f a, kjMat4f b) { return kj_mat4f_mul(a, b); }
+#endif
+
 kjRect2f kj_rect2f(f32 x, f32 y, f32 w, f32 h) {
     kjRect2f res;
     res.x = x;
@@ -1451,9 +1473,74 @@ kjVec3u kj_rect3u_centre(kjRect3u r) {
             (r.z + (r.z + r.w)) / 2);
 }
 
-#if defined(__cplusplus)
-kjMat3f operator*(kjMat3f a, kjMat3f b) { return kj_mat3f_mul(a, b); }
-kjMat4f operator*(kjMat4f a, kjMat4f b) { return kj_mat4f_mul(a, b); }
-#endif
+kjRgba kj_rgba(u8 r, u8 g, u8 b, u8 a) {
+    kjRgba res;
+    res.r = r;
+    res.b = b;
+    res.g = g;
+    res.a = a;
+    return res;
+}
+
+kjRgba kj_rgba_4f(f32 r, f32 g, f32 b, f32 a) {
+    return kj_rgba(
+        kj_cast(u8, r * 255.0f + 0.5f),
+        kj_cast(u8, g * 255.0f + 0.5f),
+        kj_cast(u8, b * 255.0f + 0.5f),
+        kj_cast(u8, a * 255.0f + 0.5f));
+}
+
+kjRgba kj_rgba_rgbaf(kjRgbaf rgbaf) {
+    return kj_rgba_4f(rgbaf.r, rgbaf.g, rgbaf.b, rgbaf.a);
+}
+
+u32 kj_rgba_pack(kjRgba rgba) {
+    return (rgba.r << 24) | (rgba.g << 16) | (rgba.b << 8) | (rgba.a << 0);
+}
+
+kjRgba kj_rgba_unpack(u32 packed) {
+    return kj_rgba(
+        kj_cast(u8, (packed & 0xFF000000) >> 24),
+        kj_cast(u8, (packed & 0x00FF0000) >> 16),
+        kj_cast(u8, (packed & 0x0000FF00) >> 8),
+        kj_cast(u8, (packed & 0x000000FF) >> 0));
+}
+
+kjRgbaf kj_rgbaf(f32 r, f32 g, f32 b, f32 a) {
+    kjRgbaf res;
+    res.r = r;
+    res.b = b;
+    res.g = g;
+    res.a = a;
+    return res;
+}
+
+kjRgbaf kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a) {
+    return kj_rgbaf(
+        kj_cast(f32, r / 255.0f),
+        kj_cast(f32, g / 255.0f),
+        kj_cast(f32, b / 255.0f),
+        kj_cast(f32, a / 255.0f));
+}
+
+kjRgbaf kj_rgbaf_rgba(kjRgba rgba) {
+    return kj_rgbaf_4b(rgba.r, rgba.g, rgba.b, rgba.a);
+}
+
+u32 kj_rgbaf_pack(kjRgbaf rgba) {
+    return
+        (kj_cast(u8, rgba.r * 255.0f) << 24) |
+        (kj_cast(u8, rgba.g * 255.0f) << 16) |
+        (kj_cast(u8, rgba.b * 255.0f) << 8)  |
+        (kj_cast(u8, rgba.a * 255.0f) << 0);
+}
+
+kjRgbaf kj_rgbaf_unpack(u32 packed) {
+    return kj_rgbaf(
+        kj_cast(f32, ((packed & 0xFF000000) >> 24) / 255.0f),
+        kj_cast(f32, ((packed & 0x00FF0000) >> 16) / 255.0f),
+        kj_cast(f32, ((packed & 0x0000FF00) >> 8)  / 255.0f),
+        kj_cast(f32, ((packed & 0x000000FF) >> 0)  / 255.0f));
+}
 
 #endif
