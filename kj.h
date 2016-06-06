@@ -19,8 +19,8 @@
 KJ_EXTERN_BEGIN
 
 #define KJ_VERSION_MAJOR 0
-#define KJ_VERSION_MINOR 4
-#define KJ_VERSION_PATCH 1
+#define KJ_VERSION_MINOR 5
+#define KJ_VERSION_PATCH 0
 
 #if defined(_WIN32) || defined(_WIN64)
 #define KJ_SYS_WIN32
