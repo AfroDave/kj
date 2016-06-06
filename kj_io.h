@@ -69,11 +69,12 @@ KJ_EXTERN_BEGIN
 
 KJ_API kjIo kj_io_open(const char* path, u32 flags);
 KJ_API kjErr kj_io_close(kjIo* io);
+KJ_API kjErr kj_io_seek(kjIo* io, i64 offset, kjIoSeek seek);
 KJ_API isize kj_io_read(kjIo* io, void* buf, isize size);
 KJ_API isize kj_io_write(kjIo* io, void* buf, isize size);
 KJ_API isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset);
 KJ_API isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset);
-KJ_API kjErr kj_io_seek(kjIo* io, i64 offset, kjIoSeek seek);
+KJ_API void* kj_io_read_all(const char* path, b32 teminate, isize* size);
 
 KJ_API kjIoStat kj_io_stat(kjIo* io);
 
@@ -194,8 +195,11 @@ kjIo kj_io_open(const char* path, u32 flags) {
         res.flags = 0;
         res.err = KJ_ERR_INVALID_INPUT;
     } else {
-        res.handle = CreateFile(
-                path, access,
+        i32 size = MultiByteToWideChar(CP_UTF8, 0, path, -1, 0, 0);
+        WCHAR* wide_path = kj_cast(WCHAR*, _alloca(size * sizeof(WCHAR)));
+        MultiByteToWideChar(CP_UTF8, 0, path, -1, wide_path, size);
+        res.handle = CreateFileW(
+                wide_path, access,
                 FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                 NULL, create, 0, NULL);
         res.flags = flags;
@@ -211,6 +215,17 @@ kjErr kj_io_close(kjIo* io) {
         res = kj_io_err_from_sys(GetLastError());
     }
     io->handle = NULL;
+    return res;
+}
+
+kjErr kj_io_seek(kjIo* io, i64 offset, kjIoSeek seek) {
+    kjErr res = KJ_ERR_NONE;
+    LARGE_INTEGER new_offset;
+    new_offset.QuadPart = offset;
+    if(SetFilePointerEx(io->handle, new_offset, &new_offset, seek) == 0) {
+        res = kj_io_err_from_sys(GetLastError());
+        io->err = res;
+    }
     return res;
 }
 
@@ -272,17 +287,6 @@ isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
     return res;
 }
 
-kjErr kj_io_seek(kjIo* io, i64 offset, kjIoSeek seek) {
-    kjErr res = KJ_ERR_NONE;
-    LARGE_INTEGER new_offset;
-    new_offset.QuadPart = offset;
-    if(SetFilePointerEx(io->handle, new_offset, &new_offset, seek) == 0) {
-        res = kj_io_err_from_sys(GetLastError());
-        io->err = res;
-    }
-    return res;
-}
-
 kjIoStat kj_io_stat(kjIo* io) {
     kjIoStat res = {0};
     BY_HANDLE_FILE_INFORMATION io_info = {0};
@@ -294,7 +298,6 @@ kjIoStat kj_io_stat(kjIo* io) {
     }
     return res;
 }
-
 #elif defined(KJ_SYS_LINUX)
 KJ_INTERN kjErr kj_io_err_from_sys(u32 err) {
     switch(err) {
@@ -402,6 +405,15 @@ kjErr kj_io_close(kjIo* io) {
     return res;
 }
 
+kjErr kj_io_seek(kjIo* io, i64 offset, kjIoSeek seek) {
+    kjErr res = KJ_ERR_NONE;
+    isize out = -1;
+    kj_syscall3(KJ_SYSCALL_LSEEK, out, io->handle, offset, seek);
+    res = kj_io_err_from_sys(out < 0 ? -out: 0);
+    io->err = res;
+    return res;
+}
+
 isize kj_io_read(kjIo* io, void* buf, isize size) {
     isize res = -1;
     kj_syscall3(KJ_SYSCALL_READ, res, io->handle, buf, size);
@@ -430,15 +442,6 @@ isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
     return res;
 }
 
-kjErr kj_io_seek(kjIo* io, i64 offset, kjIoSeek seek) {
-    kjErr res = KJ_ERR_NONE;
-    isize out = -1;
-    kj_syscall3(KJ_SYSCALL_LSEEK, out, io->handle, offset, seek);
-    res = kj_io_err_from_sys(out < 0 ? -out: 0);
-    io->err = res;
-    return res;
-}
-
 kjIoStat kj_io_stat(kjIo* io) {
     kjIoStat res;
     struct stat buf;
@@ -453,4 +456,32 @@ kjIoStat kj_io_stat(kjIo* io) {
 #else
 #error KJ_IO_UNSUPPORTED
 #endif
+
+#if defined(KJ_SYS_WIN32) || defined(KJ_SYS_LINUX)
+void* kj_io_read_all(const char* path, b32 terminate, isize* size) {
+    void* res = NULL;
+    kjIo io = kj_io_open(path, KJ_IO_FLAG_READ);
+    if(!kj_io_has_err(&io)) {
+        kjIoStat stat = kj_io_stat(&io);
+        if(stat.size > 0) {
+            res = kj_alloc(terminate ? stat.size + 1: stat.size);
+            if(kj_io_read(&io, res, stat.size) == stat.size) {
+                if(terminate) {
+                    u8* s = kj_cast(u8*, res);
+                    s[stat.size] = '\0';
+                }
+                if(size) {
+                    *size = stat.size;
+                }
+            } else {
+                kj_free(res);
+                res = NULL;
+            }
+        }
+        kj_io_close(&io);
+    }
+    return res;
+}
+#endif
+
 #endif

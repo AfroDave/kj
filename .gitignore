@@ -16,6 +16,7 @@ test*.*
 *.lib
 *.dll
 *.so
+*.txt
 
 kj_image.h
 kj_gl.h

@@ -143,10 +143,6 @@
 #define KJ_INTERN static
 #endif
 
-#if !defined(KJ_STATIC)
-#define KJ_STATIC static
-#endif
-
 #if !defined(elif)
 #define elif else if
 #endif
@@ -357,6 +353,10 @@ kj_static_assert(f64, kj_isize_of(f64) == 8);
 
 #define kj_one(p, s) kj_set(p, s, 1)
 #define kj_fill(p, s) kj_set(p, s, 0xFF)
+
+KJ_API void* kj_alloc(isize size);
+KJ_API void* kj_realloc(void* data, isize size);
+KJ_API void kj_free(void* data);
 
 KJ_API void kj_assert_handler(
         const char* expr, const char* file, u64 line, const char* msg);
@@ -911,14 +911,12 @@ force_inline void kj_lib_close(kjLib lib) {
 #if defined(KJ_SYS_WIN32)
 void kj_assert_handler(
         const char* expr, const char* file, u64 line, const char* msg) {
-    static char buf[4096];
-    if(msg) {
-        kj_snprintf(
-                buf, kj_isize_of(buf), "%s:%lu - %s %s", file, line, expr, msg);
-    } else {
-        kj_snprintf(buf, kj_isize_of(buf), "%s:%lu - %s", file, line, expr);
-    }
-    MessageBox(NULL, buf, "Assertion", MB_OK);
+    static char buf[4096] = {0};
+    kj_snprintf(
+            buf, kj_isize_of(buf) - 1,
+            "%s:%lu - %s %s", file, line, expr, msg ? msg: "");
+    buf[kj_isize_of(buf) - 1] = '\0';
+    MessageBoxA(NULL, buf, "Assertion", MB_OK);
 }
 #else
 void kj_assert_handler(
@@ -930,6 +928,49 @@ void kj_assert_handler(
     }
 }
 #endif
+#endif
+
+#if defined(KJ_SYS_WIN32)
+void* kj_alloc(isize size) {
+    void* res = NULL;
+    kj_assert(
+            (res = HeapAlloc(
+                GetProcessHeap(), HEAP_ZERO_MEMORY, size)) != NULL);
+    return res;
+}
+
+void* kj_realloc(void* data, isize size) {
+    void* res = NULL;
+    kj_assert((res = HeapReAlloc(
+                GetProcessHeap(), HEAP_ZERO_MEMORY, data, size)) != NULL);
+    return res;
+}
+
+void kj_free(void* data) {
+    if(data) {
+        HeapFree(GetProcessHeap(), 0, data);
+    }
+}
+#elif
+void* kj_alloc(isize size) {
+    void* res = NULL;
+    kj_assert((res = calloc(size, kj_isize_of(u8))) != NULL);
+    return res;
+}
+
+void* kj_realloc(void* data, isize size) {
+    void* res = NULL;
+    kj_assert((res = realloc(data, size * kj_isize_of(u8))) != NULL);
+    return res;
+}
+
+void kj_free(void* data) {
+    if(data) {
+        free(data);
+    }
+}
+#else
+#error KJ_MEM_UNSUPPORTED
 #endif
 
 #define KJ_CMP_FN_T(T) force_inline KJ_CMP_FN(kj_join(kj_cmp_, T)) {            \
@@ -985,10 +1026,9 @@ void kj_sort_insertion(void* arr, isize count, kjCmpFn cmp, kjSwapFn swap) {
     }
 }
 
-const char* kj_path_extension(const char* path) {
+const char* kj_path_extension_with_size(const char* path, isize size) {
     const char* res = NULL;
     if(path) {
-        isize size = kj_str_size(path);
         if(size > 3) {
             for(isize i = size - 1; i >= 0; i--) {
                 if(path[i] == KJ_PATH_SEPARATOR) {
@@ -1002,6 +1042,15 @@ const char* kj_path_extension(const char* path) {
                 }
             }
         }
+    }
+    return res;
+}
+
+const char* kj_path_extension(const char* path) {
+    const char* res = NULL;
+    if(path) {
+        isize size = kj_str_size(path);
+        res = kj_path_extension_with_size(path, size);
     }
     return res;
 }
@@ -1099,7 +1148,7 @@ u64 kj_time_ms(void) {
 u32 kj_hash_str_n(const char* s, isize size) {
     u32 res = 0;
     for(isize i = 0; i < size; i++) {
-        res += (*s++) * (i + 119);
+        res += (*s++) * (kj_cast(u32, i % U32_MAX) + 119);
     }
     return res;
 }

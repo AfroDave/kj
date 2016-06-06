@@ -59,7 +59,8 @@ force_inline void kj_atomic_rw_fence(void) {
 
 force_inline u32 kj_atomic_cmp_swap_u32(
         volatile u32* value, u32 expected_value, u32 new_value) {
-    return _InterlockedCompareExchange(value, new_value, expected_value);
+    return _InterlockedCompareExchange(
+            kj_cast(volatile LONG*, value), new_value, expected_value);
 }
 
 force_inline u64 kj_atomic_cmp_swap_u64(
@@ -75,7 +76,7 @@ force_inline void* kj_atomic_cmp_swap_ptr(
 }
 
 force_inline u32 kj_atomic_swap_u32(volatile u32* value, u32 new_value) {
-    return _InterlockedExchange(value, new_value);
+    return _InterlockedExchange(kj_cast(volatile LONG*, value), new_value);
 }
 
 force_inline u64 kj_atomic_swap_u64(volatile u64* value, u64 new_value) {
@@ -89,7 +90,7 @@ force_inline void* kj_atomic_swap_ptr(volatile void** value, void* new_value) {
 }
 
 force_inline u32 kj_atomic_inc_u32(volatile u32* value) {
-    return _InterlockedIncrement(value);
+    return _InterlockedIncrement(kj_cast(volatile LONG*, value));
 }
 
 force_inline u64 kj_atomic_inc_u64(volatile u64* value) {
@@ -97,7 +98,7 @@ force_inline u64 kj_atomic_inc_u64(volatile u64* value) {
 }
 
 force_inline u32 kj_atomic_dec_u32(volatile u32* value) {
-    return _InterlockedDecrement(value);
+    return _InterlockedDecrement(kj_cast(volatile LONG*, value));
 }
 
 force_inline u64 kj_atomic_dec_u64(volatile u64* value) {
@@ -105,7 +106,7 @@ force_inline u64 kj_atomic_dec_u64(volatile u64* value) {
 }
 
 force_inline u32 kj_atomic_fetch_add_u32(volatile u32* value, u32 add) {
-    return _InterlockedExchangeAdd(value, add);
+    return _InterlockedExchangeAdd(kj_cast(volatile LONG*, value), add);
 }
 
 force_inline u64 kj_atomic_fetch_add_u64(volatile u64* value, u64 add) {
@@ -113,7 +114,8 @@ force_inline u64 kj_atomic_fetch_add_u64(volatile u64* value, u64 add) {
 }
 
 force_inline u32 kj_atomic_fetch_sub_u32(volatile u32* value, u32 sub) {
-    return InterlockedExchangeAdd(value, -kj_cast(i32, sub));
+    return InterlockedExchangeAdd(
+            kj_cast(volatile LONG*, value), -kj_cast(i32, sub));
 }
 
 force_inline u64 kj_atomic_fetch_sub_u64(volatile u64* value, u64 sub) {

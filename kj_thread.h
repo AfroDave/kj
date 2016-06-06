@@ -61,7 +61,7 @@ volatile u32 THREAD_COUNTER = 0;
 #if defined(KJ_SYS_WIN32)
 kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags) {
     kjThread res;
-    res.id = _InterlockedIncrement(&THREAD_COUNTER);
+    res.id = _InterlockedIncrement(kj_cast(volatile LONG*, &THREAD_COUNTER));
     res.ctx.fn = fn;
     res.ctx.data = data;
     res.flags = flags;
