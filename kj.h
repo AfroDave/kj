@@ -20,7 +20,7 @@ KJ_EXTERN_BEGIN
 
 #define KJ_VERSION_MAJOR 0
 #define KJ_VERSION_MINOR 5
-#define KJ_VERSION_PATCH 0
+#define KJ_VERSION_PATCH 1
 
 #if defined(_WIN32) || defined(_WIN64)
 #define KJ_SYS_WIN32
@@ -104,9 +104,8 @@ KJ_EXTERN_BEGIN
 #endif
 #endif
 
-#if !defined(inline)
+#if !defined(restrict)
 #if defined(KJ_COMPILER_MSVC) && !defined(__cplusplus) && _MSC_VER <= 1800
-#define inline __inline
 #define restrict __restrict
 #endif
 #endif
@@ -121,19 +120,19 @@ KJ_EXTERN_BEGIN
 #endif
 #endif
 
-#if !defined(force_inline)
+#if !defined(KJ_INLINE)
 #if defined(KJ_COMPILER_MSVC)
-#define force_inline __forceinline
+#define KJ_INLINE __forceinline
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#define force_inline __attribute__((always_inline))
+#define KJ_INLINE __attribute__((always_inline))
 #endif
 #endif
 
-#if !defined(no_inline)
+#if !defined(KJ_NO_INLINE)
 #if defined(KJ_COMPILER_MSVC)
-#define no_inline __declspec(noinline)
+#define KJ_NO_INLINE __declspec(noinline)
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#define no_inline __attribute__((noinline))
+#define KJ_NO_INLINE __attribute__((noinline))
 #endif
 #endif
 
@@ -181,11 +180,11 @@ KJ_EXTERN_BEGIN
 #endif
 
 #if !defined(KJ_ALIGN)
-#if defined(__GNUC__)
+#if defined(KJ_COMPILER_GNU)
 #define KJ_ALIGN(a) __attribute__((aligned(a)))
-#elif defined(__clang__)
+#elif defined(KJ_COMPILER_CLANG)
 #define KJ_ALIGN(a) __attribute__((align_value((a)))
-#elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
+#elif defined(KJ_COMPILER_MSVC)
 #define KJ_ALIGN(a) __declspec(align(a))
 #else
 #error KJ_ALIGN_UNSUPPORTED
@@ -448,15 +447,14 @@ KJ_API void kj_assert_handler(
 #else
 #error KJ_BREAK_UNSUPPORTED
 #endif
-
-#define kj_assert_msg(expr, msg) do {                                           \
+#define kj_assert_msg(expr, msg, ...) do {                                      \
     if(!(expr)) {                                                               \
         kj_assert_handler(kj_string_of(expr), __FILE__, __LINE__, msg);         \
         kj_break();                                                             \
     }                                                                           \
 } while(0)
-
 #define kj_assert(expr) kj_assert_msg(expr, NULL)
+#define kj_panic(msg) kj_assert_msg(0, msg)
 #else
 #define kj_assert_msg(expr, msg)
 #define kj_assert(expr)
@@ -621,20 +619,35 @@ KJ_API i32 kj_snprintf(
 
 /// Strings/Characters
 
-KJ_API b32 kj_char_is_eol(char c);
-KJ_API b32 kj_char_is_ws(char c);
-KJ_API b32 kj_char_is_alpha(char c);
-KJ_API b32 kj_char_is_digit(char c);
-KJ_API b32 kj_char_is_alphanum(char c);
-KJ_API b32 kj_char_is_hex_letter(char c);
-KJ_API b32 kj_char_is_hex_digit(char c);
-KJ_API char kj_char_is_lower(char c);
-KJ_API char kj_char_is_upper(char c);
-KJ_API char kj_char_to_lower(char c);
-KJ_API char kj_char_to_upper(char c);
+typedef char utf8;
+typedef u16 utf16;
+typedef i32 utf32;
+
+enum {
+    KJ_MAX_ASCII = 0x7F,
+    KJ_MAX_LATIN1 = 0xFF,
+    KJ_MAX_UNICODE = 0x10FFFF,
+};
+
+KJ_API b32 kj_char_is_eol(utf32 c);
+KJ_API b32 kj_char_is_ws(utf32 c);
+KJ_API b32 kj_char_is_alpha(utf32 c);
+KJ_API b32 kj_char_is_digit(utf32 c);
+KJ_API b32 kj_char_is_alphanum(utf32 c);
+KJ_API b32 kj_char_is_hex_digit(utf32 c);
+KJ_API b32 kj_char_is_lower(utf32 c);
+KJ_API b32 kj_char_is_upper(utf32 c);
+
+KJ_API utf32 kj_char_to_lower(utf32 c);
+KJ_API utf32 kj_char_to_upper(utf32 c);
+
 KJ_API isize kj_str_size(const char* s);
 KJ_API isize kj_str_cmp_n(const char* s1, const char* s2, isize n);
 KJ_API isize kj_str_cmp(const char* s1, const char* s2);
+KJ_API isize kj_str_case_cmp_n(const char* s1, const char* s2, isize n);
+KJ_API isize kj_str_case_cmp(const char* s1, const char* s2);
+KJ_API isize kj_str_to_u64(const char* s, u64* v);
+KJ_API isize kj_str_to_i64(const char* s, i64* v);
 
 /// Dynamic Libraries
 
@@ -792,7 +805,7 @@ KJ_EXTERN_END
 #if defined(KJ_IMPL) && !defined(KJ_IMPLEMENTED)
 #define KJ_IMPLEMENTED
 
-const char* kj_type_to_str(kjType type) {
+KJ_INLINE const char* kj_type_to_str(kjType type) {
     static const char* KJ_TYPE_STR[] = {
         "none",
         "char",
@@ -818,7 +831,7 @@ const char* kj_type_to_str(kjType type) {
         KJ_TYPE_STR[KJ_TYPE_UNKNOWN]: KJ_TYPE_STR[type];
 }
 
-isize kj_type_to_isize(kjType type) {
+KJ_INLINE isize kj_type_to_isize(kjType type) {
     static const isize KJ_TYPE_ISIZE[] = {
         0,
         kj_isize_of(char),
@@ -911,16 +924,16 @@ void kj_assert_handler(
 #endif
 #endif
 
-force_inline u16 kj_byte_swap_u16(u16 a) {
+KJ_INLINE u16 kj_byte_swap_u16(u16 a) {
     return kj_cast(u16, (a << 8) | (a >> 8));
 }
 
-force_inline u32 kj_byte_swap_u32(u32 a) {
+KJ_INLINE u32 kj_byte_swap_u32(u32 a) {
     return kj_cast(u32, (a << 24) | ((a << 8) & 0x00FF0000) |
                        ((a >> 8) & 0x0000FF00) | (a >> 24));
 }
 
-force_inline u64 kj_byte_swap_u64(u64 a) {
+KJ_INLINE u64 kj_byte_swap_u64(u64 a) {
     return kj_cast(u64, kj_byte_swap_u32((a & 0xFFFFFFFF00000000) >> 32) |
                         kj_byte_swap_u32((a & 0x00000000FFFFFFFF) << 32));
 }
@@ -955,7 +968,7 @@ i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v) {
 }
 
 i32 kj_snprintf(char* buf, isize size, char const* fmt, ...) {
-    int res;
+    i32 res;
     va_list v;
     va_start(v,fmt);
     res = kj_vsnprintf(buf, size, fmt, v);
@@ -964,58 +977,87 @@ i32 kj_snprintf(char* buf, isize size, char const* fmt, ...) {
 }
 #endif
 
-force_inline b32 kj_char_is_eol(char c) {
-    return c == '\r' ||
-           c == '\n';
+KJ_INLINE b32 kj_char_is_eol(utf32 c) {
+    if(c <= KJ_MAX_LATIN1) {
+        return c == '\r' ||
+               c == '\n';
+    }
+    return false;
 }
 
-force_inline b32 kj_char_is_ws(char c) {
-    return c == ' '  ||
-           c == '\t' ||
-           c == '\v' ||
-           c == '\f' ||
-           c == '\r' ||
-           c == '\n';
+KJ_INLINE b32 kj_char_is_ws(utf32 c) {
+    if(c <= KJ_MAX_LATIN1) {
+        return c == ' '  ||
+               c == '\t' ||
+               c == '\v' ||
+               c == '\f' ||
+               c == '\r' ||
+               c == '\n' ||
+               c == 0x85 ||
+               c == 0xA0;
+    }
+    return false;
 }
 
-force_inline b32 kj_char_is_alpha(char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <='Z'); }
-
-force_inline b32 kj_char_is_digit(char c) {
-    return (c >= '0' && c <= '9');
+KJ_INLINE b32 kj_char_is_alpha(utf32 c) {
+    if(c <= KJ_MAX_LATIN1) {
+        return (c >= 'a' && c <= 'z') ||
+               (c >= 'A' && c <='Z');
+    }
+    return false;
 }
 
-force_inline b32 kj_char_is_alphanum(char c) {
-    return (c >= 'a' && c <= 'z') ||
-           (c >= 'A' && c <= 'Z') ||
-           (c >= '0' && c <= '9');
+KJ_INLINE b32 kj_char_is_digit(utf32 c) {
+    if(c <= KJ_MAX_LATIN1) {
+        return (c >= '0' && c <= '9');
+    }
+    return false;
 }
 
-force_inline b32 kj_char_is_hex_letter(char c) {
-    return (c >= 'a' && c <= 'f') ||
-           (c >= 'A' && c <= 'F');
+KJ_INLINE b32 kj_char_is_alphanum(utf32 c) {
+    if(c <= KJ_MAX_LATIN1) {
+        return (c >= 'a' && c <= 'z') ||
+               (c >= 'A' && c <= 'Z') ||
+               (c >= '0' && c <= '9');
+    }
+    return false;
 }
 
-force_inline b32 kj_char_is_hex_digit(char c) {
-    return (c >= 'a' && c <= 'f') ||
-           (c >= 'A' && c <= 'F') ||
-           (c >= '0' && c <= '9');
+KJ_INLINE b32 kj_char_is_hex_digit(utf32 c) {
+    if(c <= KJ_MAX_LATIN1) {
+        return (c >= 'a' && c <= 'f') ||
+               (c >= 'A' && c <= 'F') ||
+               (c >= '0' && c <= '9');
+    }
+    return false;
 }
 
-force_inline char kj_char_is_lower(char c) {
-    return (c >= 'a' && c <= 'z');
+KJ_INLINE b32 kj_char_is_lower(utf32 c) {
+    if(c <= KJ_MAX_LATIN1) {
+        return (c >= 'a' && c <= 'z');
+    }
+    return false;
 }
 
-force_inline char kj_char_is_upper(char c) {
-    return (c >= 'A' && c <= 'Z');
+KJ_INLINE b32 kj_char_is_upper(utf32 c) {
+    if(c <= KJ_MAX_LATIN1) {
+        return (c >= 'A' && c <= 'Z');
+    }
+    return false;
 }
 
-force_inline char kj_char_to_lower(char c) {
-    return (c >= 'A' && c <= 'Z') ? 'a' + (c - 'A'): c;
+KJ_INLINE utf32 kj_char_to_lower(utf32 c) {
+    if(c <= KJ_MAX_ASCII) {
+        return (c >= 'A' && c <= 'Z') ? 'a' + (c - 'A'): c;
+    }
+    return c;
 }
 
-force_inline char kj_char_to_upper(char c) {
-    return (c >= 'a' && c <= 'z') ? 'A' + (c - 'a'): c;
+KJ_INLINE utf32 kj_char_to_upper(utf32 c) {
+    if(c <= KJ_MAX_ASCII) {
+        return (c >= 'a' && c <= 'z') ? 'A' + (c - 'a'): c;
+    }
+    return c;
 }
 
 isize kj_str_size(const char* s) {
@@ -1047,31 +1089,101 @@ isize kj_str_cmp(const char* s1, const char* s2) {
     return 0;
 }
 
+isize kj_str_case_cmp_n(const char* s1, const char* s2, isize n) {
+    while(*s1 && *s2 && n) {
+        if(kj_char_to_lower(*s1) != kj_char_to_lower(*s2)) {
+            return kj_cast(uptr, *s1) < kj_cast(uptr, *s2) ? -1: +1;
+        }
+        s1++;
+        s2++;
+        n--;
+    }
+    return 0;
+}
+
+isize kj_str_case_cmp(const char* s1, const char* s2) {
+    while(*s1 && *s2) {
+        if(kj_char_to_lower(*s1) != kj_char_to_lower(*s2)) {
+            return kj_cast(uptr, *s1) < kj_cast(uptr, *s2) ? -1: +1;
+        }
+        s1++;
+        s2++;
+    }
+    return 0;
+}
+
+isize kj_str_to_u64(const char* s, u64* v) {
+    isize res = -1;
+    if(s && v) {
+        const char* str = s;
+        i64 base = 10;
+        if(kj_str_case_cmp_n(s, "0x", 2) == 0) {
+            base = 16;
+            s += 2;
+        } elif(kj_str_case_cmp_n(s, "0o", 2) == 0) {
+            base = 8;
+            s += 2;
+        } elif(kj_str_case_cmp_n(s, "0b", 2) == 0) {
+            base = 2;
+            s += 2;
+        }
+        i64 tmp = 0;
+        char c = '\0';
+        while((c = *s++) != '\0') {
+            if(kj_char_is_digit(c)) {
+                tmp = tmp * base + c - '0';
+            } elif(base == 16 && c >= 'a' && c <= 'f') {
+                tmp = tmp * base + c - 'a' + 10;
+            } elif(base == 16 && c >= 'A' && c <= 'F') {
+                tmp = tmp * base + c - 'A' + 10;
+            } else {
+                break;
+            }
+        }
+        res = (s - str) - 1;
+        if(res > 0) {
+            *v = tmp;
+        }
+    }
+    return res;
+}
+
+isize kj_str_to_i64(const char* s, i64* v) {
+    isize res = -1;
+    i64 sign = *s == '-' ? s++, -1: 1;
+    u64 tmp;
+    res = kj_str_to_u64(s, &tmp);
+    if(res > 0) {
+        *v = kj_cast(i64, tmp) * sign;
+    }
+    return res;
+}
+
 #if defined(KJ_LIB_IMPL) && !defined(KJ_LIB_IMPLEMENTED)
 #define KJ_LIB_IMPLEMENTED
 #if defined(KJ_SYS_WIN32)
-force_inline kjLib kj_lib_open(const char* path) {
+KJ_INLINE kjLib kj_lib_open(const char* path) {
     return kj_cast(kjLib, LoadLibrary(path));
 }
 
-force_inline kjLibFn kj_lib_fn(kjLib lib, const char* name) {
+KJ_INLINE kjLibFn kj_lib_fn(kjLib lib, const char* name) {
     return kj_cast(kjLibFn, GetProcAddress(kj_cast(HMODULE, lib), name));
 }
 
-force_inline void kj_lib_close(kjLib lib) {
+KJ_INLINE void kj_lib_close(kjLib lib) {
     FreeLibrary(kj_cast(HMODULE, lib));
 }
 #elif defined(KJ_SYS_LINUX)
 #include <dlfcn.h>
-force_inline kjLib kj_lib_open(const char* path) {
+KJ_INLINE kjLib kj_lib_open(const char* path) {
     return kj_cast(kjLib, dlopen(path, RTLD_LAZY));
 }
 
-force_inline kjLibFn kj_lib_fn(kjLib lib, const char* name) {
+KJ_INLINE kjLibFn kj_lib_fn(kjLib lib, const char* name) {
     return kj_cast(kjLibFn, dlsym(lib, name));
 }
 
-force_inline void kj_lib_close(kjLib lib) {
+KJ_INLINE void kj_lib_close(kjLib lib) {
     dlclose(lib);
 }
 #else
@@ -1079,7 +1191,7 @@ force_inline void kj_lib_close(kjLib lib) {
 #endif
 #endif
 
-#define KJ_CMP_FN_T(T) force_inline KJ_CMP_FN(kj_join(kj_cmp_, T)) {            \
+#define KJ_CMP_FN_T(T) KJ_INLINE KJ_CMP_FN(kj_join(kj_cmp_, T)) {               \
     T a = kj_cast(T*, arr)[i];                                                  \
     T b = kj_cast(T*, arr)[j];                                                  \
     return kj_cast(i32, a < b ? -1: a > b);                                     \
@@ -1100,7 +1212,7 @@ KJ_CMP_FN_T(f64)
 
 #undef KJ_CMP_FN_T
 
-#define KJ_SWAP_FN_T(T) force_inline KJ_SWAP_FN(kj_join(kj_swap_, T)) {         \
+#define KJ_SWAP_FN_T(T) KJ_INLINE KJ_SWAP_FN(kj_join(kj_swap_, T)) {            \
     T* values = kj_cast(T*, arr);                                               \
     T tmp = values[i];                                                          \
     values[i] = values[j];                                                      \

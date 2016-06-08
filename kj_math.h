@@ -9,54 +9,74 @@
 #define KJ_MATH_H
 
 #define KJ_MATH_VERSION_MAJOR 0
-#define KJ_MATH_VERSION_MINOR 1
-#define KJ_MATH_VERSION_PATCH 1
+#define KJ_MATH_VERSION_MINOR 2
+#define KJ_MATH_VERSION_PATCH 0
 
-#define kj_to_degrees(a) ((a)*57.295779513082320f)
-#define kj_to_radians(a) ((a)*0.017453292519943f)
-#define kj_from_radians(a) ((a)*57.295779513082320f)
-#define kj_from_degrees(a) ((a)*0.017453292519943f)
+#define kj_to_degrees(a) ((a) * 57.295779513082320f)
+#define kj_to_radians(a) ((a) * 0.017453292519943f)
+#define kj_from_radians(a) ((a) * 57.295779513082320f)
+#define kj_from_degrees(a) ((a) * 0.017453292519943f)
 
 #define KJ_PI (3.141592653589793f)
 #define KJ_TAU (6.283185307179586f)
 #define KJ_E (2.718281828459045f)
 #define KJ_PHI (1.618033988749894f)
 
+#if defined(KJ_COMPILER_MSVC)
+#pragma warning(push)
+#pragma warning(disable:4201)
+#endif
+
 typedef struct kjVec2f {
-    f32 x, y;
+    struct { f32 x, y; };
+    f32 e[2];
 } kjVec2f;
 
 typedef struct kjVec2i {
-    i32 x, y;
+    struct { i32 x, y; };
+    i32 e[2];
 } kjVec2i;
 
 typedef struct kjVec2u {
-    u32 x, y;
+    struct { u32 x, y; };
+    u32 e[2];
 } kjVec2u;
 
 typedef struct kjVec3f {
-    f32 x, y, z;
+    struct { f32 x, y, z; };
+    struct { f32 r, g, b; };
+    f32 e[3];
 } kjVec3f;
 
 typedef struct kjVec3i {
-    i32 x, y, z;
+    struct { i32 x, y, z; };
+    i32 e[3];
 } kjVec3i;
 
 typedef struct kjVec3u {
-    u32 x, y, z;
+    struct { u32 x, y, z; };
+    u32 e[3];
 } kjVec3u;
 
-typedef struct kjVec4f {
-    f32 x, y, z, w;
+typedef union kjVec4f {
+    struct { f32 x, y, z, w; };
+    struct { f32 r, g, b, a; };
+    f32 e[4];
 } kjVec4f;
 
 typedef struct kjVec4i {
-    i32 x, y, z, w;
+    struct { i32 x, y, z, w; };
+    i32 e[4];
 } kjVec4i;
 
 typedef struct kjVec4u {
-    u32 x, y, z, w;
+    struct { u32 x, y, z, w; };
+    u32 e[4];
 } kjVec4u;
+
+#if defined(KJ_COMPILER_MSVC)
+#pragma warning(pop)
+#endif
 
 typedef union kjMat3f {
     f32 e[3][3];
@@ -97,10 +117,6 @@ typedef struct kjRect3u {
 typedef struct kjRgba {
     u8 r, g, b, a;
 } kjRgba;
-
-typedef struct kjRgbaf {
-    f32 r, g, b, a;
-} kjRgbaf;
 
 KJ_EXTERN_BEGIN
 
@@ -293,21 +309,6 @@ KJ_API kjMat4f kj_mat4f_perspective(f32 fovy, f32 aspect, f32 znear, f32 zfar);
 KJ_API kjMat4f kj_mat4f_perspective_inf(f32 fovy, f32 aspect, f32 znear);
 KJ_API kjMat4f kj_mat4f_look_at(kjVec3f eye, kjVec3f target, kjVec3f up);
 
-#if defined(__cplusplus)
-KJ_API kjMat3f kj_mat3f(f32 e00, f32 e11, f32 e22);
-KJ_API kjMat3f kj_mat3f(void);
-KJ_API kjMat3f kj_mat3f_rotate(f32 angle, kjVec3f xyz);
-KJ_API kjMat3f kj_mat3f_scale(f32 angle, kjVec3f xyz);
-KJ_API kjMat3f operator*(kjMat3f a, kjMat3f b);
-
-KJ_API kjMat4f kj_mat4f(f32 e00, f32 e11, f32 e22, f32 e33);
-KJ_API kjMat4f kj_mat4f(void);
-KJ_API kjMat4f kj_mat4f_translate(kjVec3f xyz);
-KJ_API kjMat4f kj_mat4f_rotate(f32 angle, kjVec3f xyz);
-KJ_API kjMat4f kj_mat4f_scale(kjVec3f xyz);
-KJ_API kjMat4f operator*(kjMat4f a, kjMat4f b);
-#endif
-
 KJ_API kjRect2f kj_rect2f(f32 x, f32 y, f32 w, f32 h);
 KJ_API kjRect2i kj_rect2i(i32 x, i32 y, i32 w, i32 h);
 KJ_API kjRect2u kj_rect2u(u32 x, u32 y, u32 w, u32 h);
@@ -354,15 +355,108 @@ KJ_API kjVec3u kj_rect3u_centre(kjRect3u r);
 
 KJ_API kjRgba kj_rgba(u8 r, u8 g, u8 b, u8 a);
 KJ_API kjRgba kj_rgba_4f(f32 r, f32 g, f32 b, f32 a);
-KJ_API kjRgba kj_rgba_rgbaf(kjRgbaf rgbaf);
+KJ_API kjRgba kj_rgba_rgbaf(kjVec4f rgbaf);
 KJ_API u32 kj_rgba_pack(kjRgba rgba);
 KJ_API kjRgba kj_rgba_unpack(u32 packed);
 
-KJ_API kjRgbaf kj_rgbaf(f32 r, f32 g, f32 b, f32 a);
-KJ_API kjRgbaf kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a);
-KJ_API kjRgbaf kj_rgbaf_rgba(kjRgba rgba);
-KJ_API u32 kj_rgbaf_pack(kjRgbaf rgba);
-KJ_API kjRgbaf kj_rgbaf_unpack(u32 packed);
+KJ_API kjVec4f kj_rgbaf(f32 r, f32 g, f32 b, f32 a);
+KJ_API kjVec4f kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a);
+KJ_API kjVec4f kj_rgbaf_rgba(kjRgba rgba);
+KJ_API u32 kj_rgbaf_pack(kjVec4f rgba);
+KJ_API kjVec4f kj_rgbaf_unpack(u32 packed);
+
+#if defined(__cplusplus)
+KJ_API kjVec2f operator+(kjVec2f a, kjVec2f b);
+KJ_API kjVec2i operator+(kjVec2i a, kjVec2i b);
+KJ_API kjVec2u operator+(kjVec2u a, kjVec2u b);
+KJ_API kjVec2f operator-(kjVec2f a, kjVec2f b);
+KJ_API kjVec2i operator-(kjVec2i a, kjVec2i b);
+KJ_API kjVec2u operator-(kjVec2u a, kjVec2u b);
+KJ_API kjVec2f operator*(kjVec2f a, kjVec2f b);
+KJ_API kjVec2i operator*(kjVec2i a, kjVec2i b);
+KJ_API kjVec2u operator*(kjVec2u a, kjVec2u b);
+KJ_API kjVec2f operator/(kjVec2f a, kjVec2f b);
+KJ_API kjVec2i operator/(kjVec2i a, kjVec2i b);
+KJ_API kjVec2u operator/(kjVec2u a, kjVec2u b);
+
+KJ_API kjVec2f operator+(kjVec2f a, f32 b);
+KJ_API kjVec2i operator+(kjVec2i a, i32 b);
+KJ_API kjVec2u operator+(kjVec2u a, u32 b);
+KJ_API kjVec2f operator-(kjVec2f a, f32 b);
+KJ_API kjVec2i operator-(kjVec2i a, i32 b);
+KJ_API kjVec2u operator-(kjVec2u a, u32 b);
+KJ_API kjVec2f operator*(kjVec2f a, f32 b);
+KJ_API kjVec2i operator*(kjVec2i a, i32 b);
+KJ_API kjVec2u operator*(kjVec2u a, u32 b);
+KJ_API kjVec2f operator/(kjVec2f a, f32 b);
+KJ_API kjVec2i operator/(kjVec2i a, i32 b);
+KJ_API kjVec2u operator/(kjVec2u a, u32 b);
+
+KJ_API kjVec3f operator+(kjVec3f a, kjVec3f b);
+KJ_API kjVec3i operator+(kjVec3i a, kjVec3i b);
+KJ_API kjVec3u operator+(kjVec3u a, kjVec3u b);
+KJ_API kjVec3f operator-(kjVec3f a, kjVec3f b);
+KJ_API kjVec3i operator-(kjVec3i a, kjVec3i b);
+KJ_API kjVec3u operator-(kjVec3u a, kjVec3u b);
+KJ_API kjVec3f operator*(kjVec3f a, kjVec3f b);
+KJ_API kjVec3i operator*(kjVec3i a, kjVec3i b);
+KJ_API kjVec3u operator*(kjVec3u a, kjVec3u b);
+KJ_API kjVec3f operator/(kjVec3f a, kjVec3f b);
+KJ_API kjVec3i operator/(kjVec3i a, kjVec3i b);
+KJ_API kjVec3u operator/(kjVec3u a, kjVec3u b);
+
+KJ_API kjVec3f operator+(kjVec3f a, f32 b);
+KJ_API kjVec3i operator+(kjVec3i a, i32 b);
+KJ_API kjVec3u operator+(kjVec3u a, u32 b);
+KJ_API kjVec3f operator-(kjVec3f a, f32 b);
+KJ_API kjVec3i operator-(kjVec3i a, i32 b);
+KJ_API kjVec3u operator-(kjVec3u a, u32 b);
+KJ_API kjVec3f operator*(kjVec3f a, f32 b);
+KJ_API kjVec3i operator*(kjVec3i a, i32 b);
+KJ_API kjVec3u operator*(kjVec3u a, u32 b);
+KJ_API kjVec3f operator/(kjVec3f a, f32 b);
+KJ_API kjVec3i operator/(kjVec3i a, i32 b);
+KJ_API kjVec3u operator/(kjVec3u a, u32 b);
+
+KJ_API kjVec4f operator+(kjVec4f a, kjVec4f b);
+KJ_API kjVec4i operator+(kjVec4i a, kjVec4i b);
+KJ_API kjVec4u operator+(kjVec4u a, kjVec4u b);
+KJ_API kjVec4f operator-(kjVec4f a, kjVec4f b);
+KJ_API kjVec4i operator-(kjVec4i a, kjVec4i b);
+KJ_API kjVec4u operator-(kjVec4u a, kjVec4u b);
+KJ_API kjVec4f operator*(kjVec4f a, kjVec4f b);
+KJ_API kjVec4i operator*(kjVec4i a, kjVec4i b);
+KJ_API kjVec4u operator*(kjVec4u a, kjVec4u b);
+KJ_API kjVec4f operator/(kjVec4f a, kjVec4f b);
+KJ_API kjVec4i operator/(kjVec4i a, kjVec4i b);
+KJ_API kjVec4u operator/(kjVec4u a, kjVec4u b);
+
+KJ_API kjVec4f operator+(kjVec4f a, f32 b);
+KJ_API kjVec4i operator+(kjVec4i a, i32 b);
+KJ_API kjVec4u operator+(kjVec4u a, u32 b);
+KJ_API kjVec4f operator-(kjVec4f a, f32 b);
+KJ_API kjVec4i operator-(kjVec4i a, i32 b);
+KJ_API kjVec4u operator-(kjVec4u a, u32 b);
+KJ_API kjVec4f operator*(kjVec4f a, f32 b);
+KJ_API kjVec4i operator*(kjVec4i a, i32 b);
+KJ_API kjVec4u operator*(kjVec4u a, u32 b);
+KJ_API kjVec4f operator/(kjVec4f a, f32 b);
+KJ_API kjVec4i operator/(kjVec4i a, i32 b);
+KJ_API kjVec4u operator/(kjVec2u a, u32 b);
+
+KJ_API kjMat3f kj_mat3f(f32 e00, f32 e11, f32 e22);
+KJ_API kjMat3f kj_mat3f(void);
+KJ_API kjMat3f kj_mat3f_rotate(f32 angle, kjVec3f xyz);
+KJ_API kjMat3f kj_mat3f_scale(f32 angle, kjVec3f xyz);
+KJ_API kjMat3f operator*(kjMat3f a, kjMat3f b);
+
+KJ_API kjMat4f kj_mat4f(f32 e00, f32 e11, f32 e22, f32 e33);
+KJ_API kjMat4f kj_mat4f(void);
+KJ_API kjMat4f kj_mat4f_translate(kjVec3f xyz);
+KJ_API kjMat4f kj_mat4f_rotate(f32 angle, kjVec3f xyz);
+KJ_API kjMat4f kj_mat4f_scale(kjVec3f xyz);
+KJ_API kjMat4f operator*(kjMat4f a, kjMat4f b);
+#endif
 
 KJ_EXTERN_END
 
@@ -1283,47 +1377,47 @@ kjMat4f kj_mat4f_look_at(kjVec3f eye, kjVec3f target, kjVec3f up) {
 }
 
 #if defined(__cplusplus)
-kjMat4f kj_mat3f(f32 e00, f32 e11, f32 e22) {
+KJ_INLINE kjMat4f kj_mat3f(f32 e00, f32 e11, f32 e22) {
     return kj_mat3f_diag(e00, e11, e22);
 }
 
-kjMat4f kj_mat3f(void) {
+KJ_INLINE kjMat4f kj_mat3f(void) {
     return kj_mat3f_ident();
 }
 
-kjMat4f kj_mat3f_rotate(f32 angle, kjVec3f xyz) {
+KJ_INLINE kjMat4f kj_mat3f_rotate(f32 angle, kjVec3f xyz) {
     return kj_mat3f_rotate_vec3f(xyz);
 }
 
-kjMat4f kj_mat3f_scale(kjVec3f xyz) {
+KJ_INLINE kjMat4f kj_mat3f_scale(kjVec3f xyz) {
     return kj_mat3f_scale_vec3f(xyz);
 }
 
-kjMat3f operator*(kjMat3f a, kjMat3f b) {
+KJ_INLINE kjMat3f operator*(kjMat3f a, kjMat3f b) {
     return kj_mat3f_mul(a, b);
 }
 
-kjMat4f kj_mat4f(f32 e00, f32 e11, f32 e22, f32 e33) {
+KJ_INLINE kjMat4f kj_mat4f(f32 e00, f32 e11, f32 e22, f32 e33) {
     return kj_mat4f_diag(e00, e11, e22, e33);
 }
 
-kjMat4f kj_mat4f(void) {
+KJ_INLINE kjMat4f kj_mat4f(void) {
     return kj_mat4f_ident();
 }
 
-kjMat4f kj_mat4f_translate(kjVec3f xyz) {
+KJ_INLINE kjMat4f kj_mat4f_translate(kjVec3f xyz) {
     return kj_mat4f_translate_vec3f(xyz);
 }
 
-kjMat4f kj_mat4f_rotate(f32 angle, kjVec3f xyz) {
+KJ_INLINE kjMat4f kj_mat4f_rotate(f32 angle, kjVec3f xyz) {
     return kj_mat4f_rotate_vec3f(xyz);
 }
 
-kjMat4f kj_mat4f_scale(kjVec3f xyz) {
+KJ_INLINE kjMat4f kj_mat4f_scale(kjVec3f xyz) {
     return kj_mat4f_scale_vec3f(xyz);
 }
 
-kjMat4f operator*(kjMat4f a, kjMat4f b) {
+KJ_INLINE kjMat4f operator*(kjMat4f a, kjMat4f b) {
     return kj_mat4f_mul(a, b);
 }
 #endif
@@ -1540,7 +1634,7 @@ kjRgba kj_rgba_4f(f32 r, f32 g, f32 b, f32 a) {
         kj_cast(u8, a * 255.0f + 0.5f));
 }
 
-kjRgba kj_rgba_rgbaf(kjRgbaf rgbaf) {
+kjRgba kj_rgba_rgbaf(kjVec4f rgbaf) {
     return kj_rgba_4f(rgbaf.r, rgbaf.g, rgbaf.b, rgbaf.a);
 }
 
@@ -1556,8 +1650,8 @@ kjRgba kj_rgba_unpack(u32 packed) {
         kj_cast(u8, (packed & 0x000000FF) >> 0));
 }
 
-kjRgbaf kj_rgbaf(f32 r, f32 g, f32 b, f32 a) {
-    kjRgbaf res;
+kjVec4f kj_rgbaf(f32 r, f32 g, f32 b, f32 a) {
+    kjVec4f res;
     res.r = r;
     res.b = b;
     res.g = g;
@@ -1565,7 +1659,7 @@ kjRgbaf kj_rgbaf(f32 r, f32 g, f32 b, f32 a) {
     return res;
 }
 
-kjRgbaf kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a) {
+kjVec4f kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a) {
     return kj_rgbaf(
         kj_cast(f32, r / 255.0f),
         kj_cast(f32, g / 255.0f),
@@ -1573,11 +1667,11 @@ kjRgbaf kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a) {
         kj_cast(f32, a / 255.0f));
 }
 
-kjRgbaf kj_rgbaf_rgba(kjRgba rgba) {
+kjVec4f kj_rgbaf_rgba(kjRgba rgba) {
     return kj_rgbaf_4b(rgba.r, rgba.g, rgba.b, rgba.a);
 }
 
-u32 kj_rgbaf_pack(kjRgbaf rgba) {
+u32 kj_rgbaf_pack(kjVec4f rgba) {
     return
         (kj_cast(u8, rgba.r * 255.0f) << 24) |
         (kj_cast(u8, rgba.g * 255.0f) << 16) |
@@ -1585,7 +1679,7 @@ u32 kj_rgbaf_pack(kjRgbaf rgba) {
         (kj_cast(u8, rgba.a * 255.0f) << 0);
 }
 
-kjRgbaf kj_rgbaf_unpack(u32 packed) {
+kjVec4f kj_rgbaf_unpack(u32 packed) {
     return kj_rgbaf(
         kj_cast(f32, ((packed & 0xFF000000) >> 24) / 255.0f),
         kj_cast(f32, ((packed & 0x00FF0000) >> 16) / 255.0f),
