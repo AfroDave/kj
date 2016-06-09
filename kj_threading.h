@@ -9,8 +9,8 @@
 #define KJ_THREADING_H
 
 #define KJ_THREADING_VERSION_MAJOR 0
-#define KJ_THREADING_VERSION_MINOR 1
-#define KJ_THREADING_VERSION_PATCH 1
+#define KJ_THREADING_VERSION_MINOR 2
+#define KJ_THREADING_VERSION_PATCH 0
 
 KJ_EXTERN_BEGIN
 
@@ -102,6 +102,12 @@ KJ_API u32 kj_atomic_fetch_add_u32(kjAtomic32* v, u32 add);
 KJ_API u64 kj_atomic_fetch_add_u64(kjAtomic64* v, u64 add);
 KJ_API u32 kj_atomic_fetch_sub_u32(kjAtomic32* v, u32 sub);
 KJ_API u64 kj_atomic_fetch_sub_u64(kjAtomic64* v, u64 sub);
+KJ_API u32 kj_atomic_or_u32(kjAtomic32* v, u32 op);
+KJ_API u64 kj_atomic_or_u64(kjAtomic64* v, u64 op);
+KJ_API u32 kj_atomic_and_u32(kjAtomic32* v, u32 op);
+KJ_API u64 kj_atomic_and_u64(kjAtomic64* v, u64 op);
+KJ_API u32 kj_atomic_xor_u32(kjAtomic32* v, u32 op);
+KJ_API u64 kj_atomic_xor_u64(kjAtomic64* v, u64 op);
 
 KJ_EXTERN_END
 
@@ -315,6 +321,30 @@ KJ_INLINE u32 kj_atomic_fetch_sub_u32(kjAtomic32* v, u32 sub) {
 KJ_INLINE u64 kj_atomic_fetch_sub_u64(kjAtomic64* v, u64 sub) {
     return _InterlockedExchangeAdd64(v, -kj_cast(i64, sub));
 }
+
+KJ_INLINE u32 kj_atomic_or_u32(kjAtomic32* v, u32 op) {
+    return _InterlockedOr(v, op);
+}
+
+KJ_INLINE u64 kj_atomic_or_u64(kjAtomic64* v, u64 op) {
+    return _InterlockedOr64(v, op);
+}
+
+KJ_INLINE u32 kj_atomic_and_u32(kjAtomic32* v, u32 op) {
+    return _InterlockedAnd(v, op);
+}
+
+KJ_INLINE u64 kj_atomic_and_u64(kjAtomic64* v, u64 op) {
+    return _InterlockedAnd64(v, op);
+}
+
+KJ_INLINE u32 kj_atomic_xor_u32(kjAtomic32* v, u32 op) {
+    return _InterlockedXor(v, op);
+}
+
+KJ_INLINE u64 kj_atomic_xor_u64(kjAtomic64* v, u64 op) {
+    return _InterlockedXor64(v, op);
+}
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
 KJ_INLINE void kj_atomic_read_fence(void) {
     __asm __volatile__ ("" ::: "memory");
@@ -382,6 +412,30 @@ KJ_INLINE u32 kj_atomic_fetch_sub_u32(kjAtomic32* v, u32 sub) {
 
 KJ_INLINE u64 kj_atomic_fetch_sub_u64(kjAtomic64* v, u64 sub) {
     return __sync_fetch_and_sub(v, sub);
+}
+
+KJ_INLINE u32 kj_atomic_or_u32(kjAtomic32* v, u32 op) {
+    return __sync_fetch_and_or(v, op);
+}
+
+KJ_INLINE u64 kj_atomic_or_u64(kjAtomic64* v, u64 op) {
+    return __sync_fetch_and_or(v, op);
+}
+
+KJ_INLINE u32 kj_atomic_and_u32(kjAtomic32* v, u32 op) {
+    return __sync_fetch_and_and(v, op);
+}
+
+KJ_INLINE u64 kj_atomic_and_u64(kjAtomic64* v, u64 op) {
+    return __sync_fetch_and_and(v, op);
+}
+
+KJ_INLINE u32 kj_atomic_xor_u32(kjAtomic32* v, u32 op) {
+    return __sync_fetch_and_xor(v, op);
+}
+
+KJ_INLINE u64 kj_atomic_xor_u64(kjAtomic64* v, u64 op) {
+    return __sync_fetch_and_xor(v, op);
 }
 #endif
 

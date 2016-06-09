@@ -20,7 +20,7 @@ KJ_EXTERN_BEGIN
 
 #define KJ_VERSION_MAJOR 0
 #define KJ_VERSION_MINOR 5
-#define KJ_VERSION_PATCH 1
+#define KJ_VERSION_PATCH 2
 
 #if defined(_WIN32) || defined(_WIN64)
 #define KJ_SYS_WIN32
@@ -418,19 +418,35 @@ typedef i32 kjErr;
 
 /// Memory
 
-KJ_API void* kj_alloc(isize size);
-KJ_API void* kj_realloc(void* data, isize size);
-KJ_API void kj_free(void* data);
-
 typedef struct kjAllocator kjAllocator;
 
-#define KJ_ALLOCATOR_FN(name) void* name(kjAllocator* allocator)
-typedef KJ_ALLOCATOR_FN(kjAllocatorFn);
+#define KJ_ALLOCATOR_ALLOC_FN(name)                                             \
+    void* name(kjAllocator* allocator, isize size)
+typedef KJ_ALLOCATOR_ALLOC_FN(kjAllocatorAllocFn);
+#define KJ_ALLOCATOR_FREE_FN(name)                                              \
+    void name(kjAllocator* allocator, void* ptr)
+typedef KJ_ALLOCATOR_FREE_FN(kjAllocatorFreeFn);
+#define KJ_ALLOCATOR_REALLOC_FN(name)                                           \
+    void* name(kjAllocator* allocator, void* ptr, isize size)
+typedef KJ_ALLOCATOR_REALLOC_FN(kjAllocatorReallocFn);
 
 typedef struct kjAllocator {
-    kjAllocatorFn* fn;
-    void* data;
+    kjAllocatorAllocFn* alloc;
+    kjAllocatorFreeFn* free;
+    kjAllocatorReallocFn* realloc;
 } kjAllocator;
+
+#define kj_allocator_alloc(a, s) kj_cast(kjAllocator*, (a))->alloc((a), (s))
+#define kj_allocator_free(a, p) kj_cast(kjAllocator*, (a))->free((a), (p))
+#define kj_allocator_realloc(a, p, s)                                           \
+    kj_cast(kjAllocator*, (a))->realloc((a), (p), (s))
+
+typedef kjAllocator kjHeapAllocator;
+
+KJ_API kjHeapAllocator kj_heap_allocator(void);
+KJ_API KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc);
+KJ_API KJ_ALLOCATOR_FREE_FN(kj_heap_free);
+KJ_API KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc);
 
 /// Debug
 
@@ -502,14 +518,17 @@ KJ_API u64 kj_byte_swap_u64(u64 a);
 #if defined(KJ_SYS_LINUX)
 #if !defined(kj_syscall1)
 #if defined(KJ_ARCH_64_BIT)
-#define KJ_SYSCALL_CLOSE 3
-#define KJ_SYSCALL_OPEN 2
-#define KJ_SYSCALL_LSEEK 8
-#define KJ_SYSCALL_READ 0
-#define KJ_SYSCALL_PREAD 17
-#define KJ_SYSCALL_WRITE 1
-#define KJ_SYSCALL_PWRITE 18
-#define KJ_SYSCALL_READLINK 89
+enum {
+    KJ_SYSCALL_CLOSE = 3,
+    KJ_SYSCALL_OPEN = 2,
+    KJ_SYSCALL_LSEEK = 8,
+    KJ_SYSCALL_READ = 0,
+    KJ_SYSCALL_PREAD = 17,
+    KJ_SYSCALL_WRITE = 1,
+    KJ_SYSCALL_PWRITE = 18,
+    KJ_SYSCALL_READLINK = 89,
+};
+
 #define kj_syscall1(call, res, a) do {                                          \
     __asm volatile(                                                             \
         "syscall"                                                               \
@@ -554,14 +573,17 @@ KJ_API u64 kj_byte_swap_u64(u64 a);
           "r", (r9));                                                           \
 } while(0)
 #elif define(KJ_ARCH_32_BIT)
-#define KJ_SYSCALL_CLOSE 6
-#define KJ_SYSCALL_OPEN 5
-#define KJ_SYSCALL_LSEEK 19
-#define KJ_SYSCALL_READ 3
-#define KJ_SYSCALL_PREAD 180
-#define KJ_SYSCALL_WRITE 4
-#define KJ_SYSCALL_PWRITE 181
-#define KJ_SYSCALL_READLINK 85
+enum {
+    KJ_SYSCALL_CLOSE = 6,
+    KJ_SYSCALL_OPEN = 5,
+    KJ_SYSCALL_LSEEK = 19,
+    KJ_SYSCALL_READ = 3,
+    KJ_SYSCALL_PREAD = 180,
+    KJ_SYSCALL_WRITE = 4,
+    KJ_SYSCALL_PWRITE = 181,
+    KJ_SYSCALL_READLINK = 85,
+};
+
 #define kj_syscall1(call, res, a) do {                                          \
     __asm volatile(                                                             \
         "int $0x80"                                                             \
@@ -858,7 +880,8 @@ KJ_INLINE isize kj_type_to_isize(kjType type) {
 }
 
 #if defined(KJ_SYS_WIN32)
-void* kj_alloc(isize size) {
+KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc) {
+    kj_unused(allocator);
     void* res = NULL;
     kj_assert(
             (res = HeapAlloc(
@@ -866,39 +889,52 @@ void* kj_alloc(isize size) {
     return res;
 }
 
-void* kj_realloc(void* data, isize size) {
-    void* res = NULL;
-    kj_assert((res = HeapReAlloc(
-                GetProcessHeap(), HEAP_ZERO_MEMORY, data, size)) != NULL);
-    return res;
-}
-
-void kj_free(void* data) {
-    if(data) {
-        HeapFree(GetProcessHeap(), 0, data);
+KJ_ALLOCATOR_FREE_FN(kj_heap_free) {
+    kj_unused(allocator);
+    if(ptr) {
+        HeapFree(GetProcessHeap(), 0, ptr);
     }
 }
+
+KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc) {
+    kj_unused(allocator);
+    void* res = NULL;
+    kj_assert((res = HeapReAlloc(
+                GetProcessHeap(), HEAP_ZERO_MEMORY, ptr, size)) != NULL);
+    return res;
+}
 #elif
-void* kj_alloc(isize size) {
+KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc) {
+    kj_unused(allocator);
     void* res = NULL;
     kj_assert((res = calloc(size, kj_isize_of(u8))) != NULL);
     return res;
 }
 
-void* kj_realloc(void* data, isize size) {
-    void* res = NULL;
-    kj_assert((res = realloc(data, size * kj_isize_of(u8))) != NULL);
-    return res;
+KJ_ALLOCATOR_FREE_FN(kj_heap_free) {
+    kj_unused(allocator);
+    if(ptr) {
+        free(ptr);
+    }
 }
 
-void kj_free(void* data) {
-    if(data) {
-        free(data);
-    }
+KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc) {
+    kj_unused(allocator);
+    void* res = NULL;
+    kj_assert((res = realloc(ptr, size * kj_isize_of(u8))) != NULL);
+    return res;
 }
 #else
 #error KJ_MEM_UNSUPPORTED
 #endif
+
+kjHeapAllocator kj_heap_allocator(void) {
+    kjHeapAllocator res;
+    res.alloc = kj_heap_alloc;
+    res.free = kj_heap_free;
+    res.realloc = kj_heap_realloc;
+    return res;
+}
 
 #if defined(KJ_ASSERT_IMPL) && !defined(KJ_ASSERT_IMPLEMENTED)
 #define KJ_ASSERT_IMPLEMENTED
@@ -1743,7 +1779,7 @@ void* kj_io_slurp(const char* path, b32 terminate, isize* size) {
     if(!kj_io_has_err(&io)) {
         kjIoStat stat = kj_io_stat(&io);
         if(stat.size > 0) {
-            res = kj_alloc(terminate ? stat.size + 1: stat.size);
+            res = kj_heap_alloc(NULL, terminate ? stat.size + 1: stat.size);
             if(kj_io_read(&io, res, stat.size) == stat.size) {
                 if(terminate) {
                     u8* s = kj_cast(u8*, res);
@@ -1753,7 +1789,7 @@ void* kj_io_slurp(const char* path, b32 terminate, isize* size) {
                     *size = stat.size;
                 }
             } else {
-                kj_free(res);
+                kj_heap_free(NULL, res);
                 res = NULL;
             }
         }

@@ -10,17 +10,17 @@
 
 #define KJ_MATH_VERSION_MAJOR 0
 #define KJ_MATH_VERSION_MINOR 2
-#define KJ_MATH_VERSION_PATCH 0
+#define KJ_MATH_VERSION_PATCH 1
 
-#define kj_to_degrees(a) ((a) * 57.295779513082320f)
-#define kj_to_radians(a) ((a) * 0.017453292519943f)
-#define kj_from_radians(a) ((a) * 57.295779513082320f)
-#define kj_from_degrees(a) ((a) * 0.017453292519943f)
+#define kj_to_degrees(a) kj_cast(f32, (a) * 57.295779513082320f)
+#define kj_to_radians(a) kj_cast(f32, (a) * 0.017453292519943f)
+#define kj_from_radians(a) kj_cast(f32, (a) * 57.295779513082320f)
+#define kj_from_degrees(a) kj_cast(f32, (a) * 0.017453292519943f)
 
-#define KJ_PI (3.141592653589793f)
-#define KJ_TAU (6.283185307179586f)
-#define KJ_E (2.718281828459045f)
-#define KJ_PHI (1.618033988749894f)
+#define KJ_PI kj_cast(f32, 3.141592653589793f)
+#define KJ_TAU kj_cast(f32, 6.283185307179586f)
+#define KJ_E kj_cast(f32, 2.718281828459045f)
+#define KJ_PHI kj_cast(f32, 1.618033988749894f)
 
 #if defined(KJ_COMPILER_MSVC)
 #pragma warning(push)
@@ -481,7 +481,7 @@ f32 kj_log2(f32 x) { return __builtin_log2f(x); }
 f32 kj_pow(f32 x, f32 y) { return __builtin_powf(x, y); }
 f32 kj_floor(f32 a) { return __builtin_floorf(a); }
 f32 kj_ceil(f32 a) { return __builtin_ceilf(a); }
-#else
+#elif defined(KJ_COMPILER_MSVC)
 #include <math.h>
 f32 kj_rsqrt(f32 a) { return 1.0f / sqrtf(a); }
 f32 kj_sqrt(f32 a) { return sqrtf(a); }
@@ -499,6 +499,8 @@ f32 kj_log2(f32 x) { return log2f(x); }
 f32 kj_pow(f32 x, f32 y) { return powf(x, y); }
 f32 kj_floor(f32 a) { return floorf(a); }
 f32 kj_ceil(f32 a) { return ceilf(a); }
+#else
+#error KJ_MATH_UNSUPPORTED
 #endif
 
 kjVec2f kj_vec2f(f32 x, f32 y) {
@@ -758,7 +760,6 @@ kjVec3i kj_vec3i_negate(kjVec3i a) {
     return kj_vec3i(-a.x, -a.y, -a.z);
 }
 
-
 kjVec3u kj_vec3u_negate(kjVec3u a) {
     return kj_vec3u(-kj_cast(i32, a.x), -kj_cast(i32, a.y), -kj_cast(i32, a.z));
 }
@@ -836,17 +837,23 @@ u32 kj_vec3u_dot(kjVec3u a, kjVec3u b) {
 }
 
 kjVec3f kj_vec3f_cross(kjVec3f a, kjVec3f b) {
-    return kj_vec3f(a.y * b.z - b.y * a.z, a.z * b.x - b.z * a.x,
+    return kj_vec3f(
+            a.y * b.z - b.y * a.z,
+            a.z * b.x - b.z * a.x,
             a.x * b.y - b.x * a.y);
 }
 
 kjVec3i kj_vec3i_cross(kjVec3i a, kjVec3i b) {
-    return kj_vec3i(a.y * b.z - b.y * a.z, a.z * b.x - b.z * a.x,
+    return kj_vec3i(
+            a.y * b.z - b.y * a.z,
+            a.z * b.x - b.z * a.x,
             a.x * b.y - b.x * a.y);
 }
 
 kjVec3u kj_vec3u_cross(kjVec3u a, kjVec3u b) {
-    return kj_vec3u(a.y * b.z - b.y * a.z, a.z * b.x - b.z * a.x,
+    return kj_vec3u(
+            a.y * b.z - b.y * a.z,
+            a.z * b.x - b.z * a.x,
             a.x * b.y - b.x * a.y);
 }
 
@@ -865,7 +872,6 @@ u32 kj_vec3u_length_sq(kjVec3u a) {
 f32 kj_vec3f_length(kjVec3f a) {
     return kj_sqrt(kj_vec3f_length_sq(a));
 }
-
 
 i32 kj_vec3i_length(kjVec3i a) {
     return kj_cast(i32, kj_sqrt(kj_cast(f32, kj_vec3i_length_sq(a))));
