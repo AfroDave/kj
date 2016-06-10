@@ -20,7 +20,7 @@ KJ_EXTERN_BEGIN
 
 #define KJ_VERSION_MAJOR 0
 #define KJ_VERSION_MINOR 5
-#define KJ_VERSION_PATCH 2
+#define KJ_VERSION_PATCH 3
 
 #if defined(_WIN32) || defined(_WIN64)
 #define KJ_SYS_WIN32
@@ -36,6 +36,11 @@ KJ_EXTERN_BEGIN
 #include <windows.h>
 #elif defined(__linux__)
 #define KJ_SYS_LINUX
+#if __STDC_VERSION__ >= 199901L
+#define _XOPEN_SOURCE 600
+#else
+#define _XOPEN_SOURCE 500
+#endif
 #else
 #error KJ_SYS_UNSUPPORTED
 #endif
@@ -110,16 +115,6 @@ KJ_EXTERN_BEGIN
 #endif
 #endif
 
-#if !defined(__cplusplus)
-#if !defined(thread_local)
-#if defined(KJ_COMPILER_MSVC)
-#define thread_local __declspec(thread)
-#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#define thread_local __thread
-#endif
-#endif
-#endif
-
 #if !defined(KJ_INLINE)
 #if defined(KJ_COMPILER_MSVC)
 #define KJ_INLINE __forceinline
@@ -180,10 +175,8 @@ KJ_EXTERN_BEGIN
 #endif
 
 #if !defined(KJ_ALIGN)
-#if defined(KJ_COMPILER_GNU)
+#if defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
 #define KJ_ALIGN(a) __attribute__((aligned(a)))
-#elif defined(KJ_COMPILER_CLANG)
-#define KJ_ALIGN(a) __attribute__((align_value((a)))
 #elif defined(KJ_COMPILER_MSVC)
 #define KJ_ALIGN(a) __declspec(align(a))
 #else
@@ -203,8 +196,6 @@ KJ_EXTERN_BEGIN
 #if !defined(kj_unused)
 #if defined(KJ_COMPILER_MSVC)
 #define kj_unused(a) __pragma(warning(suppress:4100)) (a)
-#elif defined(KJ_COMPILER_GNU)
-#define kj_unused(a) __attribute__((__unused__)) (a)
 #else
 #define kj_unused(a) kj_cast(void, (a))
 #endif
@@ -430,11 +421,11 @@ typedef KJ_ALLOCATOR_FREE_FN(kjAllocatorFreeFn);
     void* name(kjAllocator* allocator, void* ptr, isize size)
 typedef KJ_ALLOCATOR_REALLOC_FN(kjAllocatorReallocFn);
 
-typedef struct kjAllocator {
+struct kjAllocator {
     kjAllocatorAllocFn* alloc;
     kjAllocatorFreeFn* free;
     kjAllocatorReallocFn* realloc;
-} kjAllocator;
+};
 
 #define kj_allocator_alloc(a, s) kj_cast(kjAllocator*, (a))->alloc((a), (s))
 #define kj_allocator_free(a, p) kj_cast(kjAllocator*, (a))->free((a), (p))
@@ -526,7 +517,7 @@ enum {
     KJ_SYSCALL_PREAD = 17,
     KJ_SYSCALL_WRITE = 1,
     KJ_SYSCALL_PWRITE = 18,
-    KJ_SYSCALL_READLINK = 89,
+    KJ_SYSCALL_READLINK = 89
 };
 
 #define kj_syscall1(call, res, a) do {                                          \
@@ -581,7 +572,7 @@ enum {
     KJ_SYSCALL_PREAD = 180,
     KJ_SYSCALL_WRITE = 4,
     KJ_SYSCALL_PWRITE = 181,
-    KJ_SYSCALL_READLINK = 85,
+    KJ_SYSCALL_READLINK = 85
 };
 
 #define kj_syscall1(call, res, a) do {                                          \
@@ -648,7 +639,7 @@ typedef i32 utf32;
 enum {
     KJ_MAX_ASCII = 0x7F,
     KJ_MAX_LATIN1 = 0xFF,
-    KJ_MAX_UNICODE = 0x10FFFF,
+    KJ_MAX_UNICODE = 0x10FFFF
 };
 
 KJ_API b32 kj_char_is_eol(utf32 c);
@@ -797,8 +788,6 @@ typedef struct kjIoStat {
     kjDateTime last_write;
 } kjIoStat;
 
-KJ_EXTERN_BEGIN
-
 #define kj_io_has_err(io) ((io)->err != KJ_ERR_NONE)
 
 KJ_API kjIo kj_io_open(const char* path, u32 flags);
@@ -882,10 +871,7 @@ KJ_INLINE isize kj_type_to_isize(kjType type) {
 #if defined(KJ_SYS_WIN32)
 KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc) {
     kj_unused(allocator);
-    void* res = NULL;
-    kj_assert(
-            (res = HeapAlloc(
-                GetProcessHeap(), HEAP_ZERO_MEMORY, size)) != NULL);
+    void* res = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size);
     return res;
 }
 
@@ -899,15 +885,14 @@ KJ_ALLOCATOR_FREE_FN(kj_heap_free) {
 KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc) {
     kj_unused(allocator);
     void* res = NULL;
-    kj_assert((res = HeapReAlloc(
-                GetProcessHeap(), HEAP_ZERO_MEMORY, ptr, size)) != NULL);
+    res = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ptr, size);
     return res;
 }
-#elif
+#elif defined(KJ_SYS_LINUX)
 KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc) {
     kj_unused(allocator);
     void* res = NULL;
-    kj_assert((res = calloc(size, kj_isize_of(u8))) != NULL);
+    res = calloc(size, kj_isize_of(u8));
     return res;
 }
 
@@ -921,7 +906,7 @@ KJ_ALLOCATOR_FREE_FN(kj_heap_free) {
 KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc) {
     kj_unused(allocator);
     void* res = NULL;
-    kj_assert((res = realloc(ptr, size * kj_isize_of(u8))) != NULL);
+    res = realloc(ptr, size * kj_isize_of(u8));
     return res;
 }
 #else
@@ -1348,7 +1333,7 @@ kjDateTime kj_datetime_utc(void) {
     time_t t;
     time(&t);
     struct tm* tm = gmtime(&t);
-    kj_systime_to_datetime(&tm, &res);
+    kj_systime_to_datetime(tm, &res);
     return res;
 }
 
@@ -1756,6 +1741,7 @@ isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
 
 kjIoStat kj_io_stat(kjIo* io) {
     kjIoStat res;
+    kj_zero(&res, kj_isize_of(kjIoStat));
     struct stat buf;
     if(fstat(io->handle, &buf) == -1) {
         io->err = kj_io_err_from_sys(errno);

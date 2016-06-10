@@ -10,12 +10,22 @@
 
 #define KJ_THREADING_VERSION_MAJOR 0
 #define KJ_THREADING_VERSION_MINOR 2
-#define KJ_THREADING_VERSION_PATCH 0
+#define KJ_THREADING_VERSION_PATCH 1
 
 KJ_EXTERN_BEGIN
 
+#if !defined(__cplusplus)
+#if !defined(thread_local)
+#if defined(KJ_COMPILER_MSVC) && _MSC_VER >= 1300
+#define thread_local __declspec(thread)
+#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+#define thread_local __thread
+#endif
+#endif
+#endif
+
 enum {
-    KJ_THREADING_FLAG_NONE = KJ_BIT_ZERO,
+    KJ_THREADING_FLAG_NONE = KJ_BIT_ZERO
 };
 
 #define KJ_THREAD_FN(name) void name(void* data)
@@ -49,6 +59,7 @@ KJ_API void kj_thread_detach(kjThread* thread);
 typedef CRITICAL_SECTION kjMutex;
 typedef HANDLE kjSemaphore;
 #elif defined(KJ_SYS_LINUX)
+#include <semaphore.h>
 typedef pthread_mutex_t kjMutex;
 typedef sem_t kjSemaphore;
 #else
@@ -367,7 +378,7 @@ KJ_INLINE u64 kj_atomic_cmp_swap_u64(kjAtomic64* v, u64 cmp, u64 swap) {
 }
 
 KJ_INLINE void* kj_atomic_cmp_swap_ptr(kjAtomicPtr* v, void* cmp, void* swap) {
-    return __sync_val_compare_and_swap(v, cmp, swap);
+    return kj_cast(void*, __sync_val_compare_and_swap(v, cmp, swap));
 }
 
 KJ_INLINE u32 kj_atomic_swap_u32(kjAtomic32* v, u32 swap) {
@@ -379,7 +390,7 @@ KJ_INLINE u64 kj_atomic_swap_u64(kjAtomic64* v, u64 swap) {
 }
 
 KJ_INLINE void* kj_atomic_swap_ptr(kjAtomicPtr* v, void* swap) {
-    return __sync_lock_test_and_set(v, swap);
+    return kj_cast(void*, __sync_lock_test_and_set(v, swap));
 }
 
 KJ_INLINE u32 kj_atomic_inc_u32(kjAtomic32* v) {
