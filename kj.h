@@ -20,7 +20,7 @@ KJ_EXTERN_BEGIN
 
 #define KJ_VERSION_MAJOR 0
 #define KJ_VERSION_MINOR 5
-#define KJ_VERSION_PATCH 3
+#define KJ_VERSION_PATCH 4
 
 #if defined(_WIN32) || defined(_WIN64)
 #define KJ_SYS_WIN32
@@ -36,13 +36,9 @@ KJ_EXTERN_BEGIN
 #include <windows.h>
 #elif defined(__linux__)
 #define KJ_SYS_LINUX
-#if __STDC_VERSION__ >= 199901L
-#define _XOPEN_SOURCE 600
+#define _GNU_SOURCE
 #else
-#define _XOPEN_SOURCE 500
-#endif
-#else
-#error KJ_SYS_UNSUPPORTED
+#error Unsupported Operating System
 #endif
 
 #if defined(_MSC_VER)
@@ -52,7 +48,7 @@ KJ_EXTERN_BEGIN
 #elif defined(__GNUC__) || defined(__GNUG__)
 #define KJ_COMPILER_GNU
 #else
-#error KJ_COMPILER_UNSUPPORTED
+#error Unsupported Compiler
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
@@ -60,7 +56,7 @@ KJ_EXTERN_BEGIN
 #elif defined(__i386) || defined(_M_IX86)
 #define KJ_ARCH_32_BIT
 #else
-#error KJ_ARCH_UNSUPPORTED
+#error Unsupported Architecture
 #endif
 
 #define KJ_LE 1234
@@ -104,8 +100,6 @@ KJ_EXTERN_BEGIN
 #else
 #define KJ_EXTERN
 #endif
-#else
-#error KJ_EXPORT_UNSUPPORTED
 #endif
 #endif
 
@@ -179,8 +173,6 @@ KJ_EXTERN_BEGIN
 #define KJ_ALIGN(a) __attribute__((aligned(a)))
 #elif defined(KJ_COMPILER_MSVC)
 #define KJ_ALIGN(a) __declspec(align(a))
-#else
-#error KJ_ALIGN_UNSUPPORTED
 #endif
 #endif
 
@@ -270,6 +262,7 @@ typedef signed __int64 i64;
 typedef unsigned __int64 u64;
 #else
 #include <stdint.h>
+
 typedef int8_t i8;
 typedef uint8_t u8;
 typedef int16_t i16;
@@ -317,8 +310,6 @@ typedef u64 usize;
 #elif defined(KJ_ARCH_32_BIT)
 typedef i32 isize;
 typedef u32 usize;
-#else
-#error KJ_ARCH_UNSUPPORTED
 #endif
 
 #if !defined(ISIZE_MIN)
@@ -334,8 +325,6 @@ typedef u32 usize;
 
 #define USIZE_MIN U32_MIN
 #define USIZE_MAX U32_MAX
-#else
-#error KJ_ARCH_UNSUPPORTED
 #endif
 #endif
 
@@ -368,44 +357,58 @@ kj_static_assert(u64, kj_isize_of(u64) == 8);
 kj_static_assert(f32, kj_isize_of(f32) == 4);
 kj_static_assert(f64, kj_isize_of(f64) == 8);
 
+#define KJ_TYPE_MAP(X)                                                          \
+    X(KJ_TYPE_UNKNOWN, -1, "unknown", void*)                                    \
+    X(KJ_TYPE_NONE, 0, "none", void*)                                           \
+    X(KJ_TYPE_CHAR, 1, "char", char)                                            \
+    X(KJ_TYPE_I8, 2, "i8", i8)                                                  \
+    X(KJ_TYPE_U8, 3, "u8", u8)                                                  \
+    X(KJ_TYPE_I16, 4, "i16", i16)                                               \
+    X(KJ_TYPE_U16, 5, "u16", u16)                                               \
+    X(KJ_TYPE_I32, 6, "i32", i32)                                               \
+    X(KJ_TYPE_U32, 7, "u32", u32)                                               \
+    X(KJ_TYPE_I64, 8, "i64", i64)                                               \
+    X(KJ_TYPE_U64, 9, "u64", u64)                                               \
+    X(KJ_TYPE_ISIZE, 10, "isize", isize)                                        \
+    X(KJ_TYPE_USIZE, 11, "usize", usize)                                        \
+    X(KJ_TYPE_F32, 12, "f32", f32)                                              \
+    X(KJ_TYPE_F64, 13, "f64", f64)                                              \
+    X(KJ_TYPE_B8, 14, "b8", b8)                                                 \
+    X(KJ_TYPE_B16, 15, "b16", b16)                                              \
+    X(KJ_TYPE_B32, 16, "b32", b32)                                              \
+    X(KJ_TYPE_B64, 17, "b64", b64)                                              \
+
 typedef enum kjType {
-    KJ_TYPE_NONE = 0,
-    KJ_TYPE_CHAR = 1,
-    KJ_TYPE_I8 = 2,
-    KJ_TYPE_U8 = 3,
-    KJ_TYPE_I16 = 4,
-    KJ_TYPE_U16 = 5,
-    KJ_TYPE_I32 = 6,
-    KJ_TYPE_U32 = 7,
-    KJ_TYPE_I64 = 8,
-    KJ_TYPE_U64 = 9,
-    KJ_TYPE_ISIZE = 10,
-    KJ_TYPE_USIZE = 11,
-    KJ_TYPE_F32 = 12,
-    KJ_TYPE_F64 = 13,
-    KJ_TYPE_B8 = 14,
-    KJ_TYPE_B16 = 15,
-    KJ_TYPE_B32 = 16,
-    KJ_TYPE_B64 = 17,
-    KJ_TYPE_UNKNOWN,
+#define KJ_TYPE_ENUM(type, ...) type,
+    KJ_TYPE_MAP(KJ_TYPE_ENUM)
+#undef KJ_TYPE_ENUM
     KJ_TYPE_COUNT
 } kjType;
 
 KJ_API const char* kj_type_to_str(kjType type);
 KJ_API isize kj_type_to_isize(kjType type);
 
-typedef i32 kjErr;
-#define KJ_ERR_NONE 0
-#define KJ_ERR_UNKNOWN -1
-#define KJ_ERR_BAD_HANDLE 1
-#define KJ_ERR_PERMISSION_DENIED 2
-#define KJ_ERR_NOT_FOUND 3
-#define KJ_ERR_BROKEN_PIPE 4
-#define KJ_ERR_ALREADY_EXISTS 5
-#define KJ_ERR_TIMED_OUT 6
-#define KJ_ERR_INVALID_INPUT 7
-#define KJ_ERR_INTERRUPED 8
-#define KJ_ERR_ILLEGAL_SEEK 9
+#define KJ_ERR_MAP(X)                                                           \
+    X(KJ_ERR_UNKNOWN, -1, "Unknown")                                            \
+    X(KJ_ERR_NONE, 0, "None")                                                   \
+    X(KJ_ERR_BAD_HANDLE, 1, "Bad Handle")                                       \
+    X(KJ_ERR_PERMISSION_DENIED, 2, "Permission Denied")                         \
+    X(KJ_ERR_NOT_FOUND, 3, "Not Found")                                         \
+    X(KJ_ERR_BROKEN_PIPE, 4, "Broken Pipe")                                     \
+    X(KJ_ERR_ALREADY_EXISTS, 5, "Already Exists")                               \
+    X(KJ_ERR_TIMED_OUT, 6, "Timed Out")                                         \
+    X(KJ_ERR_INVALID_INPUT, 7, "Invalid Input")                                 \
+    X(KJ_ERR_INTERRUPED, 8, "Interrupted")                                      \
+    X(KJ_ERR_ILLEGAL_SEEK, 9, "Illegal Seek")
+
+typedef enum kjErr {
+#define KJ_ERR_ENUM(type, value, name) type,
+    KJ_ERR_MAP(KJ_ERR_ENUM)
+#undef KJ_ERR_ENUM
+    KJ_ERR_COUNT
+} kjErr;
+
+KJ_API const char* kj_err_to_str(kjErr err);
 
 /// Memory
 
@@ -444,15 +447,13 @@ KJ_API KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc);
 KJ_API void kj_assert_handler(
         const char* expr, const char* file, u64 line, const char* msg);
 
-#if defined(KJ_DEBUG)
+#if !defined(KJ_NO_ASSERT)
 #if defined(KJ_COMPILER_MSVC)
 #define kj_break() do {                                                         \
     if(IsDebuggerPresent()) { __debugbreak(); } else { ExitProcess(0); }        \
 } while(0)
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#define kj_break() __builtin_trap()
-#else
-#error KJ_BREAK_UNSUPPORTED
+#define kj_break() do { __builtin_trap(); } while(0)
 #endif
 #define kj_assert_msg(expr, msg, ...) do {                                      \
     if(!(expr)) {                                                               \
@@ -461,7 +462,7 @@ KJ_API void kj_assert_handler(
     }                                                                           \
 } while(0)
 #define kj_assert(expr) kj_assert_msg(expr, NULL)
-#define kj_panic(msg) kj_assert_msg(0, msg)
+#define kj_panic(msg) kj_assert_msg(!"panic", msg)
 #else
 #define kj_assert_msg(expr, msg)
 #define kj_assert(expr)
@@ -606,8 +607,6 @@ enum {
         : "0" ((call)), "b" ((a)), "c" ((b)), "d" ((c)), "s" ((d)), "D" ((e))); \
 } while(0)
 #define kj_syscall6(call, res, a, b, c, d, e, f)
-#else
-#error KJ_SYSCALL_UNSUPPORTED
 #endif
 #endif
 #endif
@@ -766,9 +765,8 @@ typedef enum kjIoSeek {
 } kjIoSeek;
 
 #if defined(KJ_SYS_WIN32)
-#include <windows.h>
 typedef struct kjIo {
-    void* handle;
+    HANDLE handle;
     u32 flags;
     kjErr err;
 } kjIo;
@@ -778,8 +776,6 @@ typedef struct kjIo {
     u32 flags;
     kjErr err;
 } kjIo;
-#else
-#error KJ_IO_UNSUPPORTED
 #endif
 
 typedef struct kjIoStat {
@@ -802,71 +798,46 @@ KJ_API void* kj_io_slurp(const char* path, b32 teminate, isize* size);
 KJ_API kjIoStat kj_io_stat(kjIo* io);
 KJ_API i64 kj_io_size(kjIo* io);
 
-KJ_API const char* kj_io_err_str(kjIo* io);
-
 /// Paths
 
-KJ_API const char* kj_path_extension_with_size(const char* path, isize size);
+KJ_API const char* kj_path_extension_n(const char* path, isize size);
 KJ_API const char* kj_path_extension(const char* path);
 
 KJ_EXTERN_END
 
 #endif
 
-#if defined(KJ_IMPL) && !defined(KJ_IMPLEMENTED)
-#define KJ_IMPLEMENTED
-
+#if defined(KJ_IMPL)
 KJ_INLINE const char* kj_type_to_str(kjType type) {
     static const char* KJ_TYPE_STR[] = {
-        "none",
-        "char",
-        "i8",
-        "u8",
-        "i16",
-        "u16",
-        "i32",
-        "u32",
-        "i64",
-        "u64",
-        "isize",
-        "usize",
-        "f32",
-        "f64",
-        "b8",
-        "b16",
-        "b32",
-        "b64",
-        "unknown",
+#define KJ_TYPE_NAME(type, value, name, ...) name,
+    KJ_TYPE_MAP(KJ_TYPE_NAME)
+#undef KJ_TYPE_NAME
     };
-    return type < KJ_TYPE_NONE || type > KJ_TYPE_UNKNOWN ?
+    return type < KJ_TYPE_UNKNOWN || type >= KJ_TYPE_COUNT ?
         KJ_TYPE_STR[KJ_TYPE_UNKNOWN]: KJ_TYPE_STR[type];
 }
 
 KJ_INLINE isize kj_type_to_isize(kjType type) {
     static const isize KJ_TYPE_ISIZE[] = {
-        0,
-        kj_isize_of(char),
-        kj_isize_of(i8),
-        kj_isize_of(u8),
-        kj_isize_of(i16),
-        kj_isize_of(u16),
-        kj_isize_of(i32),
-        kj_isize_of(u32),
-        kj_isize_of(i64),
-        kj_isize_of(u64),
-        kj_isize_of(isize),
-        kj_isize_of(usize),
-        kj_isize_of(f32),
-        kj_isize_of(f64),
-        kj_isize_of(b8),
-        kj_isize_of(b16),
-        kj_isize_of(b32),
-        kj_isize_of(b64),
-        0,
+#define KJ_TYPE_SIZE(type, value, name, T, ...) kj_isize_of(T),
+    KJ_TYPE_MAP(KJ_TYPE_SIZE)
+#undef KJ_TYPE_SIZE
     };
-    return type < KJ_TYPE_NONE || type > KJ_TYPE_UNKNOWN ?
+    return type <= KJ_TYPE_NONE || type >= KJ_TYPE_COUNT ?
         0: KJ_TYPE_ISIZE[type];
 }
+
+KJ_INLINE const char* kj_err_to_str(kjErr err) {
+    static const char* KJ_ERR_STR[] = {
+#define KJ_ERR_NAME(type, value, name, ...) name,
+    KJ_ERR_MAP(KJ_ERR_NAME)
+#undef KJ_ERR_NAME
+    };
+    return err < KJ_ERR_UNKNOWN || err >= KJ_ERR_COUNT ?
+        KJ_ERR_STR[KJ_ERR_UNKNOWN]: KJ_ERR_STR[err];
+}
+
 
 #if defined(KJ_SYS_WIN32)
 KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc) {
@@ -889,6 +860,8 @@ KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc) {
     return res;
 }
 #elif defined(KJ_SYS_LINUX)
+#include <stdlib.h>
+
 KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc) {
     kj_unused(allocator);
     void* res = NULL;
@@ -909,8 +882,6 @@ KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc) {
     res = realloc(ptr, size * kj_isize_of(u8));
     return res;
 }
-#else
-#error KJ_MEM_UNSUPPORTED
 #endif
 
 kjHeapAllocator kj_heap_allocator(void) {
@@ -921,8 +892,7 @@ kjHeapAllocator kj_heap_allocator(void) {
     return res;
 }
 
-#if defined(KJ_ASSERT_IMPL) && !defined(KJ_ASSERT_IMPLEMENTED)
-#define KJ_ASSERT_IMPLEMENTED
+#if !defined(KJ_NO_ASSERT_HANDLER)
 #if defined(KJ_SYS_WIN32)
 void kj_assert_handler(
         const char* expr, const char* file, u64 line, const char* msg) {
@@ -933,7 +903,7 @@ void kj_assert_handler(
     buf[kj_isize_of(buf) - 1] = '\0';
     MessageBoxA(NULL, buf, "Assertion", MB_OK);
 }
-#else
+#elif defined(KJ_SYS_LINUX)
 void kj_assert_handler(
         const char* expr, const char* file, u64 line, const char* msg) {
     if(msg) {
@@ -941,6 +911,14 @@ void kj_assert_handler(
     } else {
         kj_printf("%s:%lu - %s", file, line, expr);
     }
+}
+#else
+void kj_assert_handler(
+        const char* expr, const char* file, u64 line, const char* msg) {
+    kj_unused(expr);
+    kj_unused(file);
+    kj_unused(line);
+    kj_unused(msg);
 }
 #endif
 #endif
@@ -1180,8 +1158,7 @@ isize kj_str_to_i64(const char* s, i64* v) {
     return res;
 }
 
-#if defined(KJ_LIB_IMPL) && !defined(KJ_LIB_IMPLEMENTED)
-#define KJ_LIB_IMPLEMENTED
+#if defined(KJ_LIB_IMPL)
 #if defined(KJ_SYS_WIN32)
 KJ_INLINE kjLib kj_lib_open(const char* path) {
     return kj_cast(kjLib, LoadLibrary(path));
@@ -1196,6 +1173,7 @@ KJ_INLINE void kj_lib_close(kjLib lib) {
 }
 #elif defined(KJ_SYS_LINUX)
 #include <dlfcn.h>
+
 KJ_INLINE kjLib kj_lib_open(const char* path) {
     return kj_cast(kjLib, dlopen(path, RTLD_LAZY));
 }
@@ -1207,8 +1185,6 @@ KJ_INLINE kjLibFn kj_lib_fn(kjLib lib, const char* name) {
 KJ_INLINE void kj_lib_close(kjLib lib) {
     dlclose(lib);
 }
-#else
-#error KJ_LIB_UNSUPPORTED
 #endif
 #endif
 
@@ -1357,8 +1333,6 @@ u64 kj_time_ms(void) {
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (ts.tv_sec + ts.tv_nsec) / 1000000;
 }
-#else
-#error KJ_DATETIME_UNSUPPORTED
 #endif
 
 u32 kj_hash_str_n(const char* s, isize size) {
@@ -1374,22 +1348,6 @@ u32 kj_hash_str(const char* s) {
 }
 
 #define KJ_IO_INVALID_MODE U32_MAX
-
-const char* kj_io_err_str(kjIo* io) {
-    switch(io->err) {
-        case KJ_ERR_NONE: return "None";
-        case KJ_ERR_BAD_HANDLE: return "Bad Handle";
-        case KJ_ERR_PERMISSION_DENIED: return "Permission Denied";
-        case KJ_ERR_NOT_FOUND: return "Not Found";
-        case KJ_ERR_BROKEN_PIPE: return "Broken Pipe";
-        case KJ_ERR_ALREADY_EXISTS: return "Already Exists";
-        case KJ_ERR_TIMED_OUT: return "Timed Out";
-        case KJ_ERR_INVALID_INPUT: return "Invalid Input";
-        case KJ_ERR_INTERRUPED: return "Interrupted";
-        case KJ_ERR_ILLEGAL_SEEK: return "Illegal Seek";
-        default: return "Unknown";
-    }
-}
 
 #if defined(KJ_SYS_WIN32)
 KJ_INTERN kjErr kj_io_err_from_sys(u32 err) {
@@ -1754,8 +1712,6 @@ kjIoStat kj_io_stat(kjIo* io) {
     }
     return res;
 }
-#else
-#error KJ_IO_UNSUPPORTED
 #endif
 
 #if defined(KJ_SYS_WIN32) || defined(KJ_SYS_LINUX)
@@ -1794,7 +1750,7 @@ i64 kj_io_size(kjIo* io) {
 }
 #endif
 
-const char* kj_path_extension_with_size(const char* path, isize size) {
+const char* kj_path_extension_n(const char* path, isize size) {
     const char* res = NULL;
     if(path) {
         if(size >= 3) {
@@ -1818,7 +1774,7 @@ const char* kj_path_extension(const char* path) {
     const char* res = NULL;
     if(path) {
         isize size = kj_str_size(path);
-        res = kj_path_extension_with_size(path, size);
+        res = kj_path_extension_n(path, size);
     }
     return res;
 }
