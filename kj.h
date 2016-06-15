@@ -33,7 +33,11 @@ KJ_EXTERN_BEGIN
 #if !defined(VC_EXTRALEAN)
 #define VC_EXTRALEAN
 #endif
+#if !defined(_CRT_SECURE_NO_WARNINGS)
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 #include <windows.h>
+#include <malloc.h>
 #elif defined(__linux__)
 #define KJ_SYS_LINUX
 #define _GNU_SOURCE
@@ -177,7 +181,8 @@ KJ_EXTERN_BEGIN
 #endif
 
 #if !defined(kj_align_on)
-#define kj_align_on(p, a) (((p) + ((a) - 1)) & ~((a) - 1))
+#define kj_align_on(p, a)                                                       \
+    kj_cast(void*, (kj_cast(uptr, p) + ((a) - 1)) & ~((a) - 1))
 #endif
 
 #if !defined(kj_concat)
@@ -204,25 +209,26 @@ KJ_EXTERN_BEGIN
 #define kj_swap(T, a, b) { T tmp_##__LINE__ = a; a = b; b = tmp_##__LINE__; }
 #define kj_abs(a) ((a) > 0 ? (a): -(a))
 #define kj_sign(a) ((a) >= 0 ? 1: -1)
+#define kj_round_up(a, b) ((a) + (((b) - 1) - (((a) - 1) % (b))))
 #endif
 
 #if !defined(kj_kb)
-#define kj_kb(a) ((a) * 1024)
-#define kj_mb(a) (kj_kb((a)) * 1024)
-#define kj_gb(a) (kj_mb((a)) * 1024)
-#define kj_tb(a) (kj_gb((a)) * 1024)
-#define kj_b_kb(a) ((a) / 1024)
-#define kj_b_mb(a) (kj_b_kb((a)) / 1024)
-#define kj_b_gb(a) (kj_b_mb((a)) / 1024)
-#define kj_b_tb(a) (kj_b_gb((a)) / 1024)
+#define kj_kb_to_bytes(a) ((a) * 1024)
+#define kj_mb_to_bytes(a) (kj_kb_to_bytes((a)) * 1024)
+#define kj_gb_to_bytes(a) (kj_mb_to_bytes((a)) * 1024)
+#define kj_tb_to_bytes(a) (kj_gb_to_bytes((a)) * 1024)
+#define kj_bytes_to_kb(a) ((a) / 1024)
+#define kj_bytes_to_mb(a) (kj_bytes_to_kb((a)) / 1024)
+#define kj_bytes_to_gb(a) (kj_bytes_to_mb((a)) / 1024)
+#define kj_bytes_to_tb(a) (kj_bytes_to_gb((a)) / 1024)
 #endif
 
 #if !defined(KJ_BIT_FLAG)
 #define KJ_BIT_ZERO (0x00 << 0x00)
 #define KJ_BIT_FLAG(a) (0x01 << (a))
-#define KJ_BIT_SET(a, n) (((a) >> (n)) & 0x01)
-#define KJ_BIT_GET(a, n) ((a) |  (0x01 << (n)))
-#define KJ_BIT_CLEAR(a, n) ((a) & ~(0x01 << (n)))
+#define kj_bit_set(a, n) (((a) >> (n)) & 0x01)
+#define kj_bit_get(a, n) ((a) |  (0x01 << (n)))
+#define kj_bit_clear(a, n) ((a) & ~(0x01 << (n)))
 #endif
 
 #if !defined(__cplusplus)
@@ -274,16 +280,16 @@ typedef uint64_t u64;
 #endif
 
 #if !defined(I8_MIN)
-#define I8_MIN kj_cast(i8, -128)
+#define I8_MIN k-j_cast(i8, 128)
 #define I8_MAX kj_cast(i8, 127)
 
-#define I16_MIN kj_cast(i16, -32768)
+#define I16_MIN -kj_cast(i16, 32768)
 #define I16_MAX kj_cast(i16, 32767)
 
-#define I32_MIN kj_cast(i32, -2147483648)
+#define I32_MIN -kj_cast(i32, 2147483648)
 #define I32_MAX kj_cast(i32, 2147483647)
 
-#define I64_MIN kj_cast(i64, -9223372036854775808)
+#define I64_MIN -kj_cast(i64, 9223372036854775808)
 #define I64_MAX kj_cast(i64, 9223372036854775807)
 
 #define U8_MIN kj_cast(u8, 0x00)
@@ -399,7 +405,8 @@ KJ_API isize kj_type_to_isize(kjType type);
     X(KJ_ERR_TIMED_OUT, 6, "Timed Out")                                         \
     X(KJ_ERR_INVALID_INPUT, 7, "Invalid Input")                                 \
     X(KJ_ERR_INTERRUPED, 8, "Interrupted")                                      \
-    X(KJ_ERR_ILLEGAL_SEEK, 9, "Illegal Seek")
+    X(KJ_ERR_ILLEGAL_SEEK, 9, "Illegal Seek")                                   \
+    X(KJ_ERR_MALLOC_FAIL, 10, "Malloc Fail")
 
 typedef enum kjErr {
 #define KJ_ERR_ENUM(type, value, name) type,
@@ -412,28 +419,43 @@ KJ_API const char* kj_err_to_str(kjErr err);
 
 /// Memory
 
+KJ_API void* kj_global_alloc(isize size);
+KJ_API void kj_global_free(void* data);
+KJ_API void* kj_global_realloc(void* data, isize size);
+
 typedef struct kjAllocator kjAllocator;
 
 #define KJ_ALLOCATOR_ALLOC_FN(name)                                             \
     void* name(kjAllocator* allocator, isize size)
 typedef KJ_ALLOCATOR_ALLOC_FN(kjAllocatorAllocFn);
 #define KJ_ALLOCATOR_FREE_FN(name)                                              \
-    void name(kjAllocator* allocator, void* ptr)
+    void name(kjAllocator* allocator, void* data)
 typedef KJ_ALLOCATOR_FREE_FN(kjAllocatorFreeFn);
 #define KJ_ALLOCATOR_REALLOC_FN(name)                                           \
-    void* name(kjAllocator* allocator, void* ptr, isize size)
+    void* name(kjAllocator* allocator, void* data, isize size)
 typedef KJ_ALLOCATOR_REALLOC_FN(kjAllocatorReallocFn);
+#define KJ_ALLOCATOR_ALLOC_ALIGNED_FN(name)                                     \
+    void* name(kjAllocator* allocator, isize size, isize alignment)
+typedef KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kjAllocatorAllocAlignedFn);
+
+KJ_API KJ_ALLOCATOR_ALLOC_FN(kj_dummy_alloc);
+KJ_API KJ_ALLOCATOR_FREE_FN(kj_dummy_free);
+KJ_API KJ_ALLOCATOR_REALLOC_FN(kj_dummy_realloc);
+KJ_API KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj_dummy_alloc_aligned);
 
 struct kjAllocator {
     kjAllocatorAllocFn* alloc;
     kjAllocatorFreeFn* free;
     kjAllocatorReallocFn* realloc;
+    kjAllocatorAllocAlignedFn* alloc_aligned;
 };
 
 #define kj_allocator_alloc(a, s) kj_cast(kjAllocator*, (a))->alloc((a), (s))
 #define kj_allocator_free(a, p) kj_cast(kjAllocator*, (a))->free((a), (p))
 #define kj_allocator_realloc(a, p, s)                                           \
     kj_cast(kjAllocator*, (a))->realloc((a), (p), (s))
+#define kj_allocator_alloc_aligned(a, s, alignment)                             \
+    kj_cast(kjAllocator*, (a))->alloc_aligned((a), (s), (alignment))
 
 typedef kjAllocator kjHeapAllocator;
 
@@ -442,12 +464,25 @@ KJ_API KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc);
 KJ_API KJ_ALLOCATOR_FREE_FN(kj_heap_free);
 KJ_API KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc);
 
+typedef struct kjLinearAllocator {
+    kjAllocator allocator;
+    u8* data;
+    isize size;
+    isize used;
+    u8* last;
+} kjLinearAllocator;
+
+KJ_API kjLinearAllocator kj_linear_allocator(void* data, isize size);
+KJ_API void kj_linear_allocator_flush(kjLinearAllocator* allocator);
+KJ_API KJ_ALLOCATOR_ALLOC_FN(kj_linear_alloc);
+KJ_API KJ_ALLOCATOR_REALLOC_FN(kj_linear_realloc);
+
 /// Debug
 
+#if defined(NDEBUG) || defined(_DEBUG) || defined(KJ_DEBUG)
 KJ_API void kj_assert_handler(
         const char* expr, const char* file, u64 line, const char* msg);
 
-#if !defined(KJ_NO_ASSERT)
 #if defined(KJ_COMPILER_MSVC)
 #define kj_break() do {                                                         \
     if(IsDebuggerPresent()) { __debugbreak(); } else { ExitProcess(0); }        \
@@ -564,7 +599,7 @@ enum {
         : "0" ((call)), "D" ((a)), "S" ((b)), "d" ((c)), "r" (r10), "r", (r8),  \
           "r", (r9));                                                           \
 } while(0)
-#elif define(KJ_ARCH_32_BIT)
+#elif defined(KJ_ARCH_32_BIT)
 enum {
     KJ_SYSCALL_CLOSE = 6,
     KJ_SYSCALL_OPEN = 5,
@@ -613,7 +648,6 @@ enum {
 
 /// Printing
 
-#if !defined(KJ_NO_STDIO)
 #if defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
 #define KJ_FMT_VARGS(a) __attribute__((format(printf, (a), ((a) + 1))))
 #else
@@ -627,7 +661,6 @@ KJ_API i32 kj_printf(char const* fmt, ...) KJ_FMT_VARGS(1);
 KJ_API i32 kj_vsnprintf(char* buf, isize size, char const* fmt, va_list v);
 KJ_API i32 kj_snprintf(
         char* buf, isize size, char const* fmt, ...) KJ_FMT_VARGS(3);
-#endif
 
 /// Strings/Characters
 
@@ -803,6 +836,20 @@ KJ_API i64 kj_io_size(kjIo* io);
 KJ_API const char* kj_path_extension_n(const char* path, isize size);
 KJ_API const char* kj_path_extension(const char* path);
 
+/// Buffer
+
+typedef struct kjBuffer {
+    kjHeapAllocator* allocator;
+    isize granularity;
+    isize size;
+    isize used;
+    u8* data;
+} kjBuffer;
+
+KJ_API kjBuffer kj_buffer(kjHeapAllocator* allocator, isize granularity);
+KJ_API void kj_buffer_destroy(kjBuffer* buffer);
+KJ_API kjErr kj_buffer_write(kjBuffer* buffer, void* data, isize size);
+
 KJ_EXTERN_END
 
 #endif
@@ -838,51 +885,101 @@ KJ_INLINE const char* kj_err_to_str(kjErr err) {
         KJ_ERR_STR[KJ_ERR_UNKNOWN]: KJ_ERR_STR[err];
 }
 
+KJ_INLINE KJ_ALLOCATOR_ALLOC_FN(kj_dummy_alloc) {
+    kj_unused(allocator);
+    kj_unused(size);
+    return NULL;
+}
+
+KJ_INLINE KJ_ALLOCATOR_FREE_FN(kj_dummy_free) {
+    kj_unused(allocator);
+    kj_unused(data);
+}
+
+KJ_INLINE KJ_ALLOCATOR_REALLOC_FN(kj_dummy_realloc) {
+    kj_unused(allocator);
+    kj_unused(data);
+    kj_unused(size);
+    return NULL;
+}
+
+KJ_INLINE KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj_dummy_alloc_aligned) {
+    kj_unused(allocator);
+    kj_unused(size);
+    kj_unused(alignment);
+    return NULL;
+}
 
 #if defined(KJ_SYS_WIN32)
-KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc) {
-    kj_unused(allocator);
+void* kj_global_alloc(isize size) {
     void* res = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size);
     return res;
 }
 
-KJ_ALLOCATOR_FREE_FN(kj_heap_free) {
-    kj_unused(allocator);
-    if(ptr) {
-        HeapFree(GetProcessHeap(), 0, ptr);
+void kj_global_free(void* data) {
+    if(data) {
+        HeapFree(GetProcessHeap(), 0, data);
     }
 }
 
-KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc) {
-    kj_unused(allocator);
+void* kj_global_realloc(void* data, isize size) {
     void* res = NULL;
-    res = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ptr, size);
+    res = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, data, size);
+    return res;
+}
+
+void* kj_global_alloc_aligned(isize size, isize alignment) {
+    void* res = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size + alignment);
+    res = kj_align_on(kj_cast(u8*, res), alignment);
     return res;
 }
 #elif defined(KJ_SYS_LINUX)
 #include <stdlib.h>
 
-KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc) {
-    kj_unused(allocator);
+void* kj_global_alloc(isize size) {
     void* res = NULL;
     res = calloc(size, kj_isize_of(u8));
     return res;
 }
 
+void kj_global_free(void* data) {
+    if(data) {
+        free(data);
+    }
+}
+
+void* kj_global_realloc(void* data, isize size) {
+    void* res = NULL;
+    res = realloc(data, size * kj_isize_of(u8));
+    return res;
+}
+
+void* kj_global_alloc_aligned(isize size, isize alignment) {
+    void* res = calloc(size + alignment, kj_isize_of(u8));
+    res = kj_align_on(kj_cast(u8*, res), alignment);
+    return res;
+}
+#endif
+
+KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc) {
+    kj_unused(allocator);
+    return kj_global_alloc(size);
+}
+
 KJ_ALLOCATOR_FREE_FN(kj_heap_free) {
     kj_unused(allocator);
-    if(ptr) {
-        free(ptr);
-    }
+    kj_global_free(data);
 }
 
 KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc) {
     kj_unused(allocator);
-    void* res = NULL;
-    res = realloc(ptr, size * kj_isize_of(u8));
-    return res;
+    return kj_global_realloc(data, size);
 }
-#endif
+
+KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj_heap_alloc_aligned) {
+    kj_unused(allocator);
+    return kj_global_alloc_aligned(size, alignment);
+}
 
 kjHeapAllocator kj_heap_allocator(void) {
     kjHeapAllocator res;
@@ -892,7 +989,42 @@ kjHeapAllocator kj_heap_allocator(void) {
     return res;
 }
 
-#if !defined(KJ_NO_ASSERT_HANDLER)
+#if 0
+KJ_ALLOCATOR_ALLOC_FN(kj_linear_alloc) {
+    kj_unused(size);
+
+    void* res = NULL;
+    if(allocator) {
+        kjLinearAllocator* a = kj_cast(kjLinearAllocator*, allocator);
+    }
+    return res;
+}
+
+KJ_ALLOCATOR_REALLOC_FN(kj_linear_realloc) {
+    void* res = NULL;
+    if(allocator) {
+        kjLinearAllocator* a = kj_cast(kjLinearAllocator*, allocator);
+    }
+    return res;
+}
+
+kjLinearAllocator kj_linear_allocator(void* data, isize size) {
+    kjLinearAllocator res;
+    res.data = data;
+    res.size = size;
+    res.used = 0;
+    res.last = data;
+    return res;
+}
+
+void kj_linear_allocator_flush(kjLinearAllocator* allocator) {
+    if(allocator) {
+        allocator->used = 0;
+    }
+}
+#endif
+
+#if defined(KJ_ASSERT_HANDLER_IMPL)
 #if defined(KJ_SYS_WIN32)
 void kj_assert_handler(
         const char* expr, const char* file, u64 line, const char* msg) {
@@ -912,14 +1044,6 @@ void kj_assert_handler(
         kj_printf("%s:%lu - %s", file, line, expr);
     }
 }
-#else
-void kj_assert_handler(
-        const char* expr, const char* file, u64 line, const char* msg) {
-    kj_unused(expr);
-    kj_unused(file);
-    kj_unused(line);
-    kj_unused(msg);
-}
 #endif
 #endif
 
@@ -937,7 +1061,6 @@ KJ_INLINE u64 kj_byte_swap_u64(u64 a) {
                         kj_byte_swap_u32((a & 0x00000000FFFFFFFF) << 32));
 }
 
-#if !defined(KJ_NO_STDIO)
 #include <stdio.h>
 
 i32 kj_vprintf(char const* fmt, va_list v) {
@@ -974,7 +1097,6 @@ i32 kj_snprintf(char* buf, isize size, char const* fmt, ...) {
     va_end(v);
     return res;
 }
-#endif
 
 KJ_INLINE b32 kj_char_is_eol(utf32 c) {
     if(c <= KJ_MAX_LATIN1) {
@@ -1059,56 +1181,35 @@ KJ_INLINE utf32 kj_char_to_upper(utf32 c) {
     return c;
 }
 
-isize kj_str_size(const char* s) {
+KJ_INLINE isize kj_str_size(const char* s) {
     const char* e = s;
     while(*e) { e++; }
     return (e - s);
 }
 
-isize kj_str_cmp_n(const char* s1, const char* s2, isize n) {
-    while(*s1 && *s2 && n) {
-        if(*s1 != *s2) {
-            return kj_cast(uptr, *s1) < kj_cast(uptr, *s2) ? -1: +1;
-        }
-        s1++;
-        s2++;
-        n--;
-    }
-    return 0;
+KJ_INLINE isize kj_str_cmp_n(const char* s1, const char* s2, isize n) {
+    if(!n--) return 0;
+    for(; *s1 && *s2 && n && *s1 == *s2; s1++, s2++, n--);
+    return *s1 - *s2;
 }
 
-isize kj_str_cmp(const char* s1, const char* s2) {
-    while(*s1 && *s2) {
-        if(*s1 != *s2) {
-            return kj_cast(uptr, *s1) < kj_cast(uptr, *s2) ? -1: +1;
-        }
-        s1++;
-        s2++;
-    }
-    return 0;
+KJ_INLINE isize kj_str_cmp(const char* s1, const char* s2) {
+    for(; *s1 == *s2 && *s1; s1++, s2++);
+    return *s1 - *s2;
 }
 
-isize kj_str_case_cmp_n(const char* s1, const char* s2, isize n) {
-    while(*s1 && *s2 && n) {
-        if(kj_char_to_lower(*s1) != kj_char_to_lower(*s2)) {
-            return kj_cast(uptr, *s1) < kj_cast(uptr, *s2) ? -1: +1;
-        }
-        s1++;
-        s2++;
-        n--;
-    }
-    return 0;
+KJ_INLINE isize kj_str_case_cmp_n(const char* s1, const char* s2, isize n) {
+    if(!n--) return 0;
+    for(; *s1 && *s2 && n &&
+            (*s1 == *s2 || kj_char_to_lower(*s1) == kj_char_to_lower(*s2));
+            s1++, s2++, n--);
+    return *s1 - *s2;
 }
 
-isize kj_str_case_cmp(const char* s1, const char* s2) {
-    while(*s1 && *s2) {
-        if(kj_char_to_lower(*s1) != kj_char_to_lower(*s2)) {
-            return kj_cast(uptr, *s1) < kj_cast(uptr, *s2) ? -1: +1;
-        }
-        s1++;
-        s2++;
-    }
-    return 0;
+KJ_INLINE isize kj_str_case_cmp(const char* s1, const char* s2) {
+    for(; (*s1 == *s2 || kj_char_to_lower(*s1) == kj_char_to_lower(*s2)) &&
+            *s1; s1++, s2++);
+    return *s1 - *s2;
 }
 
 isize kj_str_to_u64(const char* s, u64* v) {
@@ -1158,7 +1259,7 @@ isize kj_str_to_i64(const char* s, i64* v) {
     return res;
 }
 
-#if defined(KJ_LIB_IMPL)
+#if !defined(KJ_LIB_IMPL)
 #if defined(KJ_SYS_WIN32)
 KJ_INLINE kjLib kj_lib_open(const char* path) {
     return kj_cast(kjLib, LoadLibrary(path));
@@ -1455,6 +1556,8 @@ kjIo kj_io_open(const char* path, u32 flags) {
 }
 
 kjErr kj_io_close(kjIo* io) {
+    kj_assert(io);
+
     kjErr res = KJ_ERR_NONE;
     if(!CloseHandle(io->handle)) {
         res = kj_io_err_from_sys(GetLastError());
@@ -1464,6 +1567,8 @@ kjErr kj_io_close(kjIo* io) {
 }
 
 kjErr kj_io_seek(kjIo* io, i64 offset, kjIoSeek seek) {
+    kj_assert(io);
+
     kjErr res = KJ_ERR_NONE;
     LARGE_INTEGER new_offset;
     new_offset.QuadPart = offset;
@@ -1475,6 +1580,8 @@ kjErr kj_io_seek(kjIo* io, i64 offset, kjIoSeek seek) {
 }
 
 isize kj_io_read(kjIo* io, void* buf, isize size) {
+    kj_assert(io);
+
     isize res = -1;
     DWORD read = 0;
     if(ReadFile(
@@ -1488,6 +1595,8 @@ isize kj_io_read(kjIo* io, void* buf, isize size) {
 }
 
 isize kj_io_write(kjIo* io, void* buf, isize size) {
+    kj_assert(io);
+
     isize res = -1;
     DWORD wrote = 0;
     if(WriteFile(
@@ -1501,6 +1610,8 @@ isize kj_io_write(kjIo* io, void* buf, isize size) {
 }
 
 isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset) {
+    kj_assert(io);
+
     isize res = -1;
     OVERLAPPED overlapped = {0};
     overlapped.Offset = kj_cast(u32, ((offset >> 0) & 0xFFFFFFFF));
@@ -1517,6 +1628,8 @@ isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset) {
 }
 
 isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
+    kj_assert(io);
+
     isize res = -1;
     OVERLAPPED overlapped = {0};
     overlapped.Offset = kj_cast(u32, ((offset >> 0) & 0xFFFFFFFF));
@@ -1533,6 +1646,8 @@ isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
 }
 
 kjIoStat kj_io_stat(kjIo* io) {
+    kj_assert(io);
+
     kjIoStat res = {0};
     BY_HANDLE_FILE_INFORMATION io_info = {0};
     if(GetFileInformationByHandle(io->handle, &io_info)) {
@@ -1648,6 +1763,8 @@ kjIo kj_io_open(const char* path, u32 flags) {
 }
 
 kjErr kj_io_close(kjIo* io) {
+    kj_assert(io);
+
     kjErr res = KJ_ERR_NONE;
     i32 out = 0;
     kj_syscall1(KJ_SYSCALL_CLOSE, out, io->handle);
@@ -1661,6 +1778,8 @@ kjErr kj_io_close(kjIo* io) {
 }
 
 kjErr kj_io_seek(kjIo* io, i64 offset, kjIoSeek seek) {
+    kj_assert(io);
+
     kjErr res = KJ_ERR_NONE;
     isize out = -1;
     kj_syscall3(KJ_SYSCALL_LSEEK, out, io->handle, offset, seek);
@@ -1670,6 +1789,8 @@ kjErr kj_io_seek(kjIo* io, i64 offset, kjIoSeek seek) {
 }
 
 isize kj_io_read(kjIo* io, void* buf, isize size) {
+    kj_assert(io);
+
     isize res = -1;
     kj_syscall3(KJ_SYSCALL_READ, res, io->handle, buf, size);
     io->err = kj_io_err_from_sys(res < 0 ? -res: 0);
@@ -1677,6 +1798,8 @@ isize kj_io_read(kjIo* io, void* buf, isize size) {
 }
 
 isize kj_io_write(kjIo* io, void* buf, isize size) {
+    kj_assert(io);
+
     isize res = -1;
     kj_syscall3(KJ_SYSCALL_WRITE, res, io->handle, buf, size);
     io->err = kj_io_err_from_sys(res < 0 ? -res: 0);
@@ -1684,6 +1807,8 @@ isize kj_io_write(kjIo* io, void* buf, isize size) {
 }
 
 isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset) {
+    kj_assert(io);
+
     isize res = -1;
     kj_syscall4(KJ_SYSCALL_PREAD, res, io->handle, buf, size, offset);
     io->err = kj_io_err_from_sys(res < 0 ? -res: 0);
@@ -1691,6 +1816,8 @@ isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset) {
 }
 
 isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
+    kj_assert(io);
+
     isize res = -1;
     kj_syscall4(KJ_SYSCALL_PWRITE, res, io->handle, buf, size, offset);
     io->err = kj_io_err_from_sys(res < 0 ? -res: 0);
@@ -1698,6 +1825,8 @@ isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
 }
 
 kjIoStat kj_io_stat(kjIo* io) {
+    kj_assert(io);
+
     kjIoStat res;
     kj_zero(&res, kj_isize_of(kjIoStat));
     struct stat buf;
@@ -1721,7 +1850,7 @@ void* kj_io_slurp(const char* path, b32 terminate, isize* size) {
     if(!kj_io_has_err(&io)) {
         kjIoStat stat = kj_io_stat(&io);
         if(stat.size > 0) {
-            res = kj_heap_alloc(NULL, terminate ? stat.size + 1: stat.size);
+            res = kj_global_alloc(terminate ? stat.size + 1: stat.size);
             if(kj_io_read(&io, res, stat.size) == stat.size) {
                 if(terminate) {
                     u8* s = kj_cast(u8*, res);
@@ -1731,7 +1860,7 @@ void* kj_io_slurp(const char* path, b32 terminate, isize* size) {
                     *size = stat.size;
                 }
             } else {
-                kj_heap_free(NULL, res);
+                kj_global_free(res);
                 res = NULL;
             }
         }
@@ -1741,6 +1870,8 @@ void* kj_io_slurp(const char* path, b32 terminate, isize* size) {
 }
 
 i64 kj_io_size(kjIo* io) {
+    kj_assert(io);
+
     i64 res = 0;
     kjIoStat stat = kj_io_stat(io);
     if(!kj_io_has_err(io)) {
@@ -1776,6 +1907,52 @@ const char* kj_path_extension(const char* path) {
         isize size = kj_str_size(path);
         res = kj_path_extension_n(path, size);
     }
+    return res;
+}
+
+kjBuffer kj_buffer(kjHeapAllocator* allocator, isize granularity) {
+    kj_assert(allocator);
+
+    kjBuffer res = {0};
+    res.granularity = granularity;
+    return res;
+}
+
+void kj_buffer_destroy(kjBuffer* buffer) {
+    kj_assert(buffer);
+
+    if(!buffer->data) {
+        kj_allocator_free(buffer->allocator, buffer->data);
+        buffer->data = NULL;
+    }
+}
+
+kjErr kj_buffer_write(kjBuffer* buffer, void* data, isize size) {
+    kj_assert(buffer);
+
+    kjErr res = KJ_ERR_NONE;
+    if(buffer->used + size > buffer->size) {
+        isize new_size = kj_round_up(buffer->size + size, buffer->granularity);
+        void* new_data = kj_allocator_realloc(
+                buffer->allocator, buffer->data, new_size);
+        if(new_data) {
+            buffer->data = kj_cast(u8*, new_data);
+            buffer->size = size;
+        } else {
+            res = KJ_ERR_MALLOC_FAIL;
+        }
+    }
+    if(res == KJ_ERR_NONE) {
+        kj_copy(buffer->data + buffer->used, data, size);
+        buffer->used += size;
+    }
+
+#if defined(KJ_DEBUG)
+    if(buffer->used < buffer->size) {
+        buffer->data[buffer->used] = '\0';
+    }
+#endif
+
     return res;
 }
 
