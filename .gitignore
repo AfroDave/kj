@@ -20,3 +20,4 @@ test*.*
 
 kj_image.h
 kj_gl.h
+kj_platform.h

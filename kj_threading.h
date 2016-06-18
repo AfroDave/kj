@@ -10,36 +10,51 @@
 
 #define KJ_THREADING_VERSION_MAJOR 0
 #define KJ_THREADING_VERSION_MINOR 2
-#define KJ_THREADING_VERSION_PATCH 1
+#define KJ_THREADING_VERSION_PATCH 2
 
 KJ_EXTERN_BEGIN
-
-#if !defined(__cplusplus)
-#if !defined(thread_local)
-#if defined(KJ_COMPILER_MSVC) && _MSC_VER >= 1300
-#define thread_local __declspec(thread)
-#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#define thread_local __thread
-#endif
-#endif
-#endif
 
 enum {
     KJ_THREADING_FLAG_NONE = KJ_BIT_ZERO
 };
 
-#define KJ_THREAD_FN(name) void name(void* data)
-typedef KJ_THREAD_FN(kjThreadFn);
-
 #if defined(KJ_SYS_WIN32)
 #include <windows.h>
 typedef HANDLE kjThreadHandle;
+typedef CRITICAL_SECTION kjMutex;
+typedef HANDLE kjSemaphore;
 #elif defined(KJ_SYS_LINUX)
 #include <pthread.h>
+#include <semaphore.h>
 typedef pthread_t kjThreadHandle;
+typedef pthread_mutex_t kjMutex;
+typedef sem_t kjSemaphore;
 #else
-#error KJ_SYS_UNSUPPORTED
+#error Unsupported Operating System
 #endif
+
+#if defined(KJ_COMPILER_MSVC)
+#define KJ_TLS __declspec(thread)
+typedef volatile LONG kjAtomic32;
+typedef volatile LONGLONG kjAtomic64;
+typedef volatile PVOID kjAtomicPtr;
+#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+#define KJ_TLS __thread
+typedef KJ_ALIGN(4) volatile u32 kjAtomic32;
+typedef KJ_ALIGN(8) volatile u64 kjAtomic64;
+#if defined(KJ_ARCH_32_BIT)
+typedef KJ_ALIGN(4) volatile void* kjAtomicPtr;
+#elif defined(KJ_ARCH_64_BIT)
+typedef KJ_ALIGN(8) volatile void* kjAtomicPtr;
+#else
+#error Unsupported Architecture
+#endif
+#else
+#error Unsupported Compiler
+#endif
+
+#define KJ_THREAD_FN(name) void name(void* data)
+typedef KJ_THREAD_FN(kjThreadFn);
 
 typedef struct kjThread {
     i32 id;
@@ -55,17 +70,6 @@ KJ_API kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags);
 KJ_API void kj_thread_join(kjThread* thread);
 KJ_API void kj_thread_detach(kjThread* thread);
 
-#if defined(KJ_SYS_WIN32)
-typedef CRITICAL_SECTION kjMutex;
-typedef HANDLE kjSemaphore;
-#elif defined(KJ_SYS_LINUX)
-#include <semaphore.h>
-typedef pthread_mutex_t kjMutex;
-typedef sem_t kjSemaphore;
-#else
-#error KJ_SYS_UNSUPPORTED
-#endif
-
 KJ_API kjMutex kj_mutex(void);
 KJ_API void kj_mutex_lock(kjMutex* mutex);
 KJ_API b32 kj_mutex_try_lock(kjMutex* mutex);
@@ -77,24 +81,6 @@ KJ_API b32 kj_semaphore_wait(kjSemaphore* semaphore);
 KJ_API b32 kj_semaphore_try_wait(kjSemaphore* semaphore);
 KJ_API void kj_semaphore_signal(kjSemaphore* semaphore, i32 count);
 KJ_API void kj_semaphore_destroy(kjSemaphore* semaphore);
-
-#if defined(KJ_COMPILER_MSVC)
-typedef volatile LONG kjAtomic32;
-typedef volatile LONGLONG kjAtomic64;
-typedef volatile PVOID kjAtomicPtr;
-#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-typedef KJ_ALIGN(4) volatile u32 kjAtomic32;
-typedef KJ_ALIGN(8) volatile u64 kjAtomic64;
-#if defined(KJ_ARCH_32_BIT)
-typedef KJ_ALIGN(4) volatile void* kjAtomicPtr;
-#elif defined(KJ_ARCH_64_BIT)
-typedef KJ_ALIGN(8) volatile void* kjAtomicPtr;
-#else
-#define KJ_ARCH_UNSUPPORTED
-#endif
-#else
-#error KJ_COMPILER_UNSUPPORTED
-#endif
 
 KJ_API void kj_atomic_read_fence(void);
 KJ_API void kj_atomic_write_fence(void);

@@ -403,6 +403,7 @@ f32 kj_floor(f32 a) { return __builtin_floorf(a); }
 f32 kj_ceil(f32 a) { return __builtin_ceilf(a); }
 #elif defined(KJ_COMPILER_MSVC)
 #include <math.h>
+
 f32 kj_rsqrt(f32 a) { return 1.0f / sqrtf(a); }
 f32 kj_sqrt(f32 a) { return sqrtf(a); }
 f32 kj_sin(f32 radians) { return sinf(radians); }
@@ -1139,8 +1140,8 @@ kjMat4f kj_mat4f_one(void) {
 
 kjMat4f kj_mat4f_mul(kjMat4f a, kjMat4f b) {
     kjMat4f res;
-    for (u32 j = 0; j < 4; j++) {
-        for (u32 i = 0; i < 4; i++) {
+    for(u32 j = 0; j < 4; j++) {
+        for(u32 i = 0; i < 4; i++) {
             res.e[j][i] =
                 a.e[0][i] * b.e[j][0] +
                 a.e[1][i] * b.e[j][1] +
