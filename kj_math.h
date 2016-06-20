@@ -734,7 +734,10 @@ kjVec3u kj_vec3u_mulu(kjVec3u a, u32 b) {
 }
 
 kjVec3f kj_vec3f_div(kjVec3f a, kjVec3f b) {
-    return kj_vec3f(a.x / b.x, a.y / b.y, a.z / b.z);
+    return kj_vec3f(
+            a.x / (b.x + F32_EPS),
+            a.y / (b.y + F32_EPS),
+            a.z / (b.z + F32_EPS));
 }
 
 kjVec3i kj_vec3i_div(kjVec3i a, kjVec3i b) {

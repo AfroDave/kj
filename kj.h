@@ -855,6 +855,7 @@ KJ_API i64 kj_io_size(kjIo* io);
 KJ_API const char* kj_path_extension_n(const char* path, isize size);
 KJ_API const char* kj_path_extension(const char* path);
 
+#if defined(KJ_SYS_WIN32)
 typedef struct kjFileGroup {
     kjErr err;
     isize count;
@@ -867,6 +868,7 @@ typedef struct kjFileGroup {
 KJ_API kjFileGroup kj_file_group_begin(const char* path);
 KJ_API isize kj_file_group_next(kjFileGroup* g, char* path, isize size);
 KJ_API void kj_file_group_end(kjFileGroup* g);
+#endif
 
 /// Buffer
 
@@ -915,7 +917,7 @@ KJ_INLINE const char* kj_err_to_str(kjErr err) {
 #undef KJ_ERR_NAME
     };
     return err < KJ_ERR_UNKNOWN || err >= KJ_ERR_COUNT ?
-        KJ_ERR_STR[KJ_ERR_UNKNOWN]: KJ_ERR_STR[err];
+        "Unknown": KJ_ERR_STR[err];
 }
 
 KJ_INLINE KJ_ALLOCATOR_ALLOC_FN(kj_dummy_alloc) {
@@ -1064,6 +1066,9 @@ KJ_ALLOCATOR_REALLOC_FN(kj_linear_realloc) {
 }
 
 KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj_linear_alloc_aligned) {
+    kj_unused(allocator);
+    kj_unused(size);
+    kj_unused(alignment);
     void* res = NULL;
     return res;
 }
@@ -1368,7 +1373,7 @@ isize kj_ucs_to_utf8(const WCHAR* ws, char* s, isize size) {
 }
 #endif
 
-#if !defined(KJ_LIB_IMPL)
+#if defined(KJ_LIB_IMPL)
 #if defined(KJ_SYS_WIN32)
 KJ_INLINE kjLib kj_lib_open(const char* path) {
     kjLib res = NULL;
@@ -2077,8 +2082,10 @@ void kj_file_group_end(kjFileGroup* g) {
 kjBuffer kj_buffer(kjHeapAllocator* allocator, isize granularity) {
     kj_assert(allocator);
 
-    kjBuffer res = {0};
+    kjBuffer res;
+    kj_zero(&res, kj_isize_of(kjBuffer));
     res.granularity = granularity;
+    res.allocator = allocator;
     return res;
 }
 

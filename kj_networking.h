@@ -18,7 +18,6 @@ KJ_EXTERN_BEGIN
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #elif defined(KJ_SYS_LINUX)
-#include <sys/sock.h>
 #include <netinet/in.h>
 #else
 #error Unsupported Operating System
@@ -75,6 +74,9 @@ KJ_INTERN kjErr kj_networking_err_from_sys(void) {
     }
 }
 #elif defined(KJ_SYS_LINUX)
+#include <arpa/inet.h>
+#include <unistd.h>
+
 #define INVALID_SOCKET (-1)
 #define SOCKET_ERROR (-1)
 
