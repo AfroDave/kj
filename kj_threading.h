@@ -19,7 +19,6 @@ enum {
 };
 
 #if defined(KJ_SYS_WIN32)
-#include <windows.h>
 typedef HANDLE kjThreadHandle;
 typedef CRITICAL_SECTION kjMutex;
 typedef HANDLE kjSemaphore;

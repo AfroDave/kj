@@ -36,6 +36,12 @@ KJ_EXTERN_BEGIN
 #if !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
 #endif
+#if !defined(_UNICODE)
+#define _UNICODE
+#endif
+#if !defined(UNICODE)
+#define UNICODE
+#endif
 #include <windows.h>
 #include <malloc.h>
 #elif defined(__linux__)
@@ -392,10 +398,17 @@ KJ_API isize kj_type_to_isize(kjType type);
     X(KJ_ERR_INVALID_INPUT, 7, "Invalid Input")                                 \
     X(KJ_ERR_INTERRUPED, 8, "Interrupted")                                      \
     X(KJ_ERR_ILLEGAL_SEEK, 9, "Illegal Seek")                                   \
-    X(KJ_ERR_MALLOC_FAIL, 10, "Malloc Fail")
+    X(KJ_ERR_MALLOC_FAIL, 10, "Malloc Fail")                                    \
+    X(KJ_ERR_ADDR_IN_USE, 11, "Address In User")                                \
+    X(KJ_ERR_ADDR_NOT_AVAILABLE, 12, "Address Not Available")                   \
+    X(KJ_ERR_CONNECTION_ABORTED, 13, "Connection Aborted")                      \
+    X(KJ_ERR_CONNECTION_REFUSED, 14, "Connection Refused")                      \
+    X(KJ_ERR_CONNECTION_RESET, 15, "Connection Reset")                          \
+    X(KJ_ERR_NOT_CONNECTED, 16, "Not Connected")                                \
+    X(KJ_ERR_WOULD_BLOCK, 17, "Would Block")
 
 typedef enum kjErr {
-#define KJ_ERR_ENUM(type, value, name) type,
+#define KJ_ERR_ENUM(type, value, name) type = value,
     KJ_ERR_MAP(KJ_ERR_ENUM)
 #undef KJ_ERR_ENUM
     KJ_ERR_COUNT
@@ -691,6 +704,11 @@ KJ_API isize kj_cstr_to_i64(const char* s, i64* v);
 KJ_API isize kj_utf8_count_n(const char* s, isize n);
 KJ_API isize kj_utf8_count(const char* s);
 
+#if defined(KJ_SYS_WIN32)
+KJ_API isize kj_utf8_to_ucs(const char* s, WCHAR* ws, isize size);
+KJ_API isize kj_ucs_to_utf8(const WCHAR* ws, char* s, isize size);
+#endif
+
 /// Dynamic Libraries
 
 typedef void* kjLib;
@@ -820,7 +838,7 @@ typedef struct kjIoStat {
 
 #define kj_io_has_err(io) ((io)->err != KJ_ERR_NONE)
 
-KJ_API kjIo kj_io_open(const char* path, u32 flags);
+KJ_API kjErr kj_io_open(kjIo* io, const char* path, u32 flags);
 KJ_API kjErr kj_io_close(kjIo* io);
 KJ_API kjErr kj_io_seek(kjIo* io, i64 offset, kjIoSeek seek);
 KJ_API isize kj_io_read(kjIo* io, void* buf, isize size);
@@ -841,7 +859,7 @@ typedef struct kjFileGroup {
     kjErr err;
     isize count;
     struct {
-        WIN32_FIND_DATA find;
+        WIN32_FIND_DATAA find;
         HANDLE handle;
     } platform;
 } kjFileGroup;
@@ -1328,10 +1346,37 @@ isize kj_utf8_count(const char* s) {
     return res;
 }
 
+#if defined(KJ_SYS_WIN32)
+isize kj_utf8_to_ucs(const char* s, WCHAR* ws, isize size) {
+    isize res = MultiByteToWideChar(CP_UTF8, 0, s, -1, NULL, 0);
+    if(res < size) {
+        MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, size);
+        ws[res] = '\0';
+        res = 0;
+    }
+    return res;
+}
+
+isize kj_ucs_to_utf8(const WCHAR* ws, char* s, isize size) {
+    isize res = WideCharToMultiByte(CP_UTF8, 0, ws, -1, NULL, 0, NULL, NULL);
+    if(res < size) {
+        WideCharToMultiByte(CP_UTF8, 0, ws, -1, s, size, NULL, NULL);
+        s[res] = '\0';
+        res = 0;
+    }
+    return res;
+}
+#endif
+
 #if !defined(KJ_LIB_IMPL)
 #if defined(KJ_SYS_WIN32)
 KJ_INLINE kjLib kj_lib_open(const char* path) {
-    return kj_cast(kjLib, LoadLibrary(path));
+    kjLib res = NULL;
+    static WCHAR wpath[MAX_PATH] = {0};
+    if(kj_utf8_to_ucs(path, &wpath[0], kj_count_of(wpath)) == 0) {
+        res = kj_cast(kjLib, LoadLibraryW(wpath));
+    }
+    return res;
 }
 
 KJ_INLINE kjLibFn kj_lib_fn(kjLib lib, const char* name) {
@@ -1520,7 +1565,8 @@ u32 kj_hash_str(const char* s) {
 #define KJ_IO_INVALID_MODE U32_MAX
 
 #if defined(KJ_SYS_WIN32)
-KJ_INTERN kjErr kj_io_err_from_sys(u32 err) {
+KJ_INTERN kjErr kj_io_err_from_sys(void) {
+    i32 err = GetLastError();
     switch(err) {
         case ERROR_SUCCESS: return KJ_ERR_NONE;
         case ERROR_ACCESS_DENIED: return KJ_ERR_PERMISSION_DENIED;
@@ -1601,26 +1647,29 @@ KJ_INTERN u32 kj_io_gen_create_mode(u32 flags) {
     return res;
 }
 
-kjIo kj_io_open(const char* path, u32 flags) {
-    kjIo res;
+kjErr kj_io_open(kjIo* io, const char* path, u32 flags) {
+    kj_assert(io);
+
+    kjErr res = KJ_ERR_NONE;
     u32 access = kj_io_gen_access_mode(flags);
     u32 create = kj_io_gen_create_mode(flags);
     if((access | create) == KJ_IO_INVALID_MODE) {
-        res.handle = NULL;
-        res.flags = 0;
-        res.err = KJ_ERR_INVALID_INPUT;
+        io->handle = NULL;
+        io->flags = 0;
+        io->err = KJ_ERR_INVALID_INPUT;
     } else {
-        i32 size = MultiByteToWideChar(CP_UTF8, 0, path, -1, 0, 0);
-        WCHAR* wpath = kj_cast(WCHAR*, _alloca(size * sizeof(WCHAR)));
-        MultiByteToWideChar(CP_UTF8, 0, path, -1, wpath, size);
-        res.handle = CreateFileW(
-                wpath, access,
-                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                NULL, create, 0, NULL);
-        res.flags = flags;
-        res.err = res.handle == INVALID_HANDLE_VALUE ? KJ_ERR_BAD_HANDLE:
-            kj_io_err_from_sys(GetLastError());
+        static WCHAR wpath[MAX_PATH] = {0};
+        if(kj_utf8_to_ucs(path, &wpath[0], kj_count_of(wpath)) == 0) {
+            io->handle = CreateFileW(
+                    wpath, access,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    NULL, create, 0, NULL);
+            io->flags = flags;
+            io->err = io->handle == INVALID_HANDLE_VALUE ? KJ_ERR_BAD_HANDLE:
+                kj_io_err_from_sys();
+        }
     }
+    res = io->err;
     return res;
 }
 
@@ -1629,7 +1678,7 @@ kjErr kj_io_close(kjIo* io) {
 
     kjErr res = KJ_ERR_NONE;
     if(!CloseHandle(io->handle)) {
-        res = kj_io_err_from_sys(GetLastError());
+        res = kj_io_err_from_sys();
     }
     io->handle = NULL;
     return res;
@@ -1642,7 +1691,7 @@ kjErr kj_io_seek(kjIo* io, i64 offset, kjIoSeek seek) {
     LARGE_INTEGER new_offset;
     new_offset.QuadPart = offset;
     if(SetFilePointerEx(io->handle, new_offset, &new_offset, seek) == 0) {
-        res = kj_io_err_from_sys(GetLastError());
+        res = kj_io_err_from_sys();
         io->err = res;
     }
     return res;
@@ -1658,7 +1707,7 @@ isize kj_io_read(kjIo* io, void* buf, isize size) {
         kj_cast(DWORD*, &read), NULL)) {
         res = read;
     } else {
-        io->err = kj_io_err_from_sys(GetLastError());
+        io->err = kj_io_err_from_sys();
     }
     return res;
 }
@@ -1673,7 +1722,7 @@ isize kj_io_write(kjIo* io, void* buf, isize size) {
         kj_cast(DWORD*, &wrote), NULL)) {
         res = wrote;
     } else {
-        io->err = kj_io_err_from_sys(GetLastError());
+        io->err = kj_io_err_from_sys();
     }
     return res;
 }
@@ -1691,7 +1740,7 @@ isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset) {
         kj_cast(DWORD*, &read), &overlapped)) {
         res = read;
     } else {
-        io->err = kj_io_err_from_sys(GetLastError());
+        io->err = kj_io_err_from_sys();
     }
     return res;
 }
@@ -1709,7 +1758,7 @@ isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
         kj_cast(DWORD*, &wrote), &overlapped)) {
         res = wrote;
     } else {
-        io->err = kj_io_err_from_sys(GetLastError());
+        io->err = kj_io_err_from_sys();
     }
     return res;
 }
@@ -1729,7 +1778,7 @@ kjIoStat kj_io_stat(kjIo* io) {
         kj_systime_to_datetime(&last_access, &res.last_access);
         kj_systime_to_datetime(&last_write, &res.last_write);
     } else {
-        io->err = kj_io_err_from_sys(GetLastError());
+        io->err = kj_io_err_from_sys();
     }
     return res;
 }
@@ -1738,7 +1787,7 @@ kjIoStat kj_io_stat(kjIo* io) {
 #include <fcntl.h>
 #include <sys/stat.h>
 
-KJ_INTERN kjErr kj_io_err_from_sys(u32 err) {
+KJ_INTERN kjErr kj_io_err_from_sys(i32 err) {
     switch(err) {
         case 0: return KJ_ERR_NONE;
         case EBADF: return KJ_ERR_BAD_HANDLE;
@@ -1814,20 +1863,23 @@ KJ_INTERN u32 kj_io_gen_create_mode(u32 flags) {
     return res;
 }
 
-kjIo kj_io_open(const char* path, u32 flags) {
-    kjIo res;
+kjErr kj_io_open(kjIo* io, const char* path, u32 flags) {
+    kj_assert(io);
+
+    kjErr res = KJ_ERR_NONE;
     u32 access = kj_io_gen_access_mode(flags);
     u32 create = kj_io_gen_create_mode(flags);
     if((access | create) == KJ_IO_INVALID_MODE) {
-        res.handle = -1;
-        res.flags = 0;
-        res.err = KJ_ERR_INVALID_INPUT;
+        io->handle = -1;
+        io->flags = 0;
+        io->err = KJ_ERR_INVALID_INPUT;
     } else {
         u32 perm = 0666;
-        kj_syscall3(KJ_SYSCALL_OPEN, res.handle, path, (access | create), perm);
-        res.flags = flags;
-        res.err = kj_io_err_from_sys(res.handle < 0 ? -res.handle: 0);
+        kj_syscall3(KJ_SYSCALL_OPEN, io->handle, path, (access | create), perm);
+        io->flags = flags;
+        io->err = kj_io_err_from_sys(io->handle < 0 ? -io->handle: 0);
     }
+    res = io->err;
     return res;
 }
 
@@ -1915,8 +1967,9 @@ kjIoStat kj_io_stat(kjIo* io) {
 #if defined(KJ_SYS_WIN32) || defined(KJ_SYS_LINUX)
 void* kj_io_slurp(const char* path, b32 terminate, isize* size) {
     void* res = NULL;
-    kjIo io = kj_io_open(path, KJ_IO_FLAG_READ);
-    if(!kj_io_has_err(&io)) {
+    kjIo io;
+    kjErr err = kj_io_open(&io, path, KJ_IO_FLAG_READ);
+    if(err == KJ_ERR_NONE) {
         kjIoStat stat = kj_io_stat(&io);
         if(stat.size > 0) {
             res = kj_global_alloc(terminate ? stat.size + 1: stat.size);
@@ -1983,10 +2036,7 @@ const char* kj_path_extension(const char* path) {
 kjFileGroup kj_file_group_begin(const char* path) {
     kjFileGroup res = {0};
 
-    //i32 size = MultiByteToWideChar(CP_UTF8, 0, path, -1, 0, 0);
-    //WCHAR* wpath = kj_cast(WCHAR*, _alloca(size * sizeof(WCHAR)));
-    //MultiByteToWideChar(CP_UTF8, 0, path, -1, wpath, size);
-    WIN32_FIND_DATA find;
+    WIN32_FIND_DATAA find;
     HANDLE handle = FindFirstFileA(path, &find);
     do {
         res.count++;
