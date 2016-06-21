@@ -356,25 +356,25 @@ kj_static_assert(f32, kj_isize_of(f32) == 4);
 kj_static_assert(f64, kj_isize_of(f64) == 8);
 
 #define KJ_TYPE_MAP(X)                                                          \
-    X(KJ_TYPE_UNKNOWN, -1, "unknown", void*)                                    \
-    X(KJ_TYPE_NONE, 0, "none", void*)                                           \
-    X(KJ_TYPE_CHAR, 1, "char", char)                                            \
-    X(KJ_TYPE_I8, 2, "i8", i8)                                                  \
-    X(KJ_TYPE_U8, 3, "u8", u8)                                                  \
-    X(KJ_TYPE_I16, 4, "i16", i16)                                               \
-    X(KJ_TYPE_U16, 5, "u16", u16)                                               \
-    X(KJ_TYPE_I32, 6, "i32", i32)                                               \
-    X(KJ_TYPE_U32, 7, "u32", u32)                                               \
-    X(KJ_TYPE_I64, 8, "i64", i64)                                               \
-    X(KJ_TYPE_U64, 9, "u64", u64)                                               \
-    X(KJ_TYPE_ISIZE, 10, "isize", isize)                                        \
-    X(KJ_TYPE_USIZE, 11, "usize", usize)                                        \
-    X(KJ_TYPE_F32, 12, "f32", f32)                                              \
-    X(KJ_TYPE_F64, 13, "f64", f64)                                              \
-    X(KJ_TYPE_B8, 14, "b8", b8)                                                 \
-    X(KJ_TYPE_B16, 15, "b16", b16)                                              \
-    X(KJ_TYPE_B32, 16, "b32", b32)                                              \
-    X(KJ_TYPE_B64, 17, "b64", b64)                                              \
+    X(KJ_TYPE_UNKNOWN, 0, "unknown", void*)                                     \
+    X(KJ_TYPE_NONE, 1, "none", void*)                                           \
+    X(KJ_TYPE_CHAR, 2, "char", char)                                            \
+    X(KJ_TYPE_I8, 3, "i8", i8)                                                  \
+    X(KJ_TYPE_U8, 4, "u8", u8)                                                  \
+    X(KJ_TYPE_I16, 5, "i16", i16)                                               \
+    X(KJ_TYPE_U16, 6, "u16", u16)                                               \
+    X(KJ_TYPE_I32, 7, "i32", i32)                                               \
+    X(KJ_TYPE_U32, 8, "u32", u32)                                               \
+    X(KJ_TYPE_I64, 9, "i64", i64)                                               \
+    X(KJ_TYPE_U64, 10, "u64", u64)                                              \
+    X(KJ_TYPE_ISIZE, 11, "isize", isize)                                        \
+    X(KJ_TYPE_USIZE, 12, "usize", usize)                                        \
+    X(KJ_TYPE_F32, 13, "f32", f32)                                              \
+    X(KJ_TYPE_F64, 14, "f64", f64)                                              \
+    X(KJ_TYPE_B8, 15, "b8", b8)                                                 \
+    X(KJ_TYPE_B16, 16, "b16", b16)                                              \
+    X(KJ_TYPE_B32, 17, "b32", b32)                                              \
+    X(KJ_TYPE_B64, 18, "b64", b64)                                              \
 
 typedef enum kjType {
 #define KJ_TYPE_ENUM(type, ...) type,
@@ -387,25 +387,25 @@ KJ_API const char* kj_type_to_str(kjType type);
 KJ_API isize kj_type_to_isize(kjType type);
 
 #define KJ_ERR_MAP(X)                                                           \
-    X(KJ_ERR_UNKNOWN, -1, "Unknown")                                            \
-    X(KJ_ERR_NONE, 0, "None")                                                   \
-    X(KJ_ERR_BAD_HANDLE, 1, "Bad Handle")                                       \
-    X(KJ_ERR_PERMISSION_DENIED, 2, "Permission Denied")                         \
-    X(KJ_ERR_NOT_FOUND, 3, "Not Found")                                         \
-    X(KJ_ERR_BROKEN_PIPE, 4, "Broken Pipe")                                     \
-    X(KJ_ERR_ALREADY_EXISTS, 5, "Already Exists")                               \
-    X(KJ_ERR_TIMED_OUT, 6, "Timed Out")                                         \
-    X(KJ_ERR_INVALID_INPUT, 7, "Invalid Input")                                 \
-    X(KJ_ERR_INTERRUPED, 8, "Interrupted")                                      \
-    X(KJ_ERR_ILLEGAL_SEEK, 9, "Illegal Seek")                                   \
-    X(KJ_ERR_MALLOC_FAIL, 10, "Malloc Fail")                                    \
-    X(KJ_ERR_ADDR_IN_USE, 11, "Address In User")                                \
-    X(KJ_ERR_ADDR_NOT_AVAILABLE, 12, "Address Not Available")                   \
-    X(KJ_ERR_CONNECTION_ABORTED, 13, "Connection Aborted")                      \
-    X(KJ_ERR_CONNECTION_REFUSED, 14, "Connection Refused")                      \
-    X(KJ_ERR_CONNECTION_RESET, 15, "Connection Reset")                          \
-    X(KJ_ERR_NOT_CONNECTED, 16, "Not Connected")                                \
-    X(KJ_ERR_WOULD_BLOCK, 17, "Would Block")
+    X(KJ_ERR_UNKNOWN, 0, "Unknown")                                             \
+    X(KJ_ERR_NONE, 1, "None")                                                   \
+    X(KJ_ERR_BAD_HANDLE, 2, "Bad Handle")                                       \
+    X(KJ_ERR_PERMISSION_DENIED, 3, "Permission Denied")                         \
+    X(KJ_ERR_NOT_FOUND, 4, "Not Found")                                         \
+    X(KJ_ERR_BROKEN_PIPE, 5, "Broken Pipe")                                     \
+    X(KJ_ERR_ALREADY_EXISTS, 6, "Already Exists")                               \
+    X(KJ_ERR_TIMED_OUT, 7, "Timed Out")                                         \
+    X(KJ_ERR_INVALID_INPUT, 8, "Invalid Input")                                 \
+    X(KJ_ERR_INTERRUPED, 9, "Interrupted")                                      \
+    X(KJ_ERR_ILLEGAL_SEEK, 10, "Illegal Seek")                                  \
+    X(KJ_ERR_MALLOC_FAIL, 11, "Malloc Fail")                                    \
+    X(KJ_ERR_ADDR_IN_USE, 12, "Address In Use")                                 \
+    X(KJ_ERR_ADDR_NOT_AVAILABLE, 13, "Address Not Available")                   \
+    X(KJ_ERR_CONNECTION_ABORTED, 14, "Connection Aborted")                      \
+    X(KJ_ERR_CONNECTION_REFUSED, 15, "Connection Refused")                      \
+    X(KJ_ERR_CONNECTION_RESET, 16, "Connection Reset")                          \
+    X(KJ_ERR_NOT_CONNECTED, 17, "Not Connected")                                \
+    X(KJ_ERR_WOULD_BLOCK, 18, "Would Block")
 
 typedef enum kjErr {
 #define KJ_ERR_ENUM(type, value, name) type = value,
@@ -896,7 +896,7 @@ KJ_INLINE const char* kj_type_to_str(kjType type) {
     KJ_TYPE_MAP(KJ_TYPE_NAME)
 #undef KJ_TYPE_NAME
     };
-    return type < KJ_TYPE_UNKNOWN || type >= KJ_TYPE_COUNT ?
+    return type <= KJ_TYPE_UNKNOWN || type >= KJ_TYPE_COUNT ?
         KJ_TYPE_STR[KJ_TYPE_UNKNOWN]: KJ_TYPE_STR[type];
 }
 
@@ -916,8 +916,8 @@ KJ_INLINE const char* kj_err_to_str(kjErr err) {
     KJ_ERR_MAP(KJ_ERR_NAME)
 #undef KJ_ERR_NAME
     };
-    return err < KJ_ERR_UNKNOWN || err >= KJ_ERR_COUNT ?
-        "Unknown": KJ_ERR_STR[err];
+    return err <= KJ_ERR_UNKNOWN || err >= KJ_ERR_COUNT ?
+        KJ_ERR_STR[KJ_ERR_UNKNOWN]: KJ_ERR_STR[err];
 }
 
 KJ_INLINE KJ_ALLOCATOR_ALLOC_FN(kj_dummy_alloc) {
@@ -1355,7 +1355,7 @@ isize kj_utf8_count(const char* s) {
 isize kj_utf8_to_ucs(const char* s, WCHAR* ws, isize size) {
     isize res = MultiByteToWideChar(CP_UTF8, 0, s, -1, NULL, 0);
     if(res < size) {
-        MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, size);
+        MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, kj_cast(i32, size));
         ws[res] = '\0';
         res = 0;
     }
@@ -1365,7 +1365,8 @@ isize kj_utf8_to_ucs(const char* s, WCHAR* ws, isize size) {
 isize kj_ucs_to_utf8(const WCHAR* ws, char* s, isize size) {
     isize res = WideCharToMultiByte(CP_UTF8, 0, ws, -1, NULL, 0, NULL, NULL);
     if(res < size) {
-        WideCharToMultiByte(CP_UTF8, 0, ws, -1, s, size, NULL, NULL);
+        WideCharToMultiByte(
+                CP_UTF8, 0, ws, -1, s, kj_cast(i32, size), NULL, NULL);
         s[res] = '\0';
         res = 0;
     }
