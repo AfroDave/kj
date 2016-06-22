@@ -882,7 +882,7 @@ typedef struct kjBuffer {
 
 KJ_API kjBuffer kj_buffer(kjHeapAllocator* allocator, isize granularity);
 KJ_API void kj_buffer_destroy(kjBuffer* buffer);
-KJ_API kjErr kj_buffer_write(kjBuffer* buffer, void* data, isize size);
+KJ_API kjErr kj_buffer_write(kjBuffer* buffer, const void* data, isize size);
 KJ_API void kj_buffer_clear(kjBuffer* buffer);
 
 KJ_EXTERN_END
@@ -2099,14 +2099,19 @@ void kj_buffer_destroy(kjBuffer* buffer) {
     }
 }
 
-kjErr kj_buffer_write(kjBuffer* buffer, void* data, isize size) {
+kjErr kj_buffer_write(kjBuffer* buffer, const void* data, isize size) {
     kj_assert(buffer);
 
     kjErr res = KJ_ERR_NONE;
     if(buffer->used + size > buffer->size) {
         isize new_size = kj_round_up(buffer->size + size, buffer->granularity);
-        void* new_data = kj_allocator_realloc(
-                buffer->allocator, buffer->data, new_size);
+        void* new_data = NULL;
+        if(buffer->data) {
+             new_data = kj_allocator_realloc(
+                    buffer->allocator, buffer->data, new_size);
+        } else {
+             new_data = kj_allocator_alloc(buffer->allocator, new_size);
+        }
         if(new_data) {
             buffer->data = kj_cast(u8*, new_data);
             buffer->size = size;
