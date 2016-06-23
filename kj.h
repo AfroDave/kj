@@ -709,8 +709,8 @@ KJ_API isize kj_utf8_count_n(const char* s, isize n);
 KJ_API isize kj_utf8_count(const char* s);
 
 #if defined(KJ_SYS_WIN32)
-KJ_API isize kj_utf8_to_ucs(const char* s, WCHAR* ws, isize size);
-KJ_API isize kj_ucs_to_utf8(const WCHAR* ws, char* s, isize size);
+KJ_API i32 kj_utf8_to_ucs(const char* s, WCHAR* ws, i32 size);
+KJ_API i32 kj_ucs_to_utf8(const WCHAR* ws, char* s, i32 size);
 #endif
 
 /// Dynamic Libraries
@@ -863,7 +863,7 @@ typedef struct kjFileGroup {
     kjErr err;
     isize count;
 #if defined(KJ_SYS_WIN32)
-    WIN32_FIND_DATAA find;
+    WIN32_FIND_DATAW find;
     HANDLE handle;
 #elif defined(KJ_SYS_LINUX)
     DIR* dir;
@@ -1406,21 +1406,20 @@ isize kj_utf8_count(const char* s) {
 }
 
 #if defined(KJ_SYS_WIN32)
-isize kj_utf8_to_ucs(const char* s, WCHAR* ws, isize size) {
-    isize res = MultiByteToWideChar(CP_UTF8, 0, s, -1, NULL, 0);
+i32 kj_utf8_to_ucs(const char* s, WCHAR* ws, i32 size) {
+    i32 res = MultiByteToWideChar(CP_UTF8, 0, s, -1, NULL, 0);
     if(res < size) {
-        MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, kj_cast(i32, size));
+        MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, size);
         ws[res] = '\0';
         res = 0;
     }
     return res;
 }
 
-isize kj_ucs_to_utf8(const WCHAR* ws, char* s, isize size) {
-    isize res = WideCharToMultiByte(CP_UTF8, 0, ws, -1, NULL, 0, NULL, NULL);
+i32 kj_ucs_to_utf8(const WCHAR* ws, char* s, i32 size) {
+    i32 res = WideCharToMultiByte(CP_UTF8, 0, ws, -1, NULL, 0, NULL, NULL);
     if(res < size) {
-        WideCharToMultiByte(
-                CP_UTF8, 0, ws, -1, s, kj_cast(i32, size), NULL, NULL);
+        WideCharToMultiByte(CP_UTF8, 0, ws, -1, s, size, NULL, NULL);
         s[res] = '\0';
         res = 0;
     }
@@ -2062,20 +2061,23 @@ kjErr kj_file_group_begin(kjFileGroup* g, const char* path) {
     kjErr res = KJ_ERR_NONE;
     kj_zero(g, kj_isize_of(kjFileGroup));
 
-    WIN32_FIND_DATAA find;
+    WIN32_FIND_DATAW find;
     HANDLE handle = INVALID_HANDLE_VALUE;
-    if((handle = FindFirstFileA(path, &find)) == INVALID_HANDLE_VALUE) {
-        res = kj_err_from_sys(GetLastError());
-    } else {
-        do {
-            g->count++;
-            if(!FindNextFileA(handle, &find)) {
-                break;
-            }
-        } while(handle != INVALID_HANDLE_VALUE);
-        FindClose(handle);
+    static WCHAR wpath[MAX_PATH] = {0};
+    if(kj_utf8_to_ucs(path, &wpath[0], kj_count_of(wpath)) == 0) {
+        if((handle = FindFirstFileW(wpath, &find)) == INVALID_HANDLE_VALUE) {
+            res = kj_err_from_sys(GetLastError());
+        } else {
+            do {
+                g->count++;
+                if(!FindNextFileW(handle, &find)) {
+                    break;
+                }
+            } while(handle != INVALID_HANDLE_VALUE);
+            FindClose(handle);
 
-        g->handle = FindFirstFileA(path, &g->find);
+            g->handle = FindFirstFileW(wpath, &g->find);
+        }
     }
 
     return res;
@@ -2086,10 +2088,16 @@ isize kj_file_group_next(kjFileGroup* g, char* path, isize size) {
 
     isize res = -1;
     if(g->handle != INVALID_HANDLE_VALUE) {
-        res = kj_cstr_count_n(g->find.cFileName, 260);
-        kj_copy(path, &g->find.cFileName[0], kj_min(size, res));
+        static char cpath[MAX_PATH] = {0};
+        if(kj_ucs_to_utf8(
+                    &g->find.cFileName[0],
+                    &cpath[0], kj_count_of(cpath)) == 0) {
+            res = kj_cstr_count_n(cpath, 260);
+            kj_copy(path, &cpath[0], kj_min(size, res));
+            path[res] = '\0';
+        }
     }
-    if(!FindNextFileA(g->handle, &g->find)) {
+    if(!FindNextFileW(g->handle, &g->find)) {
         g->handle = INVALID_HANDLE_VALUE;
     }
     return res;
