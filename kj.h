@@ -47,6 +47,10 @@ KJ_EXTERN_BEGIN
 #elif defined(__linux__)
 #define KJ_SYS_LINUX
 #define _GNU_SOURCE
+#include <endian.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <errno.h>
 #else
 #error Unsupported Operating System
 #endif
@@ -76,7 +80,6 @@ KJ_EXTERN_BEGIN
 #define KJ_BE 4321
 
 #if defined(KJ_SYS_LINUX)
-#include <endian.h>
 #define KJ_ENDIAN __BYTE_ORDER
 #else
 #define KJ_ENDIAN KJ_LE
@@ -414,6 +417,7 @@ typedef enum kjErr {
     KJ_ERR_COUNT
 } kjErr;
 
+KJ_API kjErr kj_err_from_sys(i32 err);
 KJ_API const char* kj_err_to_str(kjErr err);
 
 /// Memory
@@ -855,20 +859,21 @@ KJ_API i64 kj_io_size(kjIo* io);
 KJ_API const char* kj_path_extension_n(const char* path, isize size);
 KJ_API const char* kj_path_extension(const char* path);
 
-#if defined(KJ_SYS_WIN32)
 typedef struct kjFileGroup {
     kjErr err;
     isize count;
-    struct {
-        WIN32_FIND_DATAA find;
-        HANDLE handle;
-    } platform;
+#if defined(KJ_SYS_WIN32)
+    WIN32_FIND_DATAA find;
+    HANDLE handle;
+#elif defined(KJ_SYS_LINUX)
+    DIR* dir;
+    struct dirent* entry;
+#endif
 } kjFileGroup;
 
-KJ_API kjFileGroup kj_file_group_begin(const char* path);
+KJ_API kjErr kj_file_group_begin(kjFileGroup* g, const char* path);
 KJ_API isize kj_file_group_next(kjFileGroup* g, char* path, isize size);
 KJ_API void kj_file_group_end(kjFileGroup* g);
-#endif
 
 /// Buffer
 
@@ -909,6 +914,55 @@ KJ_INLINE isize kj_type_to_isize(kjType type) {
     return type <= KJ_TYPE_NONE || type >= KJ_TYPE_COUNT ?
         0: KJ_TYPE_ISIZE[type];
 }
+
+#if defined(KJ_SYS_WIN32)
+kjErr kj_err_from_sys(i32 err) {
+    switch(err) {
+        case ERROR_SUCCESS: return KJ_ERR_NONE;
+        case ERROR_ACCESS_DENIED: return KJ_ERR_PERMISSION_DENIED;
+        case ERROR_ALREADY_EXISTS: return KJ_ERR_ALREADY_EXISTS;
+        case ERROR_BROKEN_PIPE: return KJ_ERR_BROKEN_PIPE;
+        case ERROR_FILE_NOT_FOUND: return KJ_ERR_NOT_FOUND;
+        case ERROR_PATH_NOT_FOUND: return KJ_ERR_NOT_FOUND;
+        case ERROR_NO_DATA: return KJ_ERR_BROKEN_PIPE;
+        case ERROR_INVALID_PARAMETER: return KJ_ERR_INVALID_INPUT;
+        case ERROR_OPERATION_ABORTED: return KJ_ERR_TIMED_OUT;
+        case ERROR_SEEK: return KJ_ERR_ILLEGAL_SEEK;
+        case ERROR_NEGATIVE_SEEK: return KJ_ERR_ILLEGAL_SEEK;
+        case ERROR_SEEK_ON_DEVICE: return KJ_ERR_ILLEGAL_SEEK;
+        case WSAEBADF: return KJ_ERR_BAD_HANDLE;
+        case WSAEACCES: return KJ_ERR_PERMISSION_DENIED;
+        case WSAETIMEDOUT: return KJ_ERR_TIMED_OUT;
+        case WSAEINVAL: return KJ_ERR_INVALID_INPUT;
+        case WSAEINTR: return KJ_ERR_INTERRUPED;
+        case WSAEADDRINUSE: return KJ_ERR_ADDR_IN_USE;
+        case WSAEADDRNOTAVAIL: return KJ_ERR_ADDR_NOT_AVAILABLE;
+        case WSAECONNABORTED: return KJ_ERR_CONNECTION_ABORTED;
+        case WSAECONNREFUSED: return KJ_ERR_CONNECTION_REFUSED;
+        case WSAECONNRESET: return KJ_ERR_CONNECTION_RESET;
+        case WSAENOTCONN: return KJ_ERR_NOT_CONNECTED;
+        case WSAEWOULDBLOCK: return KJ_ERR_WOULD_BLOCK;
+        default: return KJ_ERR_UNKNOWN;
+    }
+}
+#elif defined(KJ_SYS_LINUX)
+kjErr kj_err_from_sys(i32 err) {
+    switch(err) {
+        case 0: return KJ_ERR_NONE;
+        case EBADF: return KJ_ERR_BAD_HANDLE;
+        case EPERM: return KJ_ERR_PERMISSION_DENIED;
+        case EACCES: return KJ_ERR_PERMISSION_DENIED;
+        case EEXIST: return KJ_ERR_ALREADY_EXISTS;
+        case EPIPE: return KJ_ERR_BROKEN_PIPE;
+        case ENOENT: return KJ_ERR_NOT_FOUND;
+        case ETIMEDOUT: return KJ_ERR_TIMED_OUT;
+        case EINVAL: return KJ_ERR_INVALID_INPUT;
+        case EINTR: return KJ_ERR_INTERRUPED;
+        case ESPIPE: return KJ_ERR_ILLEGAL_SEEK;
+        default: return KJ_ERR_UNKNOWN;
+    }
+}
+#endif
 
 KJ_INLINE const char* kj_err_to_str(kjErr err) {
     static const char* KJ_ERR_STR[] = {
@@ -1571,25 +1625,6 @@ u32 kj_hash_str(const char* s) {
 #define KJ_IO_INVALID_MODE U32_MAX
 
 #if defined(KJ_SYS_WIN32)
-KJ_INTERN kjErr kj_io_err_from_sys(void) {
-    i32 err = GetLastError();
-    switch(err) {
-        case ERROR_SUCCESS: return KJ_ERR_NONE;
-        case ERROR_ACCESS_DENIED: return KJ_ERR_PERMISSION_DENIED;
-        case ERROR_ALREADY_EXISTS: return KJ_ERR_ALREADY_EXISTS;
-        case ERROR_BROKEN_PIPE: return KJ_ERR_BROKEN_PIPE;
-        case ERROR_FILE_NOT_FOUND: return KJ_ERR_NOT_FOUND;
-        case ERROR_PATH_NOT_FOUND: return KJ_ERR_NOT_FOUND;
-        case ERROR_NO_DATA: return KJ_ERR_BROKEN_PIPE;
-        case ERROR_INVALID_PARAMETER: return KJ_ERR_INVALID_INPUT;
-        case ERROR_OPERATION_ABORTED: return KJ_ERR_TIMED_OUT;
-        case ERROR_SEEK: return KJ_ERR_ILLEGAL_SEEK;
-        case ERROR_NEGATIVE_SEEK: return KJ_ERR_ILLEGAL_SEEK;
-        case ERROR_SEEK_ON_DEVICE: return KJ_ERR_ILLEGAL_SEEK;
-        default: return KJ_ERR_UNKNOWN;
-    }
-}
-
 KJ_INTERN u32 kj_io_gen_access_mode(u32 flags) {
     u32 res = 0;
     if((flags & KJ_IO_FLAG_READ) &&
@@ -1672,7 +1707,7 @@ kjErr kj_io_open(kjIo* io, const char* path, u32 flags) {
                     NULL, create, 0, NULL);
             io->flags = flags;
             io->err = io->handle == INVALID_HANDLE_VALUE ? KJ_ERR_BAD_HANDLE:
-                kj_io_err_from_sys();
+                kj_err_from_sys(GetLastError());
         }
     }
     res = io->err;
@@ -1684,7 +1719,7 @@ kjErr kj_io_close(kjIo* io) {
 
     kjErr res = KJ_ERR_NONE;
     if(!CloseHandle(io->handle)) {
-        res = kj_io_err_from_sys();
+        res = kj_err_from_sys(GetLastError());
     }
     io->handle = NULL;
     return res;
@@ -1697,7 +1732,7 @@ kjErr kj_io_seek(kjIo* io, i64 offset, kjIoSeek seek) {
     LARGE_INTEGER new_offset;
     new_offset.QuadPart = offset;
     if(SetFilePointerEx(io->handle, new_offset, &new_offset, seek) == 0) {
-        res = kj_io_err_from_sys();
+        res = kj_err_from_sys(GetLastError());
         io->err = res;
     }
     return res;
@@ -1713,7 +1748,7 @@ isize kj_io_read(kjIo* io, void* buf, isize size) {
         kj_cast(DWORD*, &read), NULL)) {
         res = read;
     } else {
-        io->err = kj_io_err_from_sys();
+        io->err = kj_err_from_sys(GetLastError());
     }
     return res;
 }
@@ -1728,7 +1763,7 @@ isize kj_io_write(kjIo* io, void* buf, isize size) {
         kj_cast(DWORD*, &wrote), NULL)) {
         res = wrote;
     } else {
-        io->err = kj_io_err_from_sys();
+        io->err = kj_err_from_sys(GetLastError());
     }
     return res;
 }
@@ -1746,7 +1781,7 @@ isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset) {
         kj_cast(DWORD*, &read), &overlapped)) {
         res = read;
     } else {
-        io->err = kj_io_err_from_sys();
+        io->err = kj_err_from_sys(GetLastError());
     }
     return res;
 }
@@ -1764,7 +1799,7 @@ isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
         kj_cast(DWORD*, &wrote), &overlapped)) {
         res = wrote;
     } else {
-        io->err = kj_io_err_from_sys();
+        io->err = kj_err_from_sys(GetLastError());
     }
     return res;
 }
@@ -1784,31 +1819,13 @@ kjIoStat kj_io_stat(kjIo* io) {
         kj_systime_to_datetime(&last_access, &res.last_access);
         kj_systime_to_datetime(&last_write, &res.last_write);
     } else {
-        io->err = kj_io_err_from_sys();
+        io->err = kj_err_from_sys(GetLastError());
     }
     return res;
 }
 #elif defined(KJ_SYS_LINUX)
-#include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-
-KJ_INTERN kjErr kj_io_err_from_sys(i32 err) {
-    switch(err) {
-        case 0: return KJ_ERR_NONE;
-        case EBADF: return KJ_ERR_BAD_HANDLE;
-        case EPERM: return KJ_ERR_PERMISSION_DENIED;
-        case EACCES: return KJ_ERR_PERMISSION_DENIED;
-        case EEXIST: return KJ_ERR_ALREADY_EXISTS;
-        case EPIPE: return KJ_ERR_BROKEN_PIPE;
-        case ENOENT: return KJ_ERR_NOT_FOUND;
-        case ETIMEDOUT: return KJ_ERR_TIMED_OUT;
-        case EINVAL: return KJ_ERR_INVALID_INPUT;
-        case EINTR: return KJ_ERR_INTERRUPED;
-        case ESPIPE: return KJ_ERR_ILLEGAL_SEEK;
-        default: return KJ_ERR_UNKNOWN;
-    }
-}
 
 KJ_INTERN u32 kj_io_gen_access_mode(u32 flags) {
     u32 res = 0;
@@ -1883,7 +1900,7 @@ kjErr kj_io_open(kjIo* io, const char* path, u32 flags) {
         u32 perm = 0666;
         kj_syscall3(KJ_SYSCALL_OPEN, io->handle, path, (access | create), perm);
         io->flags = flags;
-        io->err = kj_io_err_from_sys(io->handle < 0 ? -io->handle: 0);
+        io->err = kj_err_from_sys(io->handle < 0 ? -io->handle: 0);
     }
     res = io->err;
     return res;
@@ -1896,7 +1913,7 @@ kjErr kj_io_close(kjIo* io) {
     i32 out = 0;
     kj_syscall1(KJ_SYSCALL_CLOSE, out, io->handle);
     if(out < 0) {
-        res = kj_io_err_from_sys(out < 0 ? -out: 0);
+        res = kj_err_from_sys(out < 0 ? -out: 0);
     }
     io->handle = -1;
     io->flags = 0;
@@ -1910,7 +1927,7 @@ kjErr kj_io_seek(kjIo* io, i64 offset, kjIoSeek seek) {
     kjErr res = KJ_ERR_NONE;
     isize out = -1;
     kj_syscall3(KJ_SYSCALL_LSEEK, out, io->handle, offset, seek);
-    res = kj_io_err_from_sys(out < 0 ? -out: 0);
+    res = kj_err_from_sys(out < 0 ? -out: 0);
     io->err = res;
     return res;
 }
@@ -1920,7 +1937,7 @@ isize kj_io_read(kjIo* io, void* buf, isize size) {
 
     isize res = -1;
     kj_syscall3(KJ_SYSCALL_READ, res, io->handle, buf, size);
-    io->err = kj_io_err_from_sys(res < 0 ? -res: 0);
+    io->err = kj_err_from_sys(res < 0 ? -res: 0);
     return res;
 }
 
@@ -1929,7 +1946,7 @@ isize kj_io_write(kjIo* io, void* buf, isize size) {
 
     isize res = -1;
     kj_syscall3(KJ_SYSCALL_WRITE, res, io->handle, buf, size);
-    io->err = kj_io_err_from_sys(res < 0 ? -res: 0);
+    io->err = kj_err_from_sys(res < 0 ? -res: 0);
     return res;
 }
 
@@ -1938,7 +1955,7 @@ isize kj_io_read_at(kjIo* io, void* buf, isize size, i64 offset) {
 
     isize res = -1;
     kj_syscall4(KJ_SYSCALL_PREAD, res, io->handle, buf, size, offset);
-    io->err = kj_io_err_from_sys(res < 0 ? -res: 0);
+    io->err = kj_err_from_sys(res < 0 ? -res: 0);
     return res;
 }
 
@@ -1947,7 +1964,7 @@ isize kj_io_write_at(kjIo* io, void* buf, isize size, i64 offset) {
 
     isize res = -1;
     kj_syscall4(KJ_SYSCALL_PWRITE, res, io->handle, buf, size, offset);
-    io->err = kj_io_err_from_sys(res < 0 ? -res: 0);
+    io->err = kj_err_from_sys(res < 0 ? -res: 0);
     return res;
 }
 
@@ -1958,7 +1975,7 @@ kjIoStat kj_io_stat(kjIo* io) {
     kj_zero(&res, kj_isize_of(kjIoStat));
     struct stat buf;
     if(fstat(io->handle, &buf) == -1) {
-        io->err = kj_io_err_from_sys(errno);
+        io->err = kj_err_from_sys(errno);
     } else {
         res.size = buf.st_size;
         struct tm* last_access = gmtime(&buf.st_atime);
@@ -2039,20 +2056,27 @@ const char* kj_path_extension(const char* path) {
 }
 
 #if defined(KJ_SYS_WIN32)
-kjFileGroup kj_file_group_begin(const char* path) {
-    kjFileGroup res = {0};
+kjErr kj_file_group_begin(kjFileGroup* g, const char* path) {
+    kj_assert(g);
+
+    kjErr res = KJ_ERR_NONE;
+    kj_zero(g, kj_isize_of(kjFileGroup));
 
     WIN32_FIND_DATAA find;
-    HANDLE handle = FindFirstFileA(path, &find);
-    do {
-        res.count++;
-        if(!FindNextFileA(handle, &find)) {
-            break;
-        }
-    } while(handle != INVALID_HANDLE_VALUE);
-    FindClose(handle);
+    HANDLE handle = INVALID_HANDLE_VALUE;
+    if((handle = FindFirstFileA(path, &find)) == INVALID_HANDLE_VALUE) {
+        res = kj_err_from_sys(GetLastError());
+    } else {
+        do {
+            g->count++;
+            if(!FindNextFileA(handle, &find)) {
+                break;
+            }
+        } while(handle != INVALID_HANDLE_VALUE);
+        FindClose(handle);
 
-    res.platform.handle = FindFirstFileA(path, &res.platform.find);
+        g->handle = FindFirstFileA(path, &g->find);
+    }
 
     return res;
 }
@@ -2061,12 +2085,12 @@ isize kj_file_group_next(kjFileGroup* g, char* path, isize size) {
     kj_assert(g);
 
     isize res = -1;
-    if(g->platform.handle != INVALID_HANDLE_VALUE) {
-        res = kj_min(size, kj_cstr_count_n(g->platform.find.cFileName, 260));
-        kj_copy(path, &g->platform.find.cFileName[0], res);
+    if(g->handle != INVALID_HANDLE_VALUE) {
+        res = kj_cstr_count_n(g->find.cFileName, 260);
+        kj_copy(path, &g->find.cFileName[0], kj_min(size, res));
     }
-    if(!FindNextFileA(g->platform.handle, &g->platform.find)) {
-        g->platform.handle = INVALID_HANDLE_VALUE;
+    if(!FindNextFileA(g->handle, &g->find)) {
+        g->handle = INVALID_HANDLE_VALUE;
     }
     return res;
 }
@@ -2074,8 +2098,46 @@ isize kj_file_group_next(kjFileGroup* g, char* path, isize size) {
 void kj_file_group_end(kjFileGroup* g) {
     kj_assert(g);
 
-    if(g->platform.handle) {
-        FindClose(g->platform.handle);
+    if(g->handle) {
+        FindClose(g->handle);
+    }
+}
+#elif defined(KJ_SYS_LINUX)
+#include <unistd.h>
+
+kjErr kj_file_group_begin(kjFileGroup* g, const char* path) {
+    kj_assert(g);
+
+    kjErr res = KJ_ERR_NONE;
+    kj_zero(g, kj_isize_of(kjFileGroup));
+
+    if((g->dir = opendir(path)) == NULL) {
+        res = kj_err_from_sys(errno);
+        g->err = res;
+    }
+    return res;
+}
+
+isize kj_file_group_next(kjFileGroup* g, char* path, isize size) {
+    kj_assert(g);
+
+    isize res = -1;
+    if(g->dir && (g->entry = readdir(g->dir)) == NULL) {
+        g->err = kj_err_from_sys(errno);
+    } else {
+        res = kj_cstr_count_n(g->entry->d_name, 255);
+        kj_copy(path, &g->entry->d_name[0], kj_min(size, res));
+        path[res] = '\0';
+        g->err = KJ_ERR_NONE;
+    }
+    return res;
+}
+
+void kj_file_group_end(kjFileGroup* g) {
+    kj_assert(g);
+
+    if(g->dir) {
+        closedir(g->dir);
     }
 }
 #endif

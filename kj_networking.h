@@ -58,53 +58,12 @@ KJ_EXTERN_END
 
 #if defined(KJ_NETWORKING_IMPL)
 
-#if defined(KJ_SYS_WIN32)
-KJ_INTERN kjErr kj_networking_err_from_sys(void) {
-    i32 err = WSAGetLastError();
-    switch(err) {
-        case 0: return KJ_ERR_NONE;
-        case WSAEBADF: return KJ_ERR_BAD_HANDLE;
-        case WSAEACCES: return KJ_ERR_PERMISSION_DENIED;
-        case WSAETIMEDOUT: return KJ_ERR_TIMED_OUT;
-        case WSAEINVAL: return KJ_ERR_INVALID_INPUT;
-        case WSAEINTR: return KJ_ERR_INTERRUPED;
-        case WSAEADDRINUSE: return KJ_ERR_ADDR_IN_USE;
-        case WSAEADDRNOTAVAIL: return KJ_ERR_ADDR_NOT_AVAILABLE;
-        case WSAECONNABORTED: return KJ_ERR_CONNECTION_ABORTED;
-        case WSAECONNREFUSED: return KJ_ERR_CONNECTION_REFUSED;
-        case WSAECONNRESET: return KJ_ERR_CONNECTION_RESET;
-        case WSAENOTCONN: return KJ_ERR_NOT_CONNECTED;
-        case WSAEWOULDBLOCK: return KJ_ERR_WOULD_BLOCK;
-        default: return KJ_ERR_UNKNOWN;
-    }
-}
-#elif defined(KJ_SYS_LINUX)
+#if defined(KJ_SYS_LINUX)
 #include <arpa/inet.h>
 #include <unistd.h>
-
+typedef i32 SOCKET;
 #define INVALID_SOCKET (-1)
 #define SOCKET_ERROR (-1)
-
-KJ_INTERN kjErr kj_networking_err_from_sys(void) {
-    i32 err = errno;
-    switch(err) {
-        case 0: return KJ_ERR_NONE;
-        case EBADF: return KJ_ERR_BAD_HANDLE;
-        case EACCES: return KJ_ERR_PERMISSION_DENIED;
-        case ETIMEDOUT: return KJ_ERR_TIMED_OUT;
-        case EINVAL: return KJ_ERR_INVALID_INPUT;
-        case EINTR: return KJ_ERR_INTERRUPED;
-        case EADDRINUSE: return KJ_ERR_ADDR_IN_USE;
-        case EADDRNOTAVAIL: return KJ_ERR_ADDR_NOT_AVAILABLE;
-        case ECONNABORTED: return KJ_ERR_CONNECTION_ABORTED;
-        case ECONNREFUSED: return KJ_ERR_CONNECTION_REFUSED;
-        case ECONNRESET: return KJ_ERR_CONNECTION_RESET;
-        case ENOTCONN: return KJ_ERR_NOT_CONNECTED;
-        case EWOULDBLOCK: return KJ_ERR_WOULD_BLOCK;
-        case EAGAIN: return KJ_ERR_WOULD_BLOCK;
-        default: return KJ_ERR_UNKNOWN;
-    }
-}
 #endif
 
 b32 kj_networking_begin(void) {
@@ -135,7 +94,11 @@ kjErr kj_socket_open(kjSocket* sock, kjSocketAddr addr) {
     i32 type = addr == KJ_SOCKET_ADDR_V4 ? AF_INET: AF_INET6;
     if((sock->handle = socket(
                     type, SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET) {
-        res = kj_networking_err_from_sys();
+#if defined(KJ_SYS_WIN32)
+        res = kj_err_from_sys(WSAGetLastError());
+#elif defined(KJ_SYS_LINUX)
+        res = kj_err_from_sys(errno);
+#endif
     }
     sock->err = res;
     return res;
@@ -166,7 +129,11 @@ kjErr kj_socket_connect(kjSocket* sock, const char* ip, u16 port) {
     if(connect(sock->handle,
                 kj_cast(struct sockaddr*, &sock->addr),
                 kj_isize_of(struct sockaddr_in)) == SOCKET_ERROR) {
-        res = kj_networking_err_from_sys();
+#if defined(KJ_SYS_WIN32)
+        res = kj_err_from_sys(WSAGetLastError());
+#elif defined(KJ_SYS_LINUX)
+        res = kj_err_from_sys(errno);
+#endif
         kj_socket_close(sock);
     }
     sock->err = res;
@@ -197,7 +164,11 @@ kjErr kj_socket_bind(kjSocket* sock, u16 port, b32 local) {
     if(bind(sock->handle,
                 kj_cast(struct sockaddr*, &sock->addr),
                 kj_isize_of(struct sockaddr_in)) == SOCKET_ERROR) {
-        res = kj_networking_err_from_sys();
+#if defined(KJ_SYS_WIN32)
+        res = kj_err_from_sys(WSAGetLastError());
+#elif defined(KJ_SYS_LINUX)
+        res = kj_err_from_sys(errno);
+#endif
         kj_socket_close(sock);
     }
     sock->err = res;
@@ -209,7 +180,12 @@ kjErr kj_socket_listen(kjSocket* sock, i32 max_conn) {
 
     kjErr res = KJ_ERR_NONE;
     if(listen(sock->handle, kj_min(max_conn, SOMAXCONN)) == SOCKET_ERROR) {
-        res = kj_networking_err_from_sys();
+#if defined(KJ_SYS_WIN32)
+        res = kj_err_from_sys(WSAGetLastError());
+#elif defined(KJ_SYS_LINUX)
+        res = kj_err_from_sys(errno);
+#endif
+        sock->err = res;
         kj_socket_close(sock);
     }
     sock->err = res;
@@ -223,7 +199,11 @@ kjErr kj_socket_accept(kjSocket* sock, kjSocket* client) {
     kjErr res = KJ_ERR_NONE;
     SOCKET s;
     if((s = accept(sock->handle, NULL, NULL)) == SOCKET_ERROR) {
-        res = kj_networking_err_from_sys();
+#if defined(KJ_SYS_WIN32)
+        res = kj_err_from_sys(WSAGetLastError());
+#elif defined(KJ_SYS_LINUX)
+        res = kj_err_from_sys(errno);
+#endif
         kj_socket_close(sock);
     } else {
         kj_zero(client, kj_isize_of(kjSocket));
