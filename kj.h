@@ -441,11 +441,6 @@ typedef KJ_ALLOCATOR_REALLOC_FN(kjAllocatorReallocFn);
     void* name(kjAllocator* allocator, isize size, isize alignment)
 typedef KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kjAllocatorAllocAlignedFn);
 
-KJ_API KJ_ALLOCATOR_ALLOC_FN(kj_dummy_alloc);
-KJ_API KJ_ALLOCATOR_FREE_FN(kj_dummy_free);
-KJ_API KJ_ALLOCATOR_REALLOC_FN(kj_dummy_realloc);
-KJ_API KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj_dummy_alloc_aligned);
-
 struct kjAllocator {
     kjAllocatorAllocFn* alloc;
     kjAllocatorFreeFn* free;
@@ -486,7 +481,8 @@ KJ_API KJ_ALLOCATOR_REALLOC_FN(kj_linear_realloc);
 /// Debug
 
 #define KJ_ASSERT_HANDLER(name) void name(                                      \
-        const char* expr, const char* file, u64 line, const char* msg)
+        const char* expr, const char* file, u64 line,                           \
+        const char* msg, void* usr)
 
 KJ_API KJ_ASSERT_HANDLER(kj_assert_handler);
 
@@ -502,15 +498,18 @@ KJ_API KJ_ASSERT_HANDLER(kj_assert_handler);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
 #define kj_break() do { __builtin_trap(); } while(0)
 #endif
-#define kj_assert_msg(expr, msg, ...) do {                                      \
+#define kj_assert_msg_usr(expr, msg, usr) do {                                  \
     if(!(expr)) {                                                               \
-        KJ_CUSTOM_ASSERT_HANDLER(kj_string_of(expr), __FILE__, __LINE__, msg);  \
+        KJ_CUSTOM_ASSERT_HANDLER(                                               \
+                kj_string_of(expr), __FILE__, __LINE__, msg, usr);              \
         kj_break();                                                             \
     }                                                                           \
 } while(0)
-#define kj_assert(expr) kj_assert_msg(expr, NULL)
-#define kj_panic(msg) kj_assert_msg(!"panic", msg)
+#define kj_assert_msg(expr, msg) kj_assert_msg_usr(expr, msg, NULL)
+#define kj_assert(expr) kj_assert_msg_usr(expr, NULL, NULL)
+#define kj_panic(msg) kj_assert_msg_usr(!"panic", msg, NULL)
 #else
+#define kj_assert_msg_usr(expr, msg, usr)
 #define kj_assert_msg(expr, msg)
 #define kj_assert(expr)
 #define kj_panic(msg)
@@ -974,25 +973,25 @@ KJ_INLINE const char* kj_err_to_str(kjErr err) {
         KJ_ERR_STR[KJ_ERR_UNKNOWN]: KJ_ERR_STR[err];
 }
 
-KJ_INLINE KJ_ALLOCATOR_ALLOC_FN(kj_dummy_alloc) {
+KJ_INTERN KJ_INLINE KJ_ALLOCATOR_ALLOC_FN(kj_dummy_alloc) {
     kj_unused(allocator);
     kj_unused(size);
     return NULL;
 }
 
-KJ_INLINE KJ_ALLOCATOR_FREE_FN(kj_dummy_free) {
+KJ_INTERN KJ_INLINE KJ_ALLOCATOR_FREE_FN(kj_dummy_free) {
     kj_unused(allocator);
     kj_unused(data);
 }
 
-KJ_INLINE KJ_ALLOCATOR_REALLOC_FN(kj_dummy_realloc) {
+KJ_INTERN KJ_INLINE KJ_ALLOCATOR_REALLOC_FN(kj_dummy_realloc) {
     kj_unused(allocator);
     kj_unused(data);
     kj_unused(size);
     return NULL;
 }
 
-KJ_INLINE KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj_dummy_alloc_aligned) {
+KJ_INTERN KJ_INLINE KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj_dummy_alloc_aligned) {
     kj_unused(allocator);
     kj_unused(size);
     kj_unused(alignment);
@@ -1146,9 +1145,9 @@ void kj_linear_allocator_clear(kjLinearAllocator* allocator) {
     }
 }
 
-#if !defined(KJ_CUSTOM_ASSERT_HANDLER)
 #if defined(KJ_SYS_WIN32)
 KJ_ASSERT_HANDLER(kj_assert_handler) {
+    kj_unused(usr);
     static char buf[4096] = {0};
     kj_snprintf(
             buf, kj_isize_of(buf) - 1,
@@ -1158,13 +1157,13 @@ KJ_ASSERT_HANDLER(kj_assert_handler) {
 }
 #elif defined(KJ_SYS_LINUX)
 KJ_ASSERT_HANDLER(kj_assert_handler) {
+    kj_unused(usr);
     if(msg) {
         kj_printf("%s:%lu - %s %s", file, line, expr, msg);
     } else {
         kj_printf("%s:%lu - %s", file, line, expr);
     }
 }
-#endif
 #endif
 
 KJ_INLINE u16 kj_byte_swap_u16(u16 a) {
