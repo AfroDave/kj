@@ -65,6 +65,7 @@ typedef struct kjThread {
     } ctx;
 } kjThread;
 
+KJ_API void kj_yield(void);
 KJ_API void kj_sleep_ms(u32 ms);
 
 KJ_API kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags);
@@ -115,6 +116,14 @@ KJ_EXTERN_END
 kjAtomic32 THREAD_COUNTER = 0;
 
 #if defined(KJ_SYS_WIN32)
+KJ_INLINE void kj_yield(void) {
+    SwitchToThread();
+}
+
+KJ_INLINE void kj_sleep_ms(u32 ms) {
+    Sleep(ms);
+}
+
 kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags) {
     kjThread res;
     res.id = kj_atomic_inc_u32(&THREAD_COUNTER);
@@ -182,6 +191,22 @@ void kj_semaphore_destroy(kjSemaphore* semaphore) {
     CloseHandle(semaphore); semaphore = NULL;
 }
 #elif defined(KJ_SYS_LINUX)
+#include <time.h>
+#include <sched.h>
+
+KJ_INLINE void kj_yield(void) {
+    sched_yield();
+}
+
+KJ_INLINE void kj_sleep_ms(u32 ms) {
+    struct timespec req = {
+        kj_cast(time_t, ms / 1000),
+        kj_cast(u32, ((ms % 1000) * 1000000))
+    };
+    struct timespec rem = { 0, 0 };
+    nanosleep(&req, &rem);
+}
+
 kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags) {
     kjThread res;
     res.id = kj_atomic_inc_u32(&THREAD_COUNTER);
@@ -250,10 +275,6 @@ void kj_semaphore_destroy(kjSemaphore* semaphore) {
 
 #if defined(KJ_COMPILER_MSVC)
 #include <intrin.h>
-
-KJ_INLINE void kj_sleep_ms(u32 ms) {
-    Sleep(ms);
-}
 
 KJ_INLINE void kj_atomic_read_fence(void) {
     _ReadBarrier();
@@ -348,17 +369,6 @@ KJ_INLINE u64 kj_atomic_xor_u64(kjAtomic64* v, u64 op) {
     return _InterlockedXor64(v, op);
 }
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#include <time.h>
-
-KJ_INLINE void kj_sleep_ms(u32 ms) {
-    struct timespec req = {
-        kj_cast(time_t, ms / 1000),
-        kj_cast(u32, ((ms % 1000) * 1000000))
-    };
-    struct timespec rem = { 0, 0 };
-    nanosleep(&req, &rem);
-}
-
 KJ_INLINE void kj_atomic_read_fence(void) {
     __asm __volatile__ ("" ::: "memory");
 }
