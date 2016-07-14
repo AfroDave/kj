@@ -72,7 +72,7 @@ KJ_API kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags);
 KJ_API void kj_thread_join(kjThread* thread);
 KJ_API void kj_thread_detach(kjThread* thread);
 
-KJ_API kjMutex kj_mutex(void);
+KJ_API kjErr kj_mutex(kjMutex* mutex);
 KJ_API void kj_mutex_lock(kjMutex* mutex);
 KJ_API b32 kj_mutex_try_lock(kjMutex* mutex);
 KJ_API void kj_mutex_unlock(kjMutex* mutex);
@@ -135,35 +135,51 @@ kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags) {
     return res;
 }
 
-void kj_thread_join(kjThread* thread) {
+KJ_INLINE void kj_thread_join(kjThread* thread) {
+    kj_assert(thread);
+
     WaitForSingleObjectEx(thread->handle, INFINITE, FALSE);
     CloseHandle(thread->handle);
 }
 
-void kj_thread_detach(kjThread* thread) {
+KJ_INLINE void kj_thread_detach(kjThread* thread) {
+    kj_assert(thread);
+
     CloseHandle(thread->handle);
     thread->handle = NULL;
 }
 
-kjMutex kj_mutex(void) {
-    kjMutex mutex;
-    InitializeCriticalSectionAndSpinCount(&mutex, 1000);
-    return mutex;
+kjErr kj_mutex(kjMutex* mutex) {
+    kj_assert(mutex);
+
+    kjErr res = KJ_ERR_NONE;
+    if(InitializeCriticalSectionAndSpinCount(mutex, 1000)) {
+        res = kj_err_from_sys(GetLastError());
+    }
+    return res;
 }
 
-void kj_mutex_lock(kjMutex* mutex) {
+KJ_INLINE void kj_mutex_lock(kjMutex* mutex) {
+    kj_assert(mutex);
+
     EnterCriticalSection(mutex);
 }
 
-b32 kj_mutex_try_lock(kjMutex* mutex) {
+KJ_INLINE b32 kj_mutex_try_lock(kjMutex* mutex) {
+    kj_assert(mutex);
+
     return TryEnterCriticalSection(mutex) > 0;
 }
 
-void kj_mutex_unlock(kjMutex* mutex) {
+KJ_INLINE void kj_mutex_unlock(kjMutex* mutex) {
+    kj_assert(mutex);
+
     LeaveCriticalSection(mutex);
 }
 
-void kj_mutex_destroy(kjMutex* mutex) {
+KJ_INLINE void kj_mutex_destroy(kjMutex* mutex) {
+    kj_assert(mutex);
+
     DeleteCriticalSection(mutex);
 }
 
@@ -173,21 +189,29 @@ kjSemaphore kj_semaphore(u32 count, u32 max) {
     return res;
 }
 
-b32 kj_semaphore_wait(kjSemaphore* semaphore) {
+KJ_INLINE b32 kj_semaphore_wait(kjSemaphore* semaphore) {
+    kj_assert(semaphore);
+
     u32 res = WaitForSingleObject(semaphore, INFINITE);
     return res == WAIT_OBJECT_0 || res == WAIT_TIMEOUT;
 }
 
-b32 kj_semaphore_try_wait(kjSemaphore* semaphore) {
+KJ_INLINE b32 kj_semaphore_try_wait(kjSemaphore* semaphore) {
+    kj_assert(semaphore);
+
     u32 res = WaitForSingleObject(semaphore, 0);
     return res == WAIT_OBJECT_0;
 }
 
-void kj_semaphore_signal(kjSemaphore* semaphore, i32 count) {
+KJ_INLINE void kj_semaphore_signal(kjSemaphore* semaphore, i32 count) {
+    kj_assert(semaphore);
+
     ReleaseSemaphore(semaphore, count, NULL);
 }
 
-void kj_semaphore_destroy(kjSemaphore* semaphore) {
+KJ_INLINE void kj_semaphore_destroy(kjSemaphore* semaphore) {
+    kj_assert(semaphore);
+
     CloseHandle(semaphore); semaphore = NULL;
 }
 #elif defined(KJ_SYS_LINUX)
@@ -217,58 +241,80 @@ kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags) {
     return res;
 }
 
-void kj_thread_join(kjThread* thread) {
+KJ_INLINE void kj_thread_join(kjThread* thread) {
+    kj_assert(thread);
+
     pthread_join(thread->handle, NULL);
 }
 
-void kj_thread_detach(kjThread* thread) {
+KJ_INLINE void kj_thread_detach(kjThread* thread) {
+    kj_assert(thread);
+
     pthread_detach(thread->handle);
 }
 
-kjMutex kj_mutex(void) {
-    kjMutex mutex;
-    pthread_mutex_init(&mutex, NULL);
+kjErr kj_mutex(kjMutex* mutex) {
+    kj_assert(mutex);
+
+    pthread_mutex_init(mutex, NULL);
     return mutex;
 }
 
-void kj_mutex_lock(kjMutex* mutex) {
+KJ_INLINE void kj_mutex_lock(kjMutex* mutex) {
+    kj_assert(mutex);
+
     pthread_mutex_lock(mutex);
 }
 
-b32 kj_mutex_try_lock(kjMutex* mutex) {
+KJ_INLINE b32 kj_mutex_try_lock(kjMutex* mutex) {
+    kj_assert(mutex);
+
     return pthread_mutex_trylock(mutex) == 0;
 }
 
-void kj_mutex_unlock(kjMutex* mutex) {
+KJ_INLINE void kj_mutex_unlock(kjMutex* mutex) {
+    kj_assert(mutex);
+
     pthread_mutex_unlock(mutex);
 }
 
-void kj_mutex_destroy(kjMutex* mutex) {
+KJ_INLINE void kj_mutex_destroy(kjMutex* mutex) {
+    kj_assert(mutex);
+
     pthread_mutex_destroy(mutex);
 }
 
 kjSemaphore kj_semaphore(u32 count, u32 max) {
-    kjSemaphore res;
     kj_unused(max);
+
+    kjSemaphore res;
     sem_init(&res, 0, count);
     return res;
 }
 
-b32 kj_semaphore_wait(kjSemaphore* semaphore) {
+KJ_INLINE b32 kj_semaphore_wait(kjSemaphore* semaphore) {
+    kj_assert(semaphore);
+
     return sem_wait(semaphore);
 }
 
-b32 kj_semaphore_try_wait(kjSemaphore* semaphore) {
+KJ_INLINE b32 kj_semaphore_try_wait(kjSemaphore* semaphore) {
+    kj_assert(semaphore);
+
     return sem_trywait(semaphore);
 }
 
-void kj_semaphore_signal(kjSemaphore* semaphore, i32 count) {
+KJ_INLINE void kj_semaphore_signal(kjSemaphore* semaphore, i32 count) {
+    kj_assert(semaphore);
+
     while(count-- > 0) {
         sem_post(semaphore);
     }
 }
 
-void kj_semaphore_destroy(kjSemaphore* semaphore) {
+KJ_INLINE void kj_semaphore_destroy(kjSemaphore* semaphore) {
+    kj_assert(semaphore);
+
     sem_destroy(semaphore);
 }
 #endif
