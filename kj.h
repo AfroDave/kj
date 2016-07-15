@@ -2175,7 +2175,7 @@ void* kj_file_slurp(
     void* res = NULL;
     kjFile file;
     if(kj_file_open(&file, path, KJ_FILE_READ) == KJ_ERR_NONE) {
-        kjFileStat stat = {0};
+        kjFileStat stat;
         if(kj_file_stat(&file, &stat) == KJ_ERR_NONE && stat.size > 0) {
             res = kj_allocator_alloc(
                     allocator, terminate ? stat.size + 1: stat.size);

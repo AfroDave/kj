@@ -209,7 +209,7 @@ kjErr kj_socket_accept(kjSocket* sock, kjSocket* client) {
 isize$ kj_socket_read(kjSocket* sock, void* buf, isize size) {
     kj_assert(sock);
 
-    isize$ res = {0};
+    isize$ res;
     res.err = KJ_ERR_NONE;
     res.value = recv(
             sock->handle,
@@ -233,7 +233,7 @@ isize$ kj_socket_read(kjSocket* sock, void* buf, isize size) {
 isize$ kj_socket_write(kjSocket* sock, const void* buf, isize size) {
     kj_assert(sock);
 
-    isize$ res = {0};
+    isize$ res;
     res.err = KJ_ERR_NONE;
     res.value = send(
             sock->handle,

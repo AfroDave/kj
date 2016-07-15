@@ -256,8 +256,8 @@ KJ_INLINE void kj_thread_detach(kjThread* thread) {
 kjErr kj_mutex(kjMutex* mutex) {
     kj_assert(mutex);
 
-    pthread_mutex_init(mutex, NULL);
-    return mutex;
+    kjErr res = kj_err_from_sys(pthread_mutex_init(mutex, NULL));
+    return res;
 }
 
 KJ_INLINE void kj_mutex_lock(kjMutex* mutex) {
