@@ -9,13 +9,13 @@
 #define KJ_THREADING_H
 
 #define KJ_THREADING_VERSION_MAJOR 0
-#define KJ_THREADING_VERSION_MINOR 2
-#define KJ_THREADING_VERSION_PATCH 2
+#define KJ_THREADING_VERSION_MINOR 3
+#define KJ_THREADING_VERSION_PATCH 0
 
 KJ_EXTERN_BEGIN
 
 enum {
-    KJ_THREADING_FLAG_NONE = KJ_BIT_ZERO
+    KJ_THREADING_FLAG_NONE = KJ_BIT_FLAG_NONE
 };
 
 #if defined(KJ_SYS_WIN32)
@@ -25,6 +25,8 @@ typedef HANDLE kjSemaphore;
 #elif defined(KJ_SYS_LINUX)
 #include <pthread.h>
 #include <semaphore.h>
+#include <time.h>
+#include <sched.h>
 typedef pthread_t kjThreadHandle;
 typedef pthread_mutex_t kjMutex;
 typedef sem_t kjSemaphore;
@@ -33,6 +35,7 @@ typedef sem_t kjSemaphore;
 #endif
 
 #if defined(KJ_COMPILER_MSVC)
+#include <intrin.h>
 #define KJ_TLS __declspec(thread)
 typedef volatile LONG kjAtomic32;
 typedef volatile LONGLONG kjAtomic64;
@@ -68,7 +71,7 @@ typedef struct kjThread {
 KJ_API void kj_yield(void);
 KJ_API void kj_sleep_ms(u32 ms);
 
-KJ_API kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags);
+KJ_API kjErr kj_thread(kjThread* thread, kjThreadFn* fn, void* data, u32 flags);
 KJ_API void kj_thread_join(kjThread* thread);
 KJ_API void kj_thread_detach(kjThread* thread);
 
@@ -78,7 +81,7 @@ KJ_API b32 kj_mutex_try_lock(kjMutex* mutex);
 KJ_API void kj_mutex_unlock(kjMutex* mutex);
 KJ_API void kj_mutex_destroy(kjMutex* mutex);
 
-KJ_API kjSemaphore kj_semaphore(u32 count, u32 max);
+KJ_API kjErr kj_semaphore(kjSemaphore* semaphore, u32 count, u32 max);
 KJ_API b32 kj_semaphore_wait(kjSemaphore* semaphore);
 KJ_API b32 kj_semaphore_try_wait(kjSemaphore* semaphore);
 KJ_API void kj_semaphore_signal(kjSemaphore* semaphore, i32 count);
@@ -124,14 +127,21 @@ KJ_INLINE void kj_sleep_ms(u32 ms) {
     Sleep(ms);
 }
 
-kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags) {
-    kjThread res;
-    res.id = kj_atomic_inc_u32(&THREAD_COUNTER);
-    res.ctx.fn = fn;
-    res.ctx.data = data;
-    res.flags = flags;
-    res.handle = CreateThread(
-            NULL, 0, kj_cast(LPTHREAD_START_ROUTINE, fn), data, 0, NULL);
+kjErr kj_thread(kjThread* thread, kjThreadFn* fn, void* data, u32 flags) {
+    kj_assert(thread);
+    kj_assert(fn);
+
+    kjErr res = KJ_ERR_NONE;
+    if((thread->handle = CreateThread(
+            NULL, 0, kj_cast(LPTHREAD_START_ROUTINE, fn),
+            data, 0, NULL)) == NULL) {
+        res = kj_err_from_sys(GetLastError());
+    } else {
+        thread->id = kj_atomic_inc_u32(&THREAD_COUNTER);
+        thread->ctx.fn = fn;
+        thread->ctx.data = data;
+        thread->flags = flags;
+    }
     return res;
 }
 
@@ -153,9 +163,8 @@ kjErr kj_mutex(kjMutex* mutex) {
     kj_assert(mutex);
 
     kjErr res = KJ_ERR_NONE;
-    if(InitializeCriticalSectionAndSpinCount(mutex, 1000)) {
-        res = kj_err_from_sys(GetLastError());
-    }
+    InitializeCriticalSectionAndSpinCount(mutex, 1000);
+    res = kj_err_from_sys(GetLastError());
     return res;
 }
 
@@ -183,9 +192,13 @@ KJ_INLINE void kj_mutex_destroy(kjMutex* mutex) {
     DeleteCriticalSection(mutex);
 }
 
-kjSemaphore kj_semaphore(u32 count, u32 max) {
-    kjSemaphore res;
-    res = CreateSemaphore(NULL, count, max, NULL);
+kjErr kj_semaphore(kjSemaphore* semaphore, u32 count, u32 max) {
+    kj_assert(semaphore);
+
+    kjErr res = KJ_ERR_NONE;
+    if((*semaphore = CreateSemaphore(NULL, count, max, NULL)) == NULL) {
+        res = kj_err_from_sys(GetLastError());
+    }
     return res;
 }
 
@@ -215,9 +228,6 @@ KJ_INLINE void kj_semaphore_destroy(kjSemaphore* semaphore) {
     CloseHandle(semaphore); semaphore = NULL;
 }
 #elif defined(KJ_SYS_LINUX)
-#include <time.h>
-#include <sched.h>
-
 KJ_INLINE void kj_yield(void) {
     sched_yield();
 }
@@ -231,13 +241,19 @@ KJ_INLINE void kj_sleep_ms(u32 ms) {
     nanosleep(&req, &rem);
 }
 
-kjThread kj_thread(kjThreadFn* fn, void* data, u32 flags) {
-    kjThread res;
-    res.id = kj_atomic_inc_u32(&THREAD_COUNTER);
-    res.ctx.fn = fn;
-    res.ctx.data = data;
-    res.flags = flags;
-    pthread_create(&res.handle, NULL, kj_cast(void* (*)(void*), fn), data);
+kjErr kj_thread(kjThread* thread, kjThreadFn* fn, void* data, u32 flags) {
+    kj_assert(thread);
+    kj_assert(fn);
+
+    kjErr res = KJ_ERR_NONE;
+    if(kj_err_from_sys(pthread_create(
+        &thread->handle, NULL, kj_cast(void* (*)(void*), fn), data))
+            == KJ_ERR_NONE) {
+        thread->id = kj_atomic_inc_u32(&THREAD_COUNTER);
+        thread->ctx.fn = fn;
+        thread->ctx.data = data;
+        thread->flags = flags;
+    }
     return res;
 }
 
@@ -284,11 +300,13 @@ KJ_INLINE void kj_mutex_destroy(kjMutex* mutex) {
     pthread_mutex_destroy(mutex);
 }
 
-kjSemaphore kj_semaphore(u32 count, u32 max) {
-    kj_unused(max);
+kjErr kj_semaphore(kjSemaphore* semaphore, u32 count, u32 max) {
+    kj_unused(semaphore);
 
-    kjSemaphore res;
-    sem_init(&res, 0, count);
+    kjErr res = KJ_ERR_NONE;
+    if(sem_init(semaphore, 0, count) == -1) {
+        res = kj_err_from_sys(errno);
+    }
     return res;
 }
 
@@ -320,8 +338,6 @@ KJ_INLINE void kj_semaphore_destroy(kjSemaphore* semaphore) {
 #endif
 
 #if defined(KJ_COMPILER_MSVC)
-#include <intrin.h>
-
 KJ_INLINE void kj_atomic_read_fence(void) {
     _ReadBarrier();
 }

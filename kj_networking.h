@@ -61,19 +61,21 @@ KJ_EXTERN_END
 #include <arpa/inet.h>
 #include <unistd.h>
 typedef i32 SOCKET;
-#define INVALID_SOCKET (-1)
-#define SOCKET_ERROR (-1)
+enum {
+    INVALID_SOCKET = -1,
+    SOCKET_ERROR = -1
+};
 #endif
 
 b32 kj_networking_begin(void) {
-    b32 res = false;
+    b32 res = KJ_FALSE;
 #if defined(KJ_SYS_WIN32)
     WSADATA wsa;
     if(WSAStartup(0x202, &wsa) == NO_ERROR) {
-        res = true;
+        res = KJ_TRUE;
     }
 #elif defined(KJ_SYS_LINUX)
-    res = true;
+    res = KJ_TRUE;
 #endif
     return res;
 }

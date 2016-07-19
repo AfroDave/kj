@@ -9,8 +9,8 @@
 #define KJ_MATH_H
 
 #define KJ_MATH_VERSION_MAJOR 0
-#define KJ_MATH_VERSION_MINOR 2
-#define KJ_MATH_VERSION_PATCH 2
+#define KJ_MATH_VERSION_MINOR 3
+#define KJ_MATH_VERSION_PATCH 0
 
 #define kj_to_degrees(a) kj_cast(f32, (a) * 57.295779513082320f)
 #define kj_to_radians(a) kj_cast(f32, (a) * 0.017453292519943f)
@@ -29,16 +29,20 @@
 
 typedef struct kjVec2f {
     struct { f32 x, y; };
+    struct { f32 w, h; };
+    struct { f32 g, a; };
     f32 e[2];
 } kjVec2f;
 
 typedef struct kjVec2i {
     struct { i32 x, y; };
+    struct { i32 w, h; };
     i32 e[2];
 } kjVec2i;
 
 typedef struct kjVec2u {
     struct { u32 x, y; };
+    struct { u32 w, h; };
     u32 e[2];
 } kjVec2u;
 
