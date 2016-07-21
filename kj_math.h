@@ -27,20 +27,20 @@
 #pragma warning(disable:4201)
 #endif
 
-typedef struct kjVec2f {
+typedef union kjVec2f {
     struct { f32 x, y; };
     struct { f32 w, h; };
     struct { f32 g, a; };
     f32 e[2];
 } kjVec2f;
 
-typedef struct kjVec2i {
+typedef union kjVec2i {
     struct { i32 x, y; };
     struct { i32 w, h; };
     i32 e[2];
 } kjVec2i;
 
-typedef struct kjVec2u {
+typedef union kjVec2u {
     struct { u32 x, y; };
     struct { u32 w, h; };
     u32 e[2];
@@ -52,12 +52,12 @@ typedef union kjVec3f {
     f32 e[3];
 } kjVec3f;
 
-typedef struct kjVec3i {
+typedef union kjVec3i {
     struct { i32 x, y, z; };
     i32 e[3];
 } kjVec3i;
 
-typedef struct kjVec3u {
+typedef union kjVec3u {
     struct { u32 x, y, z; };
     u32 e[3];
 } kjVec3u;
@@ -68,12 +68,12 @@ typedef union kjVec4f {
     f32 e[4];
 } kjVec4f;
 
-typedef struct kjVec4i {
+typedef union kjVec4i {
     struct { i32 x, y, z, w; };
     i32 e[4];
 } kjVec4i;
 
-typedef struct kjVec4u {
+typedef union kjVec4u {
     struct { u32 x, y, z, w; };
     u32 e[4];
 } kjVec4u;
