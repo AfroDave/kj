@@ -8,6 +8,7 @@ library             | category
 **kj_math.h**       | maths
 **kj_sse.h**        | simd
 **kj_threading.h**  | multithreading
+**kj_networking.h** | sockets
 
 All the libraries target C/C++ for both win32 and linux.
 
