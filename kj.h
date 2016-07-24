@@ -47,18 +47,13 @@ KJ_EXTERN_BEGIN
 #include <stdio.h>
 #elif defined(__linux__)
 #define KJ_SYS_LINUX
-#define _GNU_SOURCE
+#include <time.h>
 #include <dirent.h>
 #include <dlfcn.h>
-#include <endian.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
 #else
 #error Unsupported Operating System
 #endif
@@ -90,12 +85,22 @@ enum {
     KJ_MAX_ASCII = 0x7F,
     KJ_MAX_LATIN1 = 0xFF,
     KJ_MAX_UNICODE = 0x10FFFF,
-    KJ_PATH_MAX = 4096,
+#if defined(KJ_SYS_LINUX)
+    KJ_PATH_MAX = PATH_MAX,
+#elif defined(KJ_SYS_LINUX)
+    KJ_PATH_MAX = MAX_PATH,
+#endif
     KJ_BIT_FLAG_NONE = 0,
     KJ_LE = 1234,
     KJ_BE = 4321,
 #if defined(KJ_SYS_LINUX)
-    KJ_ENDIAN = __BYTE_ORDER,
+#if __BYTE_ORDER == __BIG_ENDIAN
+    KJ_ENDIAN = KJ_BE,
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+    KJ_ENDIAN = KJ_LE,
+#else
+#error "Unsupported Endianness"
+#endif
     KJ_PATH_SEPARATOR = '/'
 #else
     KJ_ENDIAN = KJ_LE,
@@ -268,6 +273,14 @@ enum {
 #define kj_one(p, s) kj_set(p, s, 1)
 #define kj_fill(p, s) kj_set(p, s, 0xFF)
 
+#if !defined(KJ_TLS)
+#if defined(KJ_COMPILER_MSVC)
+#define KJ_TLS __declspec(thread)
+#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+#define KJ_TLS __thread
+#endif
+#endif
+
 /// Types
 
 typedef int8_t i8;
@@ -305,10 +318,10 @@ typedef uint64_t u64;
 #define U64_MAX kj_cast(u64, 0xFFFFFFFFFFFFFFFF)
 #endif
 
-typedef u8 b8;
-typedef u16 b16;
-typedef u32 b32;
-typedef u64 b64;
+typedef i8 b8;
+typedef i16 b16;
+typedef i32 b32;
+typedef i64 b64;
 
 #if defined(KJ_ARCH_64_BIT)
 typedef i64 isize;
@@ -603,6 +616,14 @@ enum {
     KJ_SYSCALL_PREAD = 17,
     KJ_SYSCALL_WRITE = 1,
     KJ_SYSCALL_PWRITE = 18,
+    KJ_SYSCALL_ACCESS = 21,
+    KJ_SYSCALL_GETCWD = 79,
+    KJ_SYSCALL_CHDIR = 80,
+    KJ_SYSCALL_RENAME = 82,
+    KJ_SYSCALL_MKDIR = 83,
+    KJ_SYSCALL_RMDIR = 83,
+    KJ_SYSCALL_STAT = 4,
+    KJ_SYSCALL_FSTAT = 5,
     KJ_SYSCALL_READLINK = 89
 };
 
@@ -658,6 +679,14 @@ enum {
     KJ_SYSCALL_PREAD = 180,
     KJ_SYSCALL_WRITE = 4,
     KJ_SYSCALL_PWRITE = 181,
+    KJ_SYSCALL_ACCESS = 33,
+    KJ_SYSCALL_RENAME = 38,
+    KJ_SYSCALL_GETCWD = 183,
+    KJ_SYSCALL_CHDIR = 12,
+    KJ_SYSCALL_MKDIR = 39,
+    KJ_SYSCALL_RMDIR = 40,
+    KJ_SYSCALL_STAT = 18,
+    KJ_SYSCALL_FSTAT = 28,
     KJ_SYSCALL_READLINK = 85
 };
 
@@ -2018,7 +2047,7 @@ kjErr kj_file_open(kjFile* file, const char* path, u32 flags) {
         kj_syscall3(
                 KJ_SYSCALL_OPEN, file->handle, path, (access | create), perm);
         file->flags = flags;
-        res = kj_err_from_sys(file->handle < 0 ? -file->handle: 0);
+        res = file->handle < 0 ? kj_err_from_sys(-file->handle): KJ_ERR_NONE;
     }
     return res;
 }
@@ -2029,9 +2058,7 @@ kjErr kj_file_close(kjFile* file) {
     kjErr res = KJ_ERR_NONE;
     i32 out = 0;
     kj_syscall1(KJ_SYSCALL_CLOSE, out, file->handle);
-    if(out < 0) {
-        res = kj_err_from_sys(out < 0 ? -out: 0);
-    }
+    res = out < 0 ? kj_err_from_sys(-out): KJ_ERR_NONE;
     file->handle = -1;
     file->flags = 0;
     return res;
@@ -2043,7 +2070,7 @@ kjErr kj_file_seek(kjFile* file, i64 offset, kjSeekFrom seek) {
     kjErr res = KJ_ERR_NONE;
     isize out = -1;
     kj_syscall3(KJ_SYSCALL_LSEEK, out, file->handle, offset, seek);
-    res = kj_err_from_sys(out < 0 ? -out: 0);
+    res = out < 0 ? kj_err_from_sys(-out): KJ_ERR_NONE;
     return res;
 }
 
@@ -2055,7 +2082,7 @@ isize$ kj_file_read(kjFile* file, void* buf, isize size) {
     isize$ res;
     res.err = KJ_ERR_NONE;
     kj_syscall3(KJ_SYSCALL_READ, res.value, file->handle, buf, size);
-    res.err = kj_err_from_sys(res.value < 0 ? -res.value: 0);
+    res.err = res.value < 0 ? kj_err_from_sys(-res.value): KJ_ERR_NONE;
     return res;
 }
 
@@ -2067,7 +2094,7 @@ isize$ kj_file_write(kjFile* file, const void* buf, isize size) {
     isize$ res;
     res.err = KJ_ERR_NONE;
     kj_syscall3(KJ_SYSCALL_WRITE, res.value, file->handle, buf, size);
-    res.err = kj_err_from_sys(res.value < 0 ? -res.value: 0);
+    res.err = res.value < 0 ? kj_err_from_sys(-res.value): KJ_ERR_NONE;
     return res;
 }
 
@@ -2079,7 +2106,7 @@ isize$ kj_file_read_at(kjFile* file, void* buf, isize size, i64 offset) {
     isize$ res;
     res.err = KJ_ERR_NONE;
     kj_syscall4(KJ_SYSCALL_PREAD, res.value, file->handle, buf, size, offset);
-    res.err = kj_err_from_sys(res.value < 0 ? -res.value: 0);
+    res.err = res.value < 0 ? kj_err_from_sys(-res.value): KJ_ERR_NONE;
     return res;
 }
 
@@ -2091,7 +2118,7 @@ isize$ kj_file_write_at(kjFile* file, const void* buf, isize size, i64 offset) {
     isize$ res;
     res.err = KJ_ERR_NONE;
     kj_syscall4(KJ_SYSCALL_PWRITE, res.value, file->handle, buf, size, offset);
-    res.err = kj_err_from_sys(res.value < 0 ? -res.value: 0);
+    res.err = res.value < 0 ? kj_err_from_sys(-res.value): KJ_ERR_NONE;
     return res;
 }
 
@@ -2101,8 +2128,10 @@ kjErr kj_file_stat(kjFile* file, kjFileStat* stat) {
 
     kjErr res = KJ_ERR_NONE;
     struct stat buf;
-    if(fstat(file->handle, &buf) == -1) {
-        res = kj_err_from_sys(errno);
+    isize out = -1;
+    kj_syscall2(KJ_SYSCALL_FSTAT, out, file->handle, &buf);
+    if(out == -1) {
+        res = out < 0 ? kj_err_from_sys(-out): KJ_ERR_NONE;
     } else {
         stat->size = buf.st_size;
         struct tm* last_access = gmtime(&buf.st_atime);
@@ -2401,13 +2430,15 @@ b32 kj_path_is_dir(const char* path) {
     return res;
 }
 #elif defined(KJ_SYS_LINUX)
+KJ_GLOBAL KJ_TLS char KJ_PATH_BUF[KJ_PATH_MAX] = {0};
+
 kjErr kj_path_create_dir(const char* path) {
     kj_assert(path);
 
     kjErr res = KJ_ERR_NONE;
-    if(mkdir(path, S_IRWXU | S_IRGRP | S_IROTH) == -1) {
-        res = kj_err_from_sys(errno);
-    }
+    isize out = -1;
+    kj_syscall2(KJ_SYSCALL_RMDIR, out, path, S_IRWXU | S_IRGRP | S_IROTH);
+    res = out < 0 ? kj_err_from_sys(-out): KJ_ERR_NONE;
     return res;
 }
 
@@ -2415,9 +2446,9 @@ kjErr kj_path_remove_dir(const char* path) {
     kj_assert(path);
 
     kjErr res = KJ_ERR_NONE;
-    if(rmdir(path) == -1) {
-        res = kj_err_from_sys(errno);
-    }
+    isize out = -1;
+    kj_syscall1(KJ_SYSCALL_RMDIR, out, path);
+    res = out < 0 ? kj_err_from_sys(-out): KJ_ERR_NONE;
     return res;
 }
 
@@ -2426,9 +2457,9 @@ kjErr kj_path_rename(const char* from, const char* to) {
     kj_assert(to);
 
     kjErr res = KJ_ERR_NONE;
-    if(rename(from, to) == -1) {
-        res = kj_err_from_sys(errno);
-    }
+    isize out = -1;
+    kj_syscall2(KJ_SYSCALL_RENAME, out, from, to);
+    res = out < 0 ? kj_err_from_sys(-out): KJ_ERR_NONE;
     return res;
 }
 
@@ -2438,10 +2469,14 @@ isize$ kj_path_current_dir(char* path, isize size) {
 
     isize$ res;
     res.err = KJ_ERR_NONE;
-    if(!getcwd(path, size)) {
-        res.err = kj_err_from_sys(errno);
+    kj_syscall2(KJ_SYSCALL_GETCWD, res.value, KJ_PATH_BUF, KJ_PATH_MAX - 1);
+    if(res.value < 0) {
+        res.err = kj_err_from_sys(-res.value);
+    } elif(res.value > size) {
+        res.err = KJ_ERR_INSUFFICIENT_BUFFER;
     } else {
-        res.value = kj_cstr_count(path);
+        kj_copy(path, KJ_PATH_BUF, res.value);
+        path[res.value] = '\0';
     }
     return res;
 }
@@ -2450,9 +2485,9 @@ kjErr kj_path_set_current_dir(const char* path) {
     kj_assert(path);
 
     kjErr res = KJ_ERR_NONE;
-    if(chdir(path) == -1) {
-        res = kj_err_from_sys(errno);
-    }
+    isize out = -1;
+    kj_syscall1(KJ_SYSCALL_CHDIR, out, path);
+    res = out < 0 ? kj_err_from_sys(-out): KJ_ERR_NONE;
     return res;
 }
 
@@ -2462,24 +2497,17 @@ isize$ kj_path_tmp_dir(char* path, isize size) {
 
     isize$ res;
     res.err = KJ_ERR_NONE;
-    char* tmp = NULL;
+    const char* tmp = NULL;
     if((tmp = getenv("TMPDIR")) == NULL) {
-        if(size > 5) {
-            kj_copy(path, "/tmp", 4);
-            path[4] = '\0';
-            res.value = 4;
-        } else {
-            res.err = KJ_ERR_INSUFFICIENT_BUFFER;
-        }
+        tmp = "/tmp";
+    }
+    isize tmp_size = kj_cstr_count(tmp);
+    if(tmp_size < size) {
+        kj_copy(path, tmp, tmp_size);
+        path[tmp_size] = '\0';
+        res.value = tmp_size;
     } else {
-        isize tmp_size = kj_cstr_count(tmp);
-        if((tmp_size + 1) < size) {
-            kj_copy(path, tmp, tmp_size);
-            path[tmp_size] = '\0';
-            res.value = tmp_size;
-        } else {
-            res.err = KJ_ERR_INSUFFICIENT_BUFFER;
-        }
+        res.err = KJ_ERR_INSUFFICIENT_BUFFER;
     }
     return res;
 }
@@ -2490,8 +2518,16 @@ isize$ kj_path_self(char* path, isize size) {
 
     isize$ res;
     res.err = KJ_ERR_NONE;
-    if((res.value = readlink("/proc/self/exe", path, size) == -1)) {
-        res = kj_err_from_sys(errno);
+    kj_syscall3(
+            KJ_SYSCALL_READLINK, res.value,
+            "/proc/self/exe", KJ_PATH_BUF, KJ_PATH_MAX - 1);
+    if(res.value < 0) {
+        res.err = kj_err_from_sys(-res.value);
+    } elif(res.value > size) {
+        res.err = KJ_ERR_INSUFFICIENT_BUFFER;
+    } else {
+        kj_copy(path, KJ_PATH_BUF, res.value);
+        path[res.value] = '\0';
     }
     return res;
 }
@@ -2500,9 +2536,8 @@ b32 kj_path_exists(const char* path) {
     kj_assert(path);
 
     b32 res = KJ_FALSE;
-    if(access(path, F_OK) == 0) {
-        res = KJ_TRUE;
-    }
+    kj_syscall2(KJ_SYSCALL_ACCESS, res, path, 0);
+    res = res == 0 ? KJ_TRUE: KJ_FALSE;
     return res;
 }
 
@@ -2510,10 +2545,9 @@ b32 kj_path_is_file(const char* path) {
     kj_assert(path);
 
     b32 res = KJ_FALSE;
-    struct stat* buf;
-    if(stat(path, &buf) == 0) {
-        res = S_ISREG(st.st_mode) != 0;
-    }
+    struct stat st;
+    kj_syscall2(KJ_SYSCALL_STAT, res, path, &st);
+    res = res == 0 ? S_ISREG(st.st_mode) != 0: KJ_FALSE;
     return res;
 }
 
@@ -2521,10 +2555,9 @@ b32 kj_path_is_dir(const char* path) {
     kj_assert(path);
 
     b32 res = KJ_FALSE;
-    struct stat* buf;
-    if(stat(path, &buf) == 0) {
-        res = S_ISDIR(st.st_mode) != 0;
-    }
+    struct stat st;
+    kj_syscall2(KJ_SYSCALL_STAT, res, path, &st);
+    res = res == 0 ? S_ISDIR(st.st_mode) != 0: KJ_FALSE;
     return res;
 }
 #endif

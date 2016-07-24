@@ -34,14 +34,20 @@ typedef sem_t kjSemaphore;
 #error Unsupported Operating System
 #endif
 
+#if !defined(KJ_TLS)
+#if defined(KJ_COMPILER_MSVC)
+#define KJ_TLS __declspec(thread)
+#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+#define KJ_TLS __thread
+#endif
+#endif
+
 #if defined(KJ_COMPILER_MSVC)
 #include <intrin.h>
-#define KJ_TLS __declspec(thread)
 typedef volatile LONG kjAtomic32;
 typedef volatile LONGLONG kjAtomic64;
 typedef volatile PVOID kjAtomicPtr;
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#define KJ_TLS __thread
 typedef KJ_ALIGN(4) volatile u32 kjAtomic32;
 typedef KJ_ALIGN(8) volatile u64 kjAtomic64;
 #if defined(KJ_ARCH_32_BIT)
@@ -301,7 +307,7 @@ KJ_INLINE void kj_mutex_destroy(kjMutex* mutex) {
 }
 
 kjErr kj_semaphore(kjSemaphore* semaphore, u32 count, u32 max) {
-    kj_unused(semaphore);
+    kj_unused(max);
 
     kjErr res = KJ_ERR_NONE;
     if(sem_init(semaphore, 0, count) == -1) {
