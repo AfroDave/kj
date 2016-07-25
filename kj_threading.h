@@ -169,8 +169,9 @@ kjErr kj_mutex(kjMutex* mutex) {
     kj_assert(mutex);
 
     kjErr res = KJ_ERR_NONE;
-    InitializeCriticalSectionAndSpinCount(mutex, 1000);
-    res = kj_err_from_sys(GetLastError());
+    if(!InitializeCriticalSectionAndSpinCount(mutex, 1000)) {
+        res = kj_err_from_sys(GetLastError());
+    }
     return res;
 }
 

@@ -9,7 +9,7 @@
 #define KJ_MATH_H
 
 #define KJ_MATH_VERSION_MAJOR 0
-#define KJ_MATH_VERSION_MINOR 3
+#define KJ_MATH_VERSION_MINOR 4
 #define KJ_MATH_VERSION_PATCH 0
 
 #define kj_to_degrees(a) kj_cast(f32, (a) * 57.295779513082320f)
@@ -25,6 +25,12 @@
 #if defined(KJ_COMPILER_MSVC)
 #pragma warning(push)
 #pragma warning(disable:4201)
+#elif defined(KJ_COMPILER_CLANG)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpedantic"
+#elif defined(KJ_COMPILER_GNU)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 
 typedef union kjVec2f {
@@ -80,6 +86,10 @@ typedef union kjVec4u {
 
 #if defined(KJ_COMPILER_MSVC)
 #pragma warning(pop)
+#elif defined(KJ_COMPILER_CLANG)
+#pragma clang diagnostic pop
+#elif defined(KJ_COMPILER_GNU)
+#pragma GCC diagnostic pop
 #endif
 
 typedef union kjMat3f {
@@ -121,6 +131,310 @@ typedef struct kjRect3u {
 typedef struct kjRgba {
     u8 r, g, b, a;
 } kjRgba;
+
+#if defined(KJ_COMPILER_CLANG)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-braces"
+#elif defined(KJ_COMPILER_GNU)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-braces"
+#endif
+
+KJ_GLOBAL const kjRgba KJ_RGBA_ALICE_BLUE = { 0xF0, 0xF8, 0xFF, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_ANTIQUE_WHITE = { 0xFA, 0xEB, 0xD7, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_AQUA = { 0x00, 0xFF, 0xFF, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_AQUAMARINE = { 0x7F, 0xFF, 0xD4, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_AZURE = { 0xF0, 0xFF, 0xFF, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_BEIGE = { 0xF5, 0xF5, 0xDC, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_BISQUE = { 0xFF, 0xE4, 0xC4, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_BLACK = { 0x00, 0x00, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_BLANCHED_ALMOND = { 0xFF, 0xEB, 0xCD, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_BLUE = { 0x00, 0x00, 0xFF, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_BLUE_VIOLET = { 0x8A, 0x2B, 0xE2, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_BROWN = { 0xA5, 0x2A, 0x2A, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_BURLYWOOD = { 0xDE, 0xB8, 0x87, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_CADET_BLUE = { 0x5F, 0x9E, 0xA0, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_CHARTREUSE = { 0x7F, 0xFF, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_CHOCOLATE = { 0xD2, 0x69, 0x1E, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_CORAL = { 0xFF, 0x7F, 0x50, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_CORNFLOWER = { 0x64, 0x95, 0xED, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_CORNSILK = { 0xFF, 0xF8, 0xDC, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_CRIMSON = { 0xDC, 0x14, 0x3C, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_CYAN = { 0x00, 0xFF, 0xFF, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_BLUE = { 0x00, 0x00, 0x8B, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_CYAN = { 0x00, 0x8B, 0x8B, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_GOLDENROD = { 0xB8, 0x86, 0x0B, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_GRAY = { 0xA9, 0xA9, 0xA9, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_GREEN = { 0x00, 0x64, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_KHAKI = { 0xBD, 0xB7, 0x6B, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_MAGENTA = { 0x8B, 0x00, 0x8B, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_OLIVE_GREEN = { 0x55, 0x6B, 0x2F, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_ORANGE = { 0xFF, 0x8C, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_ORCHID = { 0x99, 0x32, 0xCC, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_RED = { 0x8B, 0x00, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_SALMON = { 0xE9, 0x96, 0x7A, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_SEA_GREEN = { 0x8F, 0xBC, 0x8F, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_SLATE_BLUE = { 0x48, 0x3D, 0x8B, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_SLATE_GRAY = { 0x2F, 0x4F, 0x4F, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_TURQUOISE = { 0x00, 0xCE, 0xD1, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DARK_VIOLET = { 0x94, 0x00, 0xD3, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DEEP_PINK = { 0xFF, 0x14, 0x93, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DEEP_SKY_BLUE = { 0x00, 0xBF, 0xFF, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DIM_GRAY = { 0x69, 0x69, 0x69, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_DODGER_BLUE = { 0x1E, 0x90, 0xFF, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_FIREBRICK = { 0xB2, 0x22, 0x22, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_FLORAL_WHITE = { 0xFF, 0xFA, 0xF0, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_FOREST_GREEN = { 0x22, 0x8B, 0x22, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_FUCHSIA = { 0xFF, 0x00, 0xFF, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_GAINSBORO = { 0xDC, 0xDC, 0xDC, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_GHOST_WHITE = { 0xF8, 0xF8, 0xFF, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_GOLD = { 0xFF, 0xD7, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_GOLDENROD = { 0xDA, 0xA5, 0x20, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_GRAY = { 0xBE, 0xBE, 0xBE, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_GREEN = { 0x00, 0xFF, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_GREEN_YELLOW = { 0xAD, 0xFF, 0x2F, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_HONEYDEW = { 0xF0, 0xFF, 0xF0, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_HOT_PINK = { 0xFF, 0x69, 0xB4, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_INDIAN_RED = { 0xCD, 0x5C, 0x5C, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_INDIGO = { 0x4B, 0x00, 0x82, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_IVORY = { 0xFF, 0xFF, 0xF0, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_KHAKI = { 0xF0, 0xE6, 0x8C, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LAVENDER = { 0xE6, 0xE6, 0xFA, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LAVENDER_BLUSH = { 0xFF, 0xF0, 0xF5, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LAWN_GREEN = { 0x7C, 0xFC, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LEMON_CHIFFON = { 0xFF, 0xFA, 0xCD, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIGHT_BLUE = { 0xAD, 0xD8, 0xE6, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIGHT_CORAL = { 0xF0, 0x80, 0x80, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIGHT_CYAN = { 0xE0, 0xFF, 0xFF, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIGHT_GOLDENROD = { 0xFA, 0xFA, 0xD2, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIGHT_GRAY = { 0xD3, 0xD3, 0xD3, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIGHT_GREEN = { 0x90, 0xEE, 0x90, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIGHT_PINK = { 0xFF, 0xB6, 0xC1, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIGHT_SALMON = { 0xFF, 0xA0, 0x7A, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIGHT_SEA_GREEN = { 0X20, 0XB2, 0XAA, 0XFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIGHT_SKY_BLUE = { 0X87, 0XCE, 0XFA, 0XFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIGHT_SLATE_GRAY = { 0X77, 0X88, 0X99, 0XFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIGHT_STEEL_BLUE = { 0XB0, 0XC4, 0XDE, 0XFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIGHT_YELLOW = { 0xFF, 0xFF, 0xE0, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIME = { 0x00, 0xFF, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LIME_GREEN = { 0x32, 0xCD, 0x32, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_LINEN = { 0xFA, 0xF0, 0xE6, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MAGENTA = { 0xFF, 0x00, 0xFF, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MAROON = { 0xB0, 0x30, 0x60, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MEDIUM_AQUAMARINE = { 0x66, 0xCD, 0xAA, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MEDIUM_BLUE = { 0x00, 0x00, 0xCD, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MEDIUM_ORCHID = { 0xBA, 0x55, 0xD3, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MEDIUM_PURPLE = { 0x93, 0x70, 0xDB, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MEDIUM_SEA_GREEN = { 0x3C, 0xB3, 0x71, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MEDIUM_SLATE_BLUE = { 0x7B, 0x68, 0xEE, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MEDIUM_SPRING_GREEN = { 0x00, 0xFA, 0x9A, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MEDIUM_TURQUOISE = { 0x48, 0xD1, 0xCC, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MEDIUM_VIOLET_RED = { 0xC7, 0x15, 0x85, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MIDNIGHT_BLUE = { 0x19, 0x19, 0x70, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MINT_CREAM = { 0xF5, 0xFF, 0xFA, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MISTY_ROSE = { 0xFF, 0xE4, 0xE1, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_MOCCASIN = { 0xFF, 0xE4, 0xB5, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_NAVAJO_WHITE = { 0xFF, 0xDE, 0xAD, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_NAVY_BLUE = { 0x00, 0x00, 0x80, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_OLD_LACE = { 0xFD, 0xF5, 0xE6, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_OLIVE = { 0x80, 0x80, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_OLIVE_DRAB = { 0x6B, 0x8E, 0x23, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_ORANGE = { 0xFF, 0xA5, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_ORANGE_RED = { 0xFF, 0x45, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_ORCHID = { 0xDA, 0x70, 0xD6, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_PALE_GOLDENROD = { 0xEE, 0xE8, 0xAA, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_PALE_GREEN = { 0x98, 0xFB, 0x98, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_PALE_TURQUOISE = { 0xAF, 0xEE, 0xEE, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_PALE_VIOLET_RED = { 0xDB, 0x70, 0x93, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_PAPAYA_WHIP = { 0xFF, 0xEF, 0xD5, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_PEACH_PUFF = { 0xFF, 0xDA, 0xB9, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_PERU = { 0xCD, 0x85, 0x3F, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_PINK = { 0xFF, 0xC0, 0xCB, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_PLUM = { 0xDD, 0xA0, 0xDD, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_POWDER_BLUE = { 0xB0, 0xE0, 0xE6, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_PURPLE = { 0xA0, 0x20, 0xF0, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_REBECCA_PURPLE = { 0x66, 0x33, 0x99, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_RED = { 0xFF, 0x00, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_ROSY_BROWN = { 0xBC, 0x8F, 0x8F, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_ROYAL_BLUE = { 0x41, 0x69, 0xE1, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_SADDLE_BROWN = { 0x8B, 0x45, 0x13, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_SALMON = { 0xFA, 0x80, 0x72, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_SANDY_BROWN = { 0xF4, 0xA4, 0x60, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_SEASHELL = { 0xFF, 0xF5, 0xEE, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_SEA_GREEN = { 0x2E, 0x8B, 0x57, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_SIENNA = { 0xA0, 0x52, 0x2D, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_SILVER = { 0xC0, 0xC0, 0xC0, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_SKY_BLUE = { 0x87, 0xCE, 0xEB, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_SLATE_BLUE = { 0x6A, 0x5A, 0xCD, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_SLATE_GRAY = { 0x70, 0x80, 0x90, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_SNOW = { 0xFF, 0xFA, 0xFA, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_SPRING_GREEN = { 0x00, 0xFF, 0x7F, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_STEEL_BLUE = { 0x46, 0x82, 0xB4, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_TAN = { 0xD2, 0xB4, 0x8C, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_TEAL = { 0x00, 0x80, 0x80, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_THISTLE = { 0xD8, 0xBF, 0xD8, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_TOMATO = { 0xFF, 0x63, 0x47, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_TURQUOISE = { 0x40, 0xE0, 0xD0, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_VIOLET = { 0xEE, 0x82, 0xEE, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_WEB_GRAY = { 0x80, 0x80, 0x80, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_WEB_GREEN = { 0x00, 0x80, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_WEB_MAROON = { 0x7F, 0x00, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_WEB_PURPLE = { 0x7F, 0x00, 0x7F, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_WHEAT = { 0xF5, 0xDE, 0xB3, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_WHITE = { 0xFF, 0xFF, 0xFF, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_WHITE_SMOKE = { 0xF5, 0xF5, 0xF5, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_YELLOW = { 0xFF, 0xFF, 0x00, 0xFF };
+KJ_GLOBAL const kjRgba KJ_RGBA_YELLOW_GREEN = { 0x9A, 0xCD, 0x32, 0xFF };
+
+KJ_GLOBAL const kjVec4f KJ_RGBAF_ALICE_BLUE = { 0.94f, 0.97f, 1.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_ANTIQUE_WHITE = { 0.98f, 0.92f, 0.84f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_AQUA = { 0.0f, 1.0f, 1.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_AQUAMARINE = { 0.5f, 1.0f, 0.83f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_AZURE = { 0.94f, 1.0f, 1.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_BEIGE = { 0.96f, 0.96f, 0.86f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_BISQUE = { 1.0f, 0.89f, 0.77f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_BLACK = { 0.0f, 0.0f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_BLANCHED_ALMOND = { 1.0f, 0.92f, 0.8f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_BLUE = { 0.0f, 0.0f, 1.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_BLUE_VIOLET = { 0.54f, 0.17f, 0.89f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_BROWN = { 0.65f, 0.16f, 0.16f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_BURLYWOOD = { 0.87f, 0.72f, 0.53f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_CADET_BLUE = { 0.37f, 0.62f, 0.63f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_CHARTREUSE = { 0.5f, 1.0f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_CHOCOLATE = { 0.82f, 0.41f, 0.12f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_CORAL = { 1.0f, 0.5f, 0.31f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_CORNFLOWER = { 0.39f, 0.58f, 0.93f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_CORNSILK = { 1.0f, 0.97f, 0.86f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_CRIMSON = { 0.86f, 0.078f, 0.24f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_CYAN = { 0.0f, 1.0f, 1.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_BLUE = { 0.0f, 0.0f, 0.55f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_CYAN = { 0.0f, 0.55f, 0.55f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_GOLDENROD = { 0.72f, 0.53f, 0.043f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_GRAY = { 0.66f, 0.66f, 0.66f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_GREEN = { 0.0f, 0.39f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_KHAKI = { 0.74f, 0.72f, 0.42f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_MAGENTA = { 0.55f, 0.0f, 0.55f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_OLIVE_GREEN = { 0.33f, 0.42f, 0.18f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_ORANGE = { 1.0f, 0.55f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_ORCHID = { 0.6f, 0.2f, 0.8f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_RED = { 0.55f, 0.0f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_SALMON = { 0.91f, 0.59f, 0.48f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_SEA_GREEN = { 0.56f, 0.74f, 0.56f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_SLATE_BLUE = { 0.28f, 0.24f, 0.55f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_SLATE_GRAY = { 0.18f, 0.31f, 0.31f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_TURQUOISE = { 0.0f, 0.81f, 0.82f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DARK_VIOLET = { 0.58f, 0.0f, 0.83f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DEEP_PINK = { 1.0f, 0.078f, 0.58f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DEEP_SKY_BLUE = { 0.0f, 0.75f, 1.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DIM_GRAY = { 0.41f, 0.41f, 0.41f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_DODGER_BLUE = { 0.12f, 0.56f, 1.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_FIREBRICK = { 0.7f, 0.13f, 0.13f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_FLORAL_WHITE = { 1.0f, 0.98f, 0.94f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_FOREST_GREEN = { 0.13f, 0.55f, 0.13f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_FUCHSIA = { 1.0f, 0.0f, 1.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_GAINSBORO = { 0.86f, 0.86f, 0.86f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_GHOST_WHITE = { 0.97f, 0.97f, 1.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_GOLD = { 1.0f, 0.84f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_GOLDENROD = { 0.85f, 0.65f, 0.13f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_GRAY = { 0.75f, 0.75f, 0.75f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_GREEN = { 0.0f, 1.0f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_GREEN_YELLOW = { 0.68f, 1.0f, 0.18f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_HONEYDEW = { 0.94f, 1.0f, 0.94f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_HOT_PINK = { 1.0f, 0.41f, 0.71f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_INDIAN_RED = { 0.8f, 0.36f, 0.36f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_INDIGO = { 0.29f, 0.0f, 0.51f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_IVORY = { 1.0f, 1.0f, 0.94f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_KHAKI = { 0.94f, 0.9f, 0.55f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LAVENDER = { 0.9f, 0.9f, 0.98f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LAVENDER_BLUSH = { 1.0f, 0.94f, 0.96f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LAWN_GREEN = { 0.49f, 0.99f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LEMON_CHIFFON = { 1.0f, 0.98f, 0.8f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIGHT_BLUE = { 0.68f, 0.85f, 0.9f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIGHT_CORAL = { 0.94f, 0.5f, 0.5f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIGHT_CYAN = { 0.88f, 1.0f, 1.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIGHT_GOLDENROD = { 0.98f, 0.98f, 0.82f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIGHT_GRAY = { 0.83f, 0.83f, 0.83f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIGHT_GREEN = { 0.56f, 0.93f, 0.56f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIGHT_PINK = { 1.0f, 0.71f, 0.76f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIGHT_SALMON = { 1.0f, 0.63f, 0.48f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIGHT_SEA_GREEN = { 0.13f, 0.7f, 0.67f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIGHT_SKY_BLUE = { 0.53f, 0.81f, 0.98f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIGHT_SLATE_GRAY = { 0.47f, 0.53f, 0.6f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIGHT_STEEL_BLUE = { 0.69f, 0.77f, 0.87f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIGHT_YELLOW = { 1.0f, 1.0f, 0.88f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIME = { 0.0f, 1.0f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LIME_GREEN = { 0.2f, 0.8f, 0.2f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_LINEN = { 0.98f, 0.94f, 0.9f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MAGENTA = { 1.0f, 0.0f, 1.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MAROON = { 0.69f, 0.19f, 0.38f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MEDIUM_AQUAMARINE = { 0.4f, 0.8f, 0.67f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MEDIUM_BLUE = { 0.0f, 0.0f, 0.8f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MEDIUM_ORCHID = { 0.73f, 0.33f, 0.83f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MEDIUM_PURPLE = { 0.58f, 0.44f, 0.86f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MEDIUM_SEA_GREEN = { 0.24f, 0.7f, 0.44f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MEDIUM_SLATE_BLUE = { 0.48f, 0.41f, 0.93f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MEDIUM_SPRING_GREEN = { 0.0f, 0.98f, 0.6f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MEDIUM_TURQUOISE = { 0.28f, 0.82f, 0.8f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MEDIUM_VIOLET_RED = { 0.78f, 0.082f, 0.52f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MIDNIGHT_BLUE = { 0.098f, 0.098f, 0.44f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MINT_CREAM = { 0.96f, 1.0f, 0.98f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MISTY_ROSE = { 1.0f, 0.89f, 0.88f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_MOCCASIN = { 1.0f, 0.89f, 0.71f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_NAVAJO_WHITE = { 1.0f, 0.87f, 0.68f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_NAVY_BLUE = { 0.0f, 0.0f, 0.5f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_OLD_LACE = { 0.99f, 0.96f, 0.9f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_OLIVE = { 0.5f, 0.5f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_OLIVE_DRAB = { 0.42f, 0.56f, 0.14f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_ORANGE = { 1.0f, 0.65f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_ORANGE_RED = { 1.0f, 0.27f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_ORCHID = { 0.85f, 0.44f, 0.84f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_PALE_GOLDENROD = { 0.93f, 0.91f, 0.67f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_PALE_GREEN = { 0.6f, 0.98f, 0.6f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_PALE_TURQUOISE = { 0.69f, 0.93f, 0.93f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_PALE_VIOLET_RED = { 0.86f, 0.44f, 0.58f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_PAPAYA_WHIP = { 1.0f, 0.94f, 0.84f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_PEACH_PUFF = { 1.0f, 0.85f, 0.73f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_PERU = { 0.8f, 0.52f, 0.25f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_PINK = { 1.0f, 0.75f, 0.8f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_PLUM = { 0.87f, 0.63f, 0.87f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_POWDER_BLUE = { 0.69f, 0.88f, 0.9f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_PURPLE = { 0.63f, 0.13f, 0.94f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_REBECCA_PURPLE = { 0.4f, 0.2f, 0.6f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_RED = { 1.0f, 0.0f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_ROSY_BROWN = { 0.74f, 0.56f, 0.56f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_ROYAL_BLUE = { 0.25f, 0.41f, 0.88f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_SADDLE_BROWN = { 0.55f, 0.27f, 0.075f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_SALMON = { 0.98f, 0.5f, 0.45f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_SANDY_BROWN = { 0.96f, 0.64f, 0.38f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_SEASHELL = { 1.0f, 0.96f, 0.93f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_SEA_GREEN = { 0.18f, 0.55f, 0.34f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_SIENNA = { 0.63f, 0.32f, 0.18f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_SILVER = { 0.75f, 0.75f, 0.75f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_SKY_BLUE = { 0.53f, 0.81f, 0.92f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_SLATE_BLUE = { 0.42f, 0.35f, 0.8f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_SLATE_GRAY = { 0.44f, 0.5f, 0.56f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_SNOW = { 1.0f, 0.98f, 0.98f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_SPRING_GREEN = { 0.0f, 1.0f, 0.5f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_STEEL_BLUE = { 0.27f, 0.51f, 0.71f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_TAN = { 0.82f, 0.71f, 0.55f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_TEAL = { 0.0f, 0.5f, 0.5f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_THISTLE = { 0.85f, 0.75f, 0.85f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_TOMATO = { 1.0f, 0.39f, 0.28f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_TURQUOISE = { 0.25f, 0.88f, 0.82f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_VIOLET = { 0.93f, 0.51f, 0.93f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_WEB_GRAY = { 0.5f, 0.5f, 0.5f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_WEB_GREEN = { 0.0f, 0.5f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_WEB_MAROON = { 0.5f, 0.0f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_WEB_PURPLE = { 0.5f, 0.0f, 0.5f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_WHEAT = { 0.96f, 0.87f, 0.7f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_WHITE = { 1.0f, 1.0f, 1.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_WHITE_SMOKE = { 0.96f, 0.96f, 0.96f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_YELLOW = { 1.0f, 1.0f, 0.0f, 1.0f };
+KJ_GLOBAL const kjVec4f KJ_RGBAF_YELLOW_GREEN = { 0.6f, 0.8f, 0.2f, 1.0f };
+
+#if defined(KJ_COMPILER_GNU)
+#pragma GCC diagnostic pop
+#endif
 
 KJ_EXTERN_BEGIN
 
@@ -374,7 +688,7 @@ KJ_API u32 kj_rgba_pack(kjRgba rgba);
 KJ_API kjRgba kj_rgba_unpack(u32 packed);
 
 KJ_API kjVec4f kj_rgbaf(f32 r, f32 g, f32 b, f32 a);
-KJ_API kjVec4f kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a);
+KJ_API kjVec4f kj_rgbaf_4u8(u8 r, u8 g, u8 b, u8 a);
 KJ_API kjVec4f kj_rgbaf_rgba(kjRgba rgba);
 KJ_API u32 kj_rgbaf_pack(kjVec4f rgba);
 KJ_API kjVec4f kj_rgbaf_unpack(u32 packed);
@@ -418,7 +732,6 @@ f32 kj_ceilf(f32 a) { return __builtin_ceilf(a); }
 f32 kj_maxf(f32 x, f32 y) { return __builtin_fmaxf(x, y); }
 #elif defined(KJ_COMPILER_MSVC)
 #include <math.h>
-
 f32 kj_rsqrtf(f32 a) { return 1.0f / sqrtf(a); }
 f32 kj_sqrtf(f32 a) { return sqrtf(a); }
 f32 kj_sinf(f32 radians) { return sinf(radians); }
@@ -1110,7 +1423,9 @@ kjMat3f kj_mat3f_diag(f32 e00, f32 e11, f32 e22) {
     return kj_mat3f(e00, 0.0f, 0.0f, 0.0f, e11, 0.0f, 0.0f, 0.0f, e22);
 }
 
-kjMat3f kj_mat3f_ident(void) { return kj_mat3f_diag(1.0f, 1.0f, 1.0f); }
+kjMat3f kj_mat3f_ident(void) {
+    return kj_mat3f_diag(1.0f, 1.0f, 1.0f);
+}
 
 kjMat3f kj_mat3f_zero(void) {
     kjMat3f res;
@@ -1622,12 +1937,14 @@ kjVec3f kj_rect3f_centre(kjRect3f r) {
             (r.y + (r.y + r.h)) / 2.0f,
             (r.z + (r.z + r.w)) / 2.0f);
 }
+
 kjVec3i kj_rect3i_centre(kjRect3i r) {
     return kj_vec3i(
             (r.x + (r.x + r.w)) / 2,
             (r.y + (r.y + r.h)) / 2,
             (r.z + (r.z + r.w)) / 2);
 }
+
 kjVec3u kj_rect3u_centre(kjRect3u r) {
     return kj_vec3u(
             (r.x + (r.x + r.w)) / 2,
@@ -1677,7 +1994,7 @@ kjVec4f kj_rgbaf(f32 r, f32 g, f32 b, f32 a) {
     return res;
 }
 
-kjVec4f kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a) {
+kjVec4f kj_rgbaf_4u8(u8 r, u8 g, u8 b, u8 a) {
     return kj_rgbaf(
         kj_cast(f32, r / 255.0f),
         kj_cast(f32, g / 255.0f),
@@ -1686,7 +2003,7 @@ kjVec4f kj_rgbaf_4b(u8 r, u8 g, u8 b, u8 a) {
 }
 
 kjVec4f kj_rgbaf_rgba(kjRgba rgba) {
-    return kj_rgbaf_4b(rgba.r, rgba.g, rgba.b, rgba.a);
+    return kj_rgbaf_4u8(rgba.r, rgba.g, rgba.b, rgba.a);
 }
 
 u32 kj_rgbaf_pack(kjVec4f rgba) {

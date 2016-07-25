@@ -19,5 +19,8 @@ test*.*
 *.txt
 
 kj_image.h
-kj_gl.h
 kj_platform.h
+kj_gl.h
+kj_gpu.h
+kj_gfx.h
+kj_array.h

@@ -215,10 +215,11 @@ isize$ kj_socket_read(kjSocket* sock, void* buf, isize size) {
     res.err = KJ_ERR_NONE;
     res.value = recv(
             sock->handle,
-            buf,
 #if defined(KJ_SYS_WIN32)
+            kj_cast(char*, buf),
             kj_cast(i32, size),
 #elif defined(KJ_SYS_LINUX)
+            buf,
             size,
 #endif
             0);
@@ -239,10 +240,11 @@ isize$ kj_socket_write(kjSocket* sock, const void* buf, isize size) {
     res.err = KJ_ERR_NONE;
     res.value = send(
             sock->handle,
-            buf,
 #if defined(KJ_SYS_WIN32)
+            kj_cast(const char*, buf),
             kj_cast(i32, size),
 #elif defined(KJ_SYS_LINUX)
+            buf,
             size,
 #endif
             0);
