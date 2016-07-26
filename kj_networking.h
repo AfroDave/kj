@@ -37,7 +37,7 @@ typedef struct kjSocket {
 
 typedef enum kjSocketAddr {
     KJ_SOCKET_ADDR_V4,
-    KJ_SOCKET_ADDR_V6,
+    KJ_SOCKET_ADDR_V6
 } kjSocketAddr;
 
 KJ_API b32 kj_networking_begin(void);

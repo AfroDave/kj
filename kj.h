@@ -47,6 +47,7 @@ KJ_EXTERN_BEGIN
 #include <stdio.h>
 #elif defined(__linux__)
 #define KJ_SYS_LINUX
+#include <stdlib.h>
 #include <time.h>
 #include <dirent.h>
 #include <dlfcn.h>
@@ -61,12 +62,31 @@ KJ_EXTERN_BEGIN
 #include <stdint.h>
 #include <stdarg.h>
 
+#if !defined(kj_string_of)
+#define kj_string_of(a) #a
+#endif
+
 #if defined(_MSC_VER)
 #define KJ_COMPILER_MSVC
+#define KJ_COMPILER_WARNING_BEGIN __pragma(warning(push))
+#define KJ_COMPILER_WARNING_END __pragma(warning(pop))
+#define KJ_COMPILER_WARNING(W) __pragma(warning(disable:W))
+#define KJ_COMPILER_WARNING_NONSTANDARD 4201
+#define KJ_COMPILER_WARNING_MISSING_BRACES
 #elif defined(__clang__)
 #define KJ_COMPILER_CLANG
+#define KJ_COMPILER_WARNING_BEGIN _Pragma("clang diagnostic push")
+#define KJ_COMPILER_WARNING_END _Pragma("clang diagnostic pop")
+#define KJ_COMPILER_WARNING(W) _Pragma(kj_string_of(clang diagnostic ignored W))
+#define KJ_COMPILER_WARNING_NONSTANDARD "-Wpedantic"
+#define KJ_COMPILER_WARNING_MISSING_BRACES "-Wmissing-braces"
 #elif defined(__GNUC__) || defined(__GNUG__)
 #define KJ_COMPILER_GNU
+#define KJ_COMPILER_WARNING_BEGIN _Pragma("GCC diagnostic push")
+#define KJ_COMPILER_WARNING_END _Pragma("GCC diagnostic pop")
+#define KJ_COMPILER_WARNING(W) _Pragma(kj_string_of(GCC diagnostic ignored W))
+#define KJ_COMPILER_WARNING_NONSTANDARD "-Wpedantic"
+#define KJ_COMPILER_WARNING_MISSING_BRACES "-Wmissing-braces"
 #else
 #error Unsupported Compiler
 #endif
@@ -79,9 +99,10 @@ KJ_EXTERN_BEGIN
 #error Unsupported Architecture
 #endif
 
+#define KJ_FALSE (0 != 0)
+#define KJ_TRUE (0 == 0)
+
 enum {
-    KJ_FALSE = (0 != 0),
-    KJ_TRUE = (0 == 0),
     KJ_MAX_ASCII = 0x7F,
     KJ_MAX_LATIN1 = 0xFF,
     KJ_MAX_UNICODE = 0x10FFFF,
@@ -156,7 +177,7 @@ enum {
 #if defined(KJ_COMPILER_MSVC)
 #define KJ_INLINE __forceinline
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#define KJ_INLINE __attribute__((always_inline))
+#define KJ_INLINE __attribute__((always_inline)) inline
 #endif
 #endif
 
@@ -402,7 +423,7 @@ kj_static_assert(f64, kj_isize_of(f64) == 8);
     X(KJ_TYPE_B64, 18, "b64", b64)                                              \
 
 typedef enum kjType {
-#define KJ_TYPE_ENUM(type, ...) type,
+#define KJ_TYPE_ENUM(type, value, name, T) type,
     KJ_TYPE_MAP(KJ_TYPE_ENUM)
 #undef KJ_TYPE_ENUM
     KJ_TYPE_COUNT
@@ -423,7 +444,7 @@ KJ_API isize kj_type_to_isize(kjType type);
     X(KJ_ERR_INVALID_PARAMETER, 8, "Invalid Parameter")                         \
     X(KJ_ERR_INTERRUPED, 9, "Interrupted")                                      \
     X(KJ_ERR_ILLEGAL_SEEK, 10, "Illegal Seek")                                  \
-    X(KJ_ERR_ALLOC_FAILED, 11, "Alloc Fail")                                      \
+    X(KJ_ERR_ALLOC_FAILED, 11, "Alloc Fail")                                    \
     X(KJ_ERR_ADDR_IN_USE, 12, "Address In Use")                                 \
     X(KJ_ERR_ADDR_NOT_AVAILABLE, 13, "Address Not Available")                   \
     X(KJ_ERR_CONNECTION_ABORTED, 14, "Connection Aborted")                      \
@@ -475,7 +496,7 @@ typedef KJ_RESULT_SIZED(void*) void$$;
 
 enum {
     KJ_ALLOC_NONE = KJ_BIT_FLAG_NONE,
-    KJ_ALLOC_ZERO = KJ_BIT_FLAG(0),
+    KJ_ALLOC_ZERO = KJ_BIT_FLAG(0)
 };
 
 KJ_API void* kj_global_alloc(isize size, u32 flags);
@@ -803,7 +824,7 @@ KJ_API void kj_lib_close(kjLib lib);
 typedef enum kjOrdering {
     KJ_ORDERING_LESS = -1,
     KJ_ORDERING_EQUAL = 0,
-    KJ_ORDERING_GREATER = 1,
+    KJ_ORDERING_GREATER = 1
 } kjOrdering;
 
 #define KJ_CMP_FN(name) kjOrdering name(void* arr, isize i, isize j)
@@ -914,6 +935,7 @@ KJ_API isize$ kj_file_write_at(
         kjFile* file, const void* buf, isize size, i64 offset);
 KJ_API void$$ kj_file_slurp(
         kjAllocator* allocator, const char* path, b32 terminate);
+KJ_API isize$ kj_file_spit(const char* path, const void* buf, isize size);
 
 KJ_API kjErr kj_file_stat(kjFile* file, kjFileStat* stat);
 KJ_API kjErr kj_file_stat_path(kjFileStat* stat, const char* path);
@@ -1604,16 +1626,14 @@ KJ_INLINE kjLib kj_lib_open(const char* path) {
     return kj_cast(kjLib, dlopen(path, RTLD_LAZY));
 }
 
-#if defined(KJ_COMPILER_GNU)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
+KJ_COMPILER_WARNING_BEGIN
+KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_NONSTANDARD)
+
 KJ_INLINE kjLibFn kj_lib_fn(kjLib lib, const char* name) {
     return kj_cast(kjLibFn, dlsym(lib, name));
 }
-#if defined(KJ_COMPILER_GNU)
-#pragma GCC diagnostic pop
-#endif
+
+KJ_COMPILER_WARNING_END
 
 KJ_INLINE void kj_lib_close(kjLib lib) {
     dlclose(lib);
@@ -2147,6 +2167,7 @@ kjErr kj_file_stat(kjFile* file, kjFileStat* stat) {
 
     kjErr res = KJ_ERR_NONE;
     struct stat st;
+    kj_zero(&st, kj_isize_of(struct stat));
     isize out = -1;
     kj_syscall2(KJ_SYSCALL_FSTAT, out, *file, &st);
     if(out == -1) {
