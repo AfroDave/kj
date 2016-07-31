@@ -1,5 +1,13 @@
 // `kj_math.h`
-// public domain - no warranty implied; use at your own risk
+//
+// ---------------------------------- LICENSE ----------------------------------
+// This software is in the public domain.  Where that dedication is not
+// recognized, you are granted a perpetual, irrevocable license to copy,
+// distribute, and modify the source code as you see fit.
+//
+// The source code is provided "as is", without warranty of any kind, express
+// or implied. No attribution is required, but always appreciated.
+// =============================================================================
 //
 // usage:
 //      #define KJ_MATH_IMPL
@@ -22,16 +30,8 @@
 #define KJ_E kj_cast(f32, 2.718281828459045f)
 #define KJ_PHI kj_cast(f32, 1.618033988749894f)
 
-#if defined(KJ_COMPILER_MSVC)
-#pragma warning(push)
-#pragma warning(disable:4201)
-#elif defined(KJ_COMPILER_CLANG)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wpedantic"
-#elif defined(KJ_COMPILER_GNU)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
+KJ_COMPILER_WARNING_BEGIN
+KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_NONSTANDARD)
 
 typedef union kjVec2f {
     struct { f32 x, y; };
@@ -84,13 +84,7 @@ typedef union kjVec4u {
     u32 e[4];
 } kjVec4u;
 
-#if defined(KJ_COMPILER_MSVC)
-#pragma warning(pop)
-#elif defined(KJ_COMPILER_CLANG)
-#pragma clang diagnostic pop
-#elif defined(KJ_COMPILER_GNU)
-#pragma GCC diagnostic pop
-#endif
+KJ_COMPILER_WARNING_END
 
 typedef union kjMat3f {
     f32 e[3][3];
@@ -363,9 +357,12 @@ KJ_API u32 kj_vec2u_length(kjVec2u a);
 KJ_API kjVec2f kj_vec2f_normalise(kjVec2f a);
 KJ_API kjVec2i kj_vec2i_normalise(kjVec2i a);
 KJ_API kjVec2u kj_vec2u_normalise(kjVec2u a);
-KJ_API kjVec2f kj_vec2f_clamp(kjVec2f a, kjVec2f b, kjVec2f c);
-KJ_API kjVec2i kj_vec2i_clamp(kjVec2i a, kjVec2i b, kjVec2i c);
-KJ_API kjVec2u kj_vec2u_clamp(kjVec2u a, kjVec2u b, kjVec2u c);
+KJ_API kjVec2f kj_vec2f_clamp(kjVec2f a, kjVec2f min, kjVec2f max);
+KJ_API kjVec2i kj_vec2i_clamp(kjVec2i a, kjVec2i min, kjVec2i max);
+KJ_API kjVec2u kj_vec2u_clamp(kjVec2u a, kjVec2u min, kjVec2u max);
+KJ_API kjVec2f kj_vec2f_clampf(kjVec2f a, f32 min, f32 max);
+KJ_API kjVec2i kj_vec2i_clampi(kjVec2i a, i32 min, i32 max);
+KJ_API kjVec2u kj_vec2u_clampu(kjVec2u a, u32 min, u32 max);
 
 KJ_API kjVec3f kj_vec3f(f32 x, f32 y, f32 z);
 KJ_API kjVec3i kj_vec3i(i32 x, i32 y, i32 z);
@@ -412,9 +409,12 @@ KJ_API u32 kj_vec3u_length(kjVec3u a);
 KJ_API kjVec3f kj_vec3f_normalise(kjVec3f a);
 KJ_API kjVec3i kj_vec3i_normalise(kjVec3i a);
 KJ_API kjVec3u kj_vec3u_normalise(kjVec3u a);
-KJ_API kjVec3f kj_vec3f_clamp(kjVec3f a, kjVec3f b, kjVec3f c);
-KJ_API kjVec3i kj_vec3i_clamp(kjVec3i a, kjVec3i b, kjVec3i c);
-KJ_API kjVec3u kj_vec3u_clamp(kjVec3u a, kjVec3u b, kjVec3u c);
+KJ_API kjVec3f kj_vec3f_clamp(kjVec3f a, kjVec3f min, kjVec3f max);
+KJ_API kjVec3i kj_vec3i_clamp(kjVec3i a, kjVec3i min, kjVec3i max);
+KJ_API kjVec3u kj_vec3u_clamp(kjVec3u a, kjVec3u min, kjVec3u max);
+KJ_API kjVec3f kj_vec3f_clampf(kjVec3f a, f32 min, f32 max);
+KJ_API kjVec3i kj_vec3i_clampi(kjVec3i a, i32 min, i32 max);
+KJ_API kjVec3u kj_vec3u_clampu(kjVec3u a, u32 min, u32 max);
 
 KJ_API kjVec4f kj_vec4f(f32 x, f32 y, f32 z, f32 w);
 KJ_API kjVec4i kj_vec4i(i32 x, i32 y, i32 z, i32 w);
@@ -458,9 +458,12 @@ KJ_API u32 kj_vec4u_length(kjVec4u a);
 KJ_API kjVec4f kj_vec4f_normalise(kjVec4f a);
 KJ_API kjVec4i kj_vec4i_normalise(kjVec4i a);
 KJ_API kjVec4u kj_vec4u_normalise(kjVec4u a);
-KJ_API kjVec4f kj_vec4f_clamp(kjVec4f a, kjVec4f b, kjVec4f c);
-KJ_API kjVec4i kj_vec4i_clamp(kjVec4i a, kjVec4i b, kjVec4i c);
-KJ_API kjVec4u kj_vec4u_clamp(kjVec4u a, kjVec4u b, kjVec4u c);
+KJ_API kjVec4f kj_vec4f_clamp(kjVec4f a, kjVec4f min, kjVec4f max);
+KJ_API kjVec4i kj_vec4i_clamp(kjVec4i a, kjVec4i min, kjVec4i max);
+KJ_API kjVec4u kj_vec4u_clamp(kjVec4u a, kjVec4u min, kjVec4u max);
+KJ_API kjVec4f kj_vec4f_clampf(kjVec4f a, f32 min, f32 max);
+KJ_API kjVec4i kj_vec4i_clampi(kjVec4i a, i32 min, i32 max);
+KJ_API kjVec4u kj_vec4u_clampu(kjVec4u a, u32 min, u32 max);
 
 KJ_API kjMat3f kj_mat3f(f32 e00, f32 e10, f32 e20,
                         f32 e01, f32 e11, f32 e21,
@@ -575,265 +578,276 @@ KJ_API kjMat4f kj_mat4f_scale(kjVec3f xyz);
 #if defined(KJ_MATH_IMPL)
 
 #if defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-f32 kj_rsqrtf(f32 a) { return 1.0f / __builtin_sqrtf(a); }
-f32 kj_sqrtf(f32 a) { return __builtin_sqrtf(a); }
-f32 kj_sinf(f32 a) { return __builtin_sinf(a); }
-f32 kj_cosf(f32 a) { return __builtin_cosf(a); }
-f32 kj_tanf(f32 a) { return __builtin_tanf(a); }
-f32 kj_asinf(f32 a) { return __builtin_asinf(a); }
-f32 kj_acosf(f32 a) { return __builtin_acosf(a); }
-f32 kj_atanf(f32 a) { return __builtin_atanf(a); }
-f32 kj_atan2f(f32 y, f32 x) { return __builtin_atan2f(y, x); }
-f32 kj_expf(f32 a) { return __builtin_expf(a); }
-f32 kj_lnf(f32 a) { return __builtin_logf(a); }
-f32 kj_log10f(f32 a) { return __builtin_log10f(a); }
-f32 kj_log2f(f32 a) { return __builtin_log2f(a); }
-f32 kj_powf(f32 x, f32 y) { return __builtin_powf(x, y); }
-f32 kj_floorf(f32 a) { return __builtin_floorf(a); }
-f32 kj_ceilf(f32 a) { return __builtin_ceilf(a); }
-f32 kj_maxf(f32 x, f32 y) { return __builtin_fmaxf(x, y); }
+KJ_CONST f32 kj_rsqrtf(f32 a) { return 1.0f / __builtin_sqrtf(a); }
+KJ_CONST f32 kj_sqrtf(f32 a) { return __builtin_sqrtf(a); }
+KJ_CONST f32 kj_sinf(f32 a) { return __builtin_sinf(a); }
+KJ_CONST f32 kj_cosf(f32 a) { return __builtin_cosf(a); }
+KJ_CONST f32 kj_tanf(f32 a) { return __builtin_tanf(a); }
+KJ_CONST f32 kj_asinf(f32 a) { return __builtin_asinf(a); }
+KJ_CONST f32 kj_acosf(f32 a) { return __builtin_acosf(a); }
+KJ_CONST f32 kj_atanf(f32 a) { return __builtin_atanf(a); }
+KJ_CONST f32 kj_atan2f(f32 y, f32 x) { return __builtin_atan2f(y, x); }
+KJ_CONST f32 kj_expf(f32 a) { return __builtin_expf(a); }
+KJ_CONST f32 kj_lnf(f32 a) { return __builtin_logf(a); }
+KJ_CONST f32 kj_log10f(f32 a) { return __builtin_log10f(a); }
+KJ_CONST f32 kj_log2f(f32 a) { return __builtin_log2f(a); }
+KJ_CONST f32 kj_powf(f32 x, f32 y) { return __builtin_powf(x, y); }
+KJ_CONST f32 kj_floorf(f32 a) { return __builtin_floorf(a); }
+KJ_CONST f32 kj_ceilf(f32 a) { return __builtin_ceilf(a); }
+KJ_CONST f32 kj_maxf(f32 x, f32 y) { return __builtin_fmaxf(x, y); }
 #elif defined(KJ_COMPILER_MSVC)
 #include <math.h>
-f32 kj_rsqrtf(f32 a) { return 1.0f / sqrtf(a); }
-f32 kj_sqrtf(f32 a) { return sqrtf(a); }
-f32 kj_sinf(f32 radians) { return sinf(radians); }
-f32 kj_cosf(f32 radians) { return cosf(radians); }
-f32 kj_tanf(f32 radians) { return tanf(radians); }
-f32 kj_asinf(f32 a) { return asinf(a); }
-f32 kj_acosf(f32 a) { return acosf(a); }
-f32 kj_atanf(f32 a) { return atanf(a); }
-f32 kj_atan2f(f32 y, f32 x) { return atan2f(y, x); }
-f32 kj_expf(f32 a) { return expf(a); }
-f32 kj_lnf(f32 a) { return logf(a); }
-f32 kj_log10f(f32 a) { return log10f(a); }
-f32 kj_log2f(f32 a) { return log2f(a); }
-f32 kj_powf(f32 x, f32 y) { return powf(x, y); }
-f32 kj_floorf(f32 a) { return floorf(a); }
-f32 kj_ceilf(f32 a) { return ceilf(a); }
-f32 kj_maxf(f32 x, f32 y) { return fmaxf(x, y); }
+KJ_CONST f32 kj_rsqrtf(f32 a) { return 1.0f / sqrtf(a); }
+KJ_CONST f32 kj_sqrtf(f32 a) { return sqrtf(a); }
+KJ_CONST f32 kj_sinf(f32 radians) { return sinf(radians); }
+KJ_CONST f32 kj_cosf(f32 radians) { return cosf(radians); }
+KJ_CONST f32 kj_tanf(f32 radians) { return tanf(radians); }
+KJ_CONST f32 kj_asinf(f32 a) { return asinf(a); }
+KJ_CONST f32 kj_acosf(f32 a) { return acosf(a); }
+KJ_CONST f32 kj_atanf(f32 a) { return atanf(a); }
+KJ_CONST f32 kj_atan2f(f32 y, f32 x) { return atan2f(y, x); }
+KJ_CONST f32 kj_expf(f32 a) { return expf(a); }
+KJ_CONST f32 kj_lnf(f32 a) { return logf(a); }
+KJ_CONST f32 kj_log10f(f32 a) { return log10f(a); }
+KJ_CONST f32 kj_log2f(f32 a) { return log2f(a); }
+KJ_CONST f32 kj_powf(f32 x, f32 y) { return powf(x, y); }
+KJ_CONST f32 kj_floorf(f32 a) { return floorf(a); }
+KJ_CONST f32 kj_ceilf(f32 a) { return ceilf(a); }
+KJ_CONST f32 kj_maxf(f32 x, f32 y) { return fmaxf(x, y); }
 #else
 #error KJ_MATH_UNSUPPORTED
 #endif
 
-kjVec2f kj_vec2f(f32 x, f32 y) {
+KJ_CONST kjVec2f kj_vec2f(f32 x, f32 y) {
     kjVec2f res;
     res.x = x;
     res.y = y;
     return res;
 }
 
-kjVec2i kj_vec2i(i32 x, i32 y) {
+KJ_CONST kjVec2i kj_vec2i(i32 x, i32 y) {
     kjVec2i res;
     res.x = x;
     res.y = y;
     return res;
 }
 
-kjVec2u kj_vec2u(u32 x, u32 y) {
+KJ_CONST kjVec2u kj_vec2u(u32 x, u32 y) {
     kjVec2u res;
     res.x = x;
     res.y = y;
     return res;
 }
 
-kjVec2f kj_vec2f_zero(void) {
+KJ_CONST kjVec2f kj_vec2f_zero(void) {
     return kj_vec2f(0.0f, 0.0f);
 }
 
-kjVec2i kj_vec2i_zero(void) {
+KJ_CONST kjVec2i kj_vec2i_zero(void) {
     return kj_vec2i(0, 0);
 }
 
-kjVec2u kj_vec2u_zero(void) {
+KJ_CONST kjVec2u kj_vec2u_zero(void) {
     return kj_vec2u(0, 0);
 }
 
-kjVec2f kj_vec2f_one(void) {
+KJ_CONST kjVec2f kj_vec2f_one(void) {
     return kj_vec2f(1.0f, 1.0f);
 }
 
-kjVec2i kj_vec2i_one(void) {
+KJ_CONST kjVec2i kj_vec2i_one(void) {
     return kj_vec2i(1, 1);
 }
 
-kjVec2u kj_vec2u_one(void) {
+KJ_CONST kjVec2u kj_vec2u_one(void) {
     return kj_vec2u(1, 1);
 }
 
-kjVec2f kj_vec2f_all(f32 a) {
+KJ_CONST kjVec2f kj_vec2f_all(f32 a) {
     return kj_vec2f(a, a);
 }
 
-kjVec2i kj_vec2i_all(i32 a) {
+KJ_CONST kjVec2i kj_vec2i_all(i32 a) {
     return kj_vec2i(a, a);
 }
 
-kjVec2u kj_vec2u_all(u32 a) {
+KJ_CONST kjVec2u kj_vec2u_all(u32 a) {
     return kj_vec2u(a, a);
 }
 
-kjVec2f kj_vec2f_negate(kjVec2f a) {
+KJ_CONST kjVec2f kj_vec2f_negate(kjVec2f a) {
     return kj_vec2f(-a.x, -a.y);
 }
 
-kjVec2i kj_vec2i_negate(kjVec2i a) {
+KJ_CONST kjVec2i kj_vec2i_negate(kjVec2i a) {
     return kj_vec2i(-a.x, -a.y);
 }
 
-kjVec2u kj_vec2u_negate(kjVec2u a) {
+KJ_CONST kjVec2u kj_vec2u_negate(kjVec2u a) {
     return kj_vec2u(-kj_cast(i32, a.x), -kj_cast(i32, a.y));
 }
 
-kjVec2f kj_vec2f_add(kjVec2f a, kjVec2f b) {
+KJ_CONST kjVec2f kj_vec2f_add(kjVec2f a, kjVec2f b) {
     return kj_vec2f(a.x + b.x, a.y + b.y);
 }
 
-kjVec2i kj_vec2i_add(kjVec2i a, kjVec2i b) {
+KJ_CONST kjVec2i kj_vec2i_add(kjVec2i a, kjVec2i b) {
     return kj_vec2i(a.x + b.x, a.y + b.y);
 }
 
-kjVec2u kj_vec2u_add(kjVec2u a, kjVec2u b) {
+KJ_CONST kjVec2u kj_vec2u_add(kjVec2u a, kjVec2u b) {
     return kj_vec2u(a.x + b.x, a.y + b.y);
 }
 
-kjVec2f kj_vec2f_sub(kjVec2f a, kjVec2f b) {
+KJ_CONST kjVec2f kj_vec2f_sub(kjVec2f a, kjVec2f b) {
     return kj_vec2f(a.x - b.x, a.y - b.y);
 }
 
-kjVec2i kj_vec2i_sub(kjVec2i a, kjVec2i b) {
+KJ_CONST kjVec2i kj_vec2i_sub(kjVec2i a, kjVec2i b) {
     return kj_vec2i(a.x - b.x, a.y - b.y);
 }
 
-kjVec2u kj_vec2u_sub(kjVec2u a, kjVec2u b) {
+KJ_CONST kjVec2u kj_vec2u_sub(kjVec2u a, kjVec2u b) {
     return kj_vec2u(a.x - b.x, a.y - b.y);
 }
 
-kjVec2f kj_vec2f_mul(kjVec2f a, kjVec2f b) {
+KJ_CONST kjVec2f kj_vec2f_mul(kjVec2f a, kjVec2f b) {
     return kj_vec2f(a.x * b.x, a.y * b.y);
 }
 
-kjVec2i kj_vec2i_mul(kjVec2i a, kjVec2i b) {
+KJ_CONST kjVec2i kj_vec2i_mul(kjVec2i a, kjVec2i b) {
     return kj_vec2i(a.x * b.x, a.y * b.y);
 }
 
-kjVec2u kj_vec2u_mul(kjVec2u a, kjVec2u b) {
+KJ_CONST kjVec2u kj_vec2u_mul(kjVec2u a, kjVec2u b) {
     return kj_vec2u(a.x * b.x, a.y * b.y);
 }
 
-kjVec2f kj_vec2f_mulf(kjVec2f a, f32 b) {
+KJ_CONST kjVec2f kj_vec2f_mulf(kjVec2f a, f32 b) {
     return kj_vec2f(a.x * b, a.y * b);
 }
 
-kjVec2i kj_vec2i_muli(kjVec2i a, i32 b) {
+KJ_CONST kjVec2i kj_vec2i_muli(kjVec2i a, i32 b) {
     return kj_vec2i(a.x * b, a.y * b);
 }
 
-kjVec2u kj_vec2u_mulu(kjVec2u a, u32 b) {
+KJ_CONST kjVec2u kj_vec2u_mulu(kjVec2u a, u32 b) {
     return kj_vec2u(a.x * b, a.y * b);
 }
 
-kjVec2f kj_vec2f_div(kjVec2f a, kjVec2f b) {
+KJ_CONST kjVec2f kj_vec2f_div(kjVec2f a, kjVec2f b) {
     return kj_vec2f(
             a.x / (b.x + F32_EPS),
             a.y / (b.y + F32_EPS));
 }
 
-kjVec2i kj_vec2i_div(kjVec2i a, kjVec2i b) {
+KJ_CONST kjVec2i kj_vec2i_div(kjVec2i a, kjVec2i b) {
     return kj_vec2i(a.x / b.x, a.y / b.y);
 }
 
-kjVec2u kj_vec2u_div(kjVec2u a, kjVec2u b) {
+KJ_CONST kjVec2u kj_vec2u_div(kjVec2u a, kjVec2u b) {
     return kj_vec2u(a.x / b.x, a.y / b.y);
 }
 
-f32 kj_vec2f_dot(kjVec2f a, kjVec2f b) {
+KJ_CONST f32 kj_vec2f_dot(kjVec2f a, kjVec2f b) {
     return (a.x * b.x + a.y * b.y);
 }
 
-i32 kj_vec2i_dot(kjVec2i a, kjVec2i b) {
+KJ_CONST i32 kj_vec2i_dot(kjVec2i a, kjVec2i b) {
     return (a.x * b.x + a.y * b.y);
 }
 
-u32 kj_vec2u_dot(kjVec2u a, kjVec2u b) {
+KJ_CONST u32 kj_vec2u_dot(kjVec2u a, kjVec2u b) {
     return (a.x * b.x + a.y * b.y);
 }
 
-f32 kj_vec2f_cross(kjVec2f a, kjVec2f b) {
+KJ_CONST f32 kj_vec2f_cross(kjVec2f a, kjVec2f b) {
     return (a.x * b.y - b.x * a.y);
 }
 
-i32 kj_vec2i_cross(kjVec2i a, kjVec2i b) {
+KJ_CONST i32 kj_vec2i_cross(kjVec2i a, kjVec2i b) {
     return (a.x * b.y - b.x * a.y);
 }
 
-u32 kj_vec2u_cross(kjVec2u a, kjVec2u b) {
+KJ_CONST u32 kj_vec2u_cross(kjVec2u a, kjVec2u b) {
     return (a.x * b.y - b.x * a.y);
 }
 
-f32 kj_vec2f_length_sq(kjVec2f a) {
+KJ_CONST f32 kj_vec2f_length_sq(kjVec2f a) {
     return kj_vec2f_dot(a, a);
 }
 
-i32 kj_vec2i_length_sq(kjVec2i a) {
+KJ_CONST i32 kj_vec2i_length_sq(kjVec2i a) {
     return kj_vec2i_dot(a, a);
 }
 
-u32 kj_vec2u_length_sq(kjVec2u a) {
+KJ_CONST u32 kj_vec2u_length_sq(kjVec2u a) {
     return kj_vec2u_dot(a, a);
 }
 
-f32 kj_vec2f_length(kjVec2f a) {
+KJ_CONST f32 kj_vec2f_length(kjVec2f a) {
     return kj_sqrtf(kj_vec2f_length_sq(a));
 }
 
-i32 kj_vec2i_length(kjVec2i a) {
+KJ_CONST i32 kj_vec2i_length(kjVec2i a) {
     return kj_cast(i32, kj_sqrtf(kj_cast(f32, kj_vec2i_length_sq(a))));
 }
 
-u32 kj_vec2u_length(kjVec2u a) {
+KJ_CONST u32 kj_vec2u_length(kjVec2u a) {
     return kj_cast(u32, kj_sqrtf(kj_cast(f32, kj_vec2u_length_sq(a))));
 }
 
-kjVec2f kj_vec2f_normalise(kjVec2f a) {
+KJ_CONST kjVec2f kj_vec2f_normalise(kjVec2f a) {
     return kj_vec2f_div(a, kj_vec2f_all(kj_vec2f_length(a)));
 }
 
-kjVec2i kj_vec2i_normalise(kjVec2i a) {
+KJ_CONST kjVec2i kj_vec2i_normalise(kjVec2i a) {
     return kj_vec2i_div(a, kj_vec2i_all(kj_vec2i_length(a)));
 }
 
-kjVec2u kj_vec2u_normalise(kjVec2u a) {
+KJ_CONST kjVec2u kj_vec2u_normalise(kjVec2u a) {
     return kj_vec2u_div(a, kj_vec2u_all(kj_vec2u_length(a)));
 }
 
-kjVec2f kj_vec2f_clamp(kjVec2f a, kjVec2f b, kjVec2f c) {
+KJ_CONST kjVec2f kj_vec2f_clamp(kjVec2f a, kjVec2f min, kjVec2f max) {
     return kj_vec2f(
-            kj_clamp(a.x, b.x, c.x),
-            kj_clamp(a.y, b.y, c.y));
+            kj_clamp(a.x, min.x, max.x),
+            kj_clamp(a.y, min.y, max.y));
 }
 
-kjVec2i kj_vec2i_clamp(kjVec2i a, kjVec2i b, kjVec2i c) {
+KJ_CONST kjVec2i kj_vec2i_clamp(kjVec2i a, kjVec2i min, kjVec2i max) {
     return kj_vec2i(
-            kj_clamp(a.x, b.x, c.x),
-            kj_clamp(a.y, b.y, c.y));
+            kj_clamp(a.x, min.x, max.x),
+            kj_clamp(a.y, min.y, max.y));
 }
 
-kjVec2u kj_vec2u_clamp(kjVec2u a, kjVec2u b, kjVec2u c) {
+KJ_CONST kjVec2u kj_vec2u_clamp(kjVec2u a, kjVec2u min, kjVec2u max) {
     return kj_vec2u(
-            kj_clamp(a.x, b.x, c.x),
-            kj_clamp(a.y, b.y, c.y));
+            kj_clamp(a.x, min.x, max.x),
+            kj_clamp(a.y, min.y, max.y));
 }
 
-kjVec3f kj_vec3f(f32 x, f32 y, f32 z) {
-    kjVec3f res;
-    kj_zero(&res, kj_isize_of(kjVec3f));
+KJ_CONST kjVec2f kj_vec2f_clampf(kjVec2f a, f32 min, f32 max) {
+    return kj_vec2f_clamp(a, kj_vec2f_all(min), kj_vec2f_all(max));
+}
+
+KJ_CONST kjVec2i kj_vec2i_clampi(kjVec2i a, i32 min, i32 max) {
+    return kj_vec2i_clamp(a, kj_vec2i_all(min), kj_vec2i_all(max));
+}
+
+KJ_CONST kjVec2u kj_vec2u_clampu(kjVec2u a, u32 min, u32 max) {
+    return kj_vec2u_clamp(a, kj_vec2u_all(min), kj_vec2u_all(max));
+}
+
+KJ_CONST kjVec3f kj_vec3f(f32 x, f32 y, f32 z) {
+    kjVec3f res = {0};
     res.x = x;
     res.y = y;
     res.z = z;
     return res;
 }
 
-kjVec3i kj_vec3i(i32 x, i32 y, i32 z) {
+KJ_CONST kjVec3i kj_vec3i(i32 x, i32 y, i32 z) {
     kjVec3i res;
     res.x = x;
     res.y = y;
@@ -841,7 +855,7 @@ kjVec3i kj_vec3i(i32 x, i32 y, i32 z) {
     return res;
 }
 
-kjVec3u kj_vec3u(u32 x, u32 y, u32 z) {
+KJ_CONST kjVec3u kj_vec3u(u32 x, u32 y, u32 z) {
     kjVec3u res;
     res.x = x;
     res.y = y;
@@ -849,208 +863,223 @@ kjVec3u kj_vec3u(u32 x, u32 y, u32 z) {
     return res;
 }
 
-kjVec3f kj_vec3f_zero(void) {
+KJ_CONST kjVec3f kj_vec3f_zero(void) {
     return kj_vec3f(0.0f, 0.0f, 0.0f);
 }
 
-kjVec3i kj_vec3i_zero(void) {
+KJ_CONST kjVec3i kj_vec3i_zero(void) {
     return kj_vec3i(0, 0, 0);
 }
 
-kjVec3u kj_vec3u_zero(void) {
+KJ_CONST kjVec3u kj_vec3u_zero(void) {
     return kj_vec3u(0, 0, 0);
 }
 
-kjVec3f kj_vec3f_one(void) {
+KJ_CONST kjVec3f kj_vec3f_one(void) {
     return kj_vec3f(1.0f, 1.0f, 1.0f);
 }
 
-kjVec3i kj_vec3i_one(void) {
+KJ_CONST kjVec3i kj_vec3i_one(void) {
     return kj_vec3i(1, 1, 1);
 }
 
-kjVec3u kj_vec3u_one(void) {
+KJ_CONST kjVec3u kj_vec3u_one(void) {
     return kj_vec3u(1, 1, 1);
 }
 
-kjVec3f kj_vec3f_all(f32 a) {
+KJ_CONST kjVec3f kj_vec3f_all(f32 a) {
     return kj_vec3f(a, a, a);
 }
 
-kjVec3i kj_vec3i_all(i32 a) {
+KJ_CONST kjVec3i kj_vec3i_all(i32 a) {
     return kj_vec3i(a, a, a);
 }
 
-kjVec3u kj_vec3u_all(u32 a) {
+KJ_CONST kjVec3u kj_vec3u_all(u32 a) {
     return kj_vec3u(a, a, a);
 }
 
-kjVec3f kj_vec3f_negate(kjVec3f a) {
+KJ_CONST kjVec3f kj_vec3f_negate(kjVec3f a) {
     return kj_vec3f(-a.x, -a.y, -a.z);
 }
 
-kjVec3i kj_vec3i_negate(kjVec3i a) {
+KJ_CONST kjVec3i kj_vec3i_negate(kjVec3i a) {
     return kj_vec3i(-a.x, -a.y, -a.z);
 }
 
-kjVec3u kj_vec3u_negate(kjVec3u a) {
-    return kj_vec3u(-kj_cast(i32, a.x), -kj_cast(i32, a.y), -kj_cast(i32, a.z));
+KJ_CONST kjVec3u kj_vec3u_negate(kjVec3u a) {
+    return kj_vec3u(
+            -kj_cast(i32, a.x),
+            -kj_cast(i32, a.y),
+            -kj_cast(i32, a.z));
 }
 
-kjVec3f kj_vec3f_add(kjVec3f a, kjVec3f b) {
+KJ_CONST kjVec3f kj_vec3f_add(kjVec3f a, kjVec3f b) {
     return kj_vec3f(a.x + b.x, a.y + b.y, a.z + b.z);
 }
 
-kjVec3i kj_vec3i_add(kjVec3i a, kjVec3i b) {
+KJ_CONST kjVec3i kj_vec3i_add(kjVec3i a, kjVec3i b) {
     return kj_vec3i(a.x + b.x, a.y + b.y, a.z + b.z);
 }
 
-kjVec3u kj_vec3u_add(kjVec3u a, kjVec3u b) {
+KJ_CONST kjVec3u kj_vec3u_add(kjVec3u a, kjVec3u b) {
     return kj_vec3u(a.x + b.x, a.y + b.y, a.z + b.z);
 }
 
-kjVec3f kj_vec3f_sub(kjVec3f a, kjVec3f b) {
+KJ_CONST kjVec3f kj_vec3f_sub(kjVec3f a, kjVec3f b) {
     return kj_vec3f(a.x - b.x, a.y - b.y, a.z - b.z);
 }
 
-kjVec3i kj_vec3i_sub(kjVec3i a, kjVec3i b) {
+KJ_CONST kjVec3i kj_vec3i_sub(kjVec3i a, kjVec3i b) {
     return kj_vec3i(a.x - b.x, a.y - b.y, a.z - b.z);
 }
 
-kjVec3u kj_vec3u_sub(kjVec3u a, kjVec3u b) {
+KJ_CONST kjVec3u kj_vec3u_sub(kjVec3u a, kjVec3u b) {
     return kj_vec3u(a.x - b.x, a.y - b.y, a.z - b.z);
 }
 
-kjVec3f kj_vec3f_mul(kjVec3f a, kjVec3f b) {
+KJ_CONST kjVec3f kj_vec3f_mul(kjVec3f a, kjVec3f b) {
     return kj_vec3f(a.x * b.x, a.y * b.y, a.z * b.z);
 }
 
-kjVec3i kj_vec3i_mul(kjVec3i a, kjVec3i b) {
+KJ_CONST kjVec3i kj_vec3i_mul(kjVec3i a, kjVec3i b) {
     return kj_vec3i(a.x * b.x, a.y * b.y, a.z * b.z);
 }
 
-kjVec3u kj_vec3u_mul(kjVec3u a, kjVec3u b) {
+KJ_CONST kjVec3u kj_vec3u_mul(kjVec3u a, kjVec3u b) {
     return kj_vec3u(a.x * b.x, a.y * b.y, a.z * b.z);
 }
 
-kjVec3f kj_vec3f_mulf(kjVec3f a, f32 b) {
+KJ_CONST kjVec3f kj_vec3f_mulf(kjVec3f a, f32 b) {
     return kj_vec3f(a.x * b, a.y * b, a.z * b);
 }
 
-kjVec3i kj_vec3i_muli(kjVec3i a, i32 b) {
+KJ_CONST kjVec3i kj_vec3i_muli(kjVec3i a, i32 b) {
     return kj_vec3i(a.x * b, a.y * b, a.z * b);
 }
 
-kjVec3u kj_vec3u_mulu(kjVec3u a, u32 b) {
+KJ_CONST kjVec3u kj_vec3u_mulu(kjVec3u a, u32 b) {
     return kj_vec3u(a.x * b, a.y * b, a.z * b);
 }
 
-kjVec3f kj_vec3f_div(kjVec3f a, kjVec3f b) {
+KJ_CONST kjVec3f kj_vec3f_div(kjVec3f a, kjVec3f b) {
     return kj_vec3f(
             a.x / (b.x + F32_EPS),
             a.y / (b.y + F32_EPS),
             a.z / (b.z + F32_EPS));
 }
 
-kjVec3i kj_vec3i_div(kjVec3i a, kjVec3i b) {
+KJ_CONST kjVec3i kj_vec3i_div(kjVec3i a, kjVec3i b) {
     return kj_vec3i(a.x / b.x, a.y / b.y, a.z / b.z);
 }
 
-kjVec3u kj_vec3u_div(kjVec3u a, kjVec3u b) {
+KJ_CONST kjVec3u kj_vec3u_div(kjVec3u a, kjVec3u b) {
     return kj_vec3u(a.x / b.x, a.y / b.y, a.z / b.z);
 }
 
-f32 kj_vec3f_dot(kjVec3f a, kjVec3f b) {
+KJ_CONST f32 kj_vec3f_dot(kjVec3f a, kjVec3f b) {
     return (a.x * b.x + a.y * b.y + a.z * b.z);
 }
 
-i32 kj_vec3i_dot(kjVec3i a, kjVec3i b) {
+KJ_CONST i32 kj_vec3i_dot(kjVec3i a, kjVec3i b) {
     return (a.x * b.x + a.y * b.y + a.z * b.z);
 }
 
-u32 kj_vec3u_dot(kjVec3u a, kjVec3u b) {
+KJ_CONST u32 kj_vec3u_dot(kjVec3u a, kjVec3u b) {
     return (a.x * b.x + a.y * b.y + a.z * b.z);
 }
 
-kjVec3f kj_vec3f_cross(kjVec3f a, kjVec3f b) {
+KJ_CONST kjVec3f kj_vec3f_cross(kjVec3f a, kjVec3f b) {
     return kj_vec3f(
             a.y * b.z - b.y * a.z,
             a.z * b.x - b.z * a.x,
             a.x * b.y - b.x * a.y);
 }
 
-kjVec3i kj_vec3i_cross(kjVec3i a, kjVec3i b) {
+KJ_CONST kjVec3i kj_vec3i_cross(kjVec3i a, kjVec3i b) {
     return kj_vec3i(
             a.y * b.z - b.y * a.z,
             a.z * b.x - b.z * a.x,
             a.x * b.y - b.x * a.y);
 }
 
-kjVec3u kj_vec3u_cross(kjVec3u a, kjVec3u b) {
+KJ_CONST kjVec3u kj_vec3u_cross(kjVec3u a, kjVec3u b) {
     return kj_vec3u(
             a.y * b.z - b.y * a.z,
             a.z * b.x - b.z * a.x,
             a.x * b.y - b.x * a.y);
 }
 
-f32 kj_vec3f_length_sq(kjVec3f a) {
+KJ_CONST f32 kj_vec3f_length_sq(kjVec3f a) {
     return kj_vec3f_dot(a, a);
 }
 
-i32 kj_vec3i_length_sq(kjVec3i a) {
+KJ_CONST i32 kj_vec3i_length_sq(kjVec3i a) {
     return kj_vec3i_dot(a, a);
 }
 
-u32 kj_vec3u_length_sq(kjVec3u a) {
+KJ_CONST u32 kj_vec3u_length_sq(kjVec3u a) {
     return kj_vec3u_dot(a, a);
 }
 
-f32 kj_vec3f_length(kjVec3f a) {
+KJ_CONST f32 kj_vec3f_length(kjVec3f a) {
     return kj_sqrtf(kj_vec3f_length_sq(a));
 }
 
-i32 kj_vec3i_length(kjVec3i a) {
+KJ_CONST i32 kj_vec3i_length(kjVec3i a) {
     return kj_cast(i32, kj_sqrtf(kj_cast(f32, kj_vec3i_length_sq(a))));
 }
 
-u32 kj_vec3u_length(kjVec3u a) {
+KJ_CONST u32 kj_vec3u_length(kjVec3u a) {
     return kj_cast(u32, kj_sqrtf(kj_cast(f32, kj_vec3u_length_sq(a))));
 }
 
-kjVec3f kj_vec3f_normalise(kjVec3f a) {
+KJ_CONST kjVec3f kj_vec3f_normalise(kjVec3f a) {
     return kj_vec3f_div(a, kj_vec3f_all(kj_vec3f_length(a)));
 }
 
-kjVec3i kj_vec3i_normalise(kjVec3i a) {
+KJ_CONST kjVec3i kj_vec3i_normalise(kjVec3i a) {
     return kj_vec3i_div(a, kj_vec3i_all(kj_vec3i_length(a)));
 }
 
-kjVec3u kj_vec3u_normalise(kjVec3u a) {
+KJ_CONST kjVec3u kj_vec3u_normalise(kjVec3u a) {
     return kj_vec3u_div(a, kj_vec3u_all(kj_vec3u_length(a)));
 }
 
-kjVec3f kj_vec3f_clamp(kjVec3f a, kjVec3f b, kjVec3f c) {
+KJ_CONST kjVec3f kj_vec3f_clamp(kjVec3f a, kjVec3f b, kjVec3f c) {
     return kj_vec3f(
             kj_clamp(a.x, b.x, c.x),
             kj_clamp(a.y, b.y, c.y),
             kj_clamp(a.z, b.z, c.z));
 }
 
-kjVec3i kj_vec3i_clamp(kjVec3i a, kjVec3i b, kjVec3i c) {
+KJ_CONST kjVec3i kj_vec3i_clamp(kjVec3i a, kjVec3i b, kjVec3i c) {
     return kj_vec3i(
             kj_clamp(a.x, b.x, c.x),
             kj_clamp(a.y, b.y, c.y),
             kj_clamp(a.z, b.z, c.z));
 }
 
-kjVec3u kj_vec3u_clamp(kjVec3u a, kjVec3u b, kjVec3u c) {
+KJ_CONST kjVec3u kj_vec3u_clamp(kjVec3u a, kjVec3u b, kjVec3u c) {
     return kj_vec3u(
             kj_clamp(a.x, b.x, c.x),
             kj_clamp(a.y, b.y, c.y),
             kj_clamp(a.z, b.z, c.z));
 }
 
-kjVec4f kj_vec4f(f32 x, f32 y, f32 z, f32 w) {
+KJ_CONST kjVec3f kj_vec3f_clampf(kjVec3f a, f32 min, f32 max) {
+    return kj_vec3f_clamp(a, kj_vec3f_all(min), kj_vec3f_all(max));
+}
+
+KJ_CONST kjVec3i kj_vec3i_clampi(kjVec3i a, i32 min, i32 max) {
+    return kj_vec3i_clamp(a, kj_vec3i_all(min), kj_vec3i_all(max));
+}
+
+KJ_CONST kjVec3u kj_vec3u_clampu(kjVec3u a, u32 min, u32 max) {
+    return kj_vec3u_clamp(a, kj_vec3u_all(min), kj_vec3u_all(max));
+}
+
+KJ_CONST kjVec4f kj_vec4f(f32 x, f32 y, f32 z, f32 w) {
     kjVec4f res;
     res.x = x;
     res.y = y;
@@ -1059,7 +1088,7 @@ kjVec4f kj_vec4f(f32 x, f32 y, f32 z, f32 w) {
     return res;
 }
 
-kjVec4i kj_vec4i(i32 x, i32 y, i32 z, i32 w) {
+KJ_CONST kjVec4i kj_vec4i(i32 x, i32 y, i32 z, i32 w) {
     kjVec4i res;
     res.x = x;
     res.y = y;
@@ -1068,7 +1097,7 @@ kjVec4i kj_vec4i(i32 x, i32 y, i32 z, i32 w) {
     return res;
 }
 
-kjVec4u kj_vec4u(u32 x, u32 y, u32 z, u32 w) {
+KJ_CONST kjVec4u kj_vec4u(u32 x, u32 y, u32 z, u32 w) {
     kjVec4u res;
     res.x = x;
     res.y = y;
@@ -1077,105 +1106,105 @@ kjVec4u kj_vec4u(u32 x, u32 y, u32 z, u32 w) {
     return res;
 }
 
-kjVec4f kj_vec4f_zero(void) {
+KJ_CONST kjVec4f kj_vec4f_zero(void) {
     return kj_vec4f(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
-kjVec4i kj_vec4i_zero(void) {
+KJ_CONST kjVec4i kj_vec4i_zero(void) {
     return kj_vec4i(0, 0, 0, 0);
 }
 
-kjVec4u kj_vec4u_zero(void) {
+KJ_CONST kjVec4u kj_vec4u_zero(void) {
     return kj_vec4u(0, 0, 0, 0);
 }
 
-kjVec4f kj_vec4f_one(void) {
+KJ_CONST kjVec4f kj_vec4f_one(void) {
     return kj_vec4f(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
-kjVec4i kj_vec4i_one(void) {
+KJ_CONST kjVec4i kj_vec4i_one(void) {
     return kj_vec4i(1, 1, 1, 1);
 }
 
-kjVec4u kj_vec4u_one(void) {
+KJ_CONST kjVec4u kj_vec4u_one(void) {
     return kj_vec4u(1, 1, 1, 1);
 }
 
-kjVec4f kj_vec4f_all(f32 a) {
+KJ_CONST kjVec4f kj_vec4f_all(f32 a) {
     return kj_vec4f(a, a, a, a);
 }
 
-kjVec4i kj_vec4i_all(i32 a) {
+KJ_CONST kjVec4i kj_vec4i_all(i32 a) {
     return kj_vec4i(a, a, a, a);
 }
 
-kjVec4u kj_vec4u_all(u32 a) {
+KJ_CONST kjVec4u kj_vec4u_all(u32 a) {
     return kj_vec4u(a, a, a, a);
 }
 
-kjVec4f kj_vec4f_negate(kjVec4f a) {
+KJ_CONST kjVec4f kj_vec4f_negate(kjVec4f a) {
     return kj_vec4f(-a.x, -a.y, -a.z, -a.w);
 }
 
-kjVec4i kj_vec4i_negate(kjVec4i a) {
+KJ_CONST kjVec4i kj_vec4i_negate(kjVec4i a) {
     return kj_vec4i(-a.x, -a.y, -a.z, -a.w);
 }
 
-kjVec4u kj_vec4u_negate(kjVec4u a) {
+KJ_CONST kjVec4u kj_vec4u_negate(kjVec4u a) {
     return kj_vec4u(
             -kj_cast(i32, a.x), -kj_cast(i32, a.y),
             -kj_cast(i32, a.z), -kj_cast(i32, a.w));
 }
 
-kjVec4f kj_vec4f_add(kjVec4f a, kjVec4f b) {
+KJ_CONST kjVec4f kj_vec4f_add(kjVec4f a, kjVec4f b) {
     return kj_vec4f(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
 }
 
-kjVec4i kj_vec4i_add(kjVec4i a, kjVec4i b) {
+KJ_CONST kjVec4i kj_vec4i_add(kjVec4i a, kjVec4i b) {
     return kj_vec4i(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
 }
 
-kjVec4u kj_vec4u_add(kjVec4u a, kjVec4u b) {
+KJ_CONST kjVec4u kj_vec4u_add(kjVec4u a, kjVec4u b) {
     return kj_vec4u(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
 }
 
-kjVec4f kj_vec4f_sub(kjVec4f a, kjVec4f b) {
+KJ_CONST kjVec4f kj_vec4f_sub(kjVec4f a, kjVec4f b) {
     return kj_vec4f(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
 }
 
-kjVec4i kj_vec4i_sub(kjVec4i a, kjVec4i b) {
+KJ_CONST kjVec4i kj_vec4i_sub(kjVec4i a, kjVec4i b) {
     return kj_vec4i(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
 }
 
-kjVec4u kj_vec4u_sub(kjVec4u a, kjVec4u b) {
+KJ_CONST kjVec4u kj_vec4u_sub(kjVec4u a, kjVec4u b) {
     return kj_vec4u(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
 }
 
-kjVec4f kj_vec4f_mul(kjVec4f a, kjVec4f b) {
+KJ_CONST kjVec4f kj_vec4f_mul(kjVec4f a, kjVec4f b) {
     return kj_vec4f(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
 }
 
-kjVec4i kj_vec4i_mul(kjVec4i a, kjVec4i b) {
+KJ_CONST kjVec4i kj_vec4i_mul(kjVec4i a, kjVec4i b) {
     return kj_vec4i(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
 }
 
-kjVec4u kj_vec4u_mul(kjVec4u a, kjVec4u b) {
+KJ_CONST kjVec4u kj_vec4u_mul(kjVec4u a, kjVec4u b) {
     return kj_vec4u(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
 }
 
-kjVec4f kj_vec4f_mulf(kjVec4f a, f32 b) {
+KJ_CONST kjVec4f kj_vec4f_mulf(kjVec4f a, f32 b) {
     return kj_vec4f(a.x * b, a.y * b, a.z * b, a.w * b);
 }
 
-kjVec4i kj_vec4i_muli(kjVec4i a, i32 b) {
+KJ_CONST kjVec4i kj_vec4i_muli(kjVec4i a, i32 b) {
     return kj_vec4i(a.x * b, a.y * b, a.z * b, a.w * b);
 }
 
-kjVec4u kj_vec4u_mulu(kjVec4u a, u32 b) {
+KJ_CONST kjVec4u kj_vec4u_mulu(kjVec4u a, u32 b) {
     return kj_vec4u(a.x * b, a.y * b, a.z * b, a.w * b);
 }
 
-kjVec4f kj_vec4f_div(kjVec4f a, kjVec4f b) {
+KJ_CONST kjVec4f kj_vec4f_div(kjVec4f a, kjVec4f b) {
     return kj_vec4f(
             a.x / (b.x + F32_EPS),
             a.y / (b.y + F32_EPS),
@@ -1183,92 +1212,103 @@ kjVec4f kj_vec4f_div(kjVec4f a, kjVec4f b) {
             a.w / (b.w + F32_EPS));
 }
 
-kjVec4i kj_vec4i_div(kjVec4i a, kjVec4i b) {
+KJ_CONST kjVec4i kj_vec4i_div(kjVec4i a, kjVec4i b) {
     return kj_vec4i(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w);
 }
 
-kjVec4u kj_vec4u_div(kjVec4u a, kjVec4u b) {
+KJ_CONST kjVec4u kj_vec4u_div(kjVec4u a, kjVec4u b) {
     return kj_vec4u(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w);
 }
 
-f32 kj_vec4f_dot(kjVec4f a, kjVec4f b) {
+KJ_CONST f32 kj_vec4f_dot(kjVec4f a, kjVec4f b) {
     return (a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
 }
 
-i32 kj_vec4i_dot(kjVec4i a, kjVec4i b) {
+KJ_CONST i32 kj_vec4i_dot(kjVec4i a, kjVec4i b) {
     return (a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
 }
 
-u32 kj_vec4u_dot(kjVec4u a, kjVec4u b) {
+KJ_CONST u32 kj_vec4u_dot(kjVec4u a, kjVec4u b) {
   return (a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
 }
 
-f32 kj_vec4f_length_sq(kjVec4f a) {
+KJ_CONST f32 kj_vec4f_length_sq(kjVec4f a) {
     return kj_vec4f_dot(a, a);
 }
 
-i32 kj_vec4i_length_sq(kjVec4i a) {
+KJ_CONST i32 kj_vec4i_length_sq(kjVec4i a) {
     return kj_vec4i_dot(a, a);
 }
 
-u32 kj_vec4u_length_sq(kjVec4u a) {
+KJ_CONST u32 kj_vec4u_length_sq(kjVec4u a) {
     return kj_vec4u_dot(a, a);
 }
 
-f32 kj_vec4f_length(kjVec4f a) {
+KJ_CONST f32 kj_vec4f_length(kjVec4f a) {
     return kj_sqrtf(kj_vec4f_length_sq(a));
 }
 
-i32 kj_vec4i_length(kjVec4i a) {
+KJ_CONST i32 kj_vec4i_length(kjVec4i a) {
     return kj_cast(i32, kj_sqrtf(kj_cast(f32, kj_vec4i_length_sq(a))));
 }
 
-u32 kj_vec4u_length(kjVec4u a) {
+KJ_CONST u32 kj_vec4u_length(kjVec4u a) {
     return kj_cast(u32, kj_sqrtf(kj_cast(f32, kj_vec4u_length_sq(a))));
 }
 
-kjVec4f kj_vec4f_normalise(kjVec4f a) {
+KJ_CONST kjVec4f kj_vec4f_normalise(kjVec4f a) {
     return kj_vec4f_div(a, kj_vec4f_all(kj_vec4f_length(a)));
 }
 
-kjVec4i kj_vec4i_normalise(kjVec4i a) {
+KJ_CONST kjVec4i kj_vec4i_normalise(kjVec4i a) {
     return kj_vec4i_div(a, kj_vec4i_all(kj_vec4i_length(a)));
 }
 
-kjVec4u kj_vec4u_normalise(kjVec4u a) {
+KJ_CONST kjVec4u kj_vec4u_normalise(kjVec4u a) {
     return kj_vec4u_div(a, kj_vec4u_all(kj_vec4u_length(a)));
 }
 
-kjVec4f kj_vec4f_clamp(kjVec4f a, kjVec4f b, kjVec4f c) {
+KJ_CONST kjVec4f kj_vec4f_clamp(kjVec4f a, kjVec4f min, kjVec4f max) {
     return kj_vec4f(
-            kj_clamp(a.x, b.x, c.x),
-            kj_clamp(a.y, b.y, c.y),
-            kj_clamp(a.z, b.z, c.z),
-            kj_clamp(a.w, b.w, c.w));
+            kj_clamp(a.x, min.x, max.x),
+            kj_clamp(a.y, min.y, max.y),
+            kj_clamp(a.z, min.z, max.z),
+            kj_clamp(a.w, min.w, max.w));
 }
 
-kjVec4i kj_vec4i_clamp(kjVec4i a, kjVec4i b, kjVec4i c) {
+KJ_CONST kjVec4i kj_vec4i_clamp(kjVec4i a, kjVec4i min, kjVec4i max) {
     return kj_vec4i(
-            kj_clamp(a.x, b.x, c.x),
-            kj_clamp(a.y, b.y, c.y),
-            kj_clamp(a.z, b.z, c.z),
-            kj_clamp(a.w, b.w, c.w));
+            kj_clamp(a.x, min.x, max.x),
+            kj_clamp(a.y, min.y, max.y),
+            kj_clamp(a.z, min.z, max.z),
+            kj_clamp(a.w, min.w, max.w));
 }
 
-kjVec4u kj_vec4u_clamp(kjVec4u a, kjVec4u b, kjVec4u c) {
+KJ_CONST kjVec4u kj_vec4u_clamp(kjVec4u a, kjVec4u min, kjVec4u max) {
     return kj_vec4u(
-            kj_clamp(a.x, b.x, c.x),
-            kj_clamp(a.y, b.y, c.y),
-            kj_clamp(a.z, b.z, c.z),
-            kj_clamp(a.w, b.w, c.w));
+            kj_clamp(a.x, min.x, max.x),
+            kj_clamp(a.y, min.y, max.y),
+            kj_clamp(a.z, min.z, max.z),
+            kj_clamp(a.w, min.w, max.w));
 }
 
-kjMat3f kj_mat3f(
+KJ_CONST kjVec4f kj_vec4f_clampf(kjVec4f a, f32 min, f32 max) {
+    return kj_vec4f_clamp(a, kj_vec4f_all(min), kj_vec4f_all(max));
+}
+
+KJ_CONST kjVec4i kj_vec4i_clampi(kjVec4i a, i32 min, i32 max) {
+    return kj_vec4i_clamp(a, kj_vec4i_all(min), kj_vec4i_all(max));
+}
+
+KJ_CONST kjVec4u kj_vec4u_clampu(kjVec4u a, u32 min, u32 max) {
+    return kj_vec4u_clamp(a, kj_vec4u_all(min), kj_vec4u_all(max));
+}
+
+KJ_CONST kjMat3f kj_mat3f(
         f32 e00, f32 e10, f32 e20,
         f32 e01, f32 e11, f32 e21,
         f32 e02, f32 e12, f32 e22) {
-    kjMat3f res;
-    kj_zero(&res, kj_isize_of(kjMat3f));
+    kjMat3f res = {0};
     res.e[0][0] = e00;
     res.e[1][0] = e10;
     res.e[2][0] = e20;
@@ -1281,27 +1321,26 @@ kjMat3f kj_mat3f(
     return res;
 }
 
-kjMat3f kj_mat3f_diag(f32 e00, f32 e11, f32 e22) {
+KJ_CONST kjMat3f kj_mat3f_diag(f32 e00, f32 e11, f32 e22) {
     return kj_mat3f(e00, 0.0f, 0.0f, 0.0f, e11, 0.0f, 0.0f, 0.0f, e22);
 }
 
-kjMat3f kj_mat3f_ident(void) {
+KJ_CONST kjMat3f kj_mat3f_ident(void) {
     return kj_mat3f_diag(1.0f, 1.0f, 1.0f);
 }
 
-kjMat3f kj_mat3f_zero(void) {
-    kjMat3f res;
-    kj_zero(&res, kj_isize_of(kjMat3f));
+KJ_CONST kjMat3f kj_mat3f_zero(void) {
+    kjMat3f res = {0};
     return res;
 }
 
-kjMat3f kj_mat3f_one(void) {
+KJ_CONST kjMat3f kj_mat3f_one(void) {
     kjMat3f res;
     kj_one(&res, kj_isize_of(kjMat3f));
     return res;
 }
 
-kjMat3f kj_mat3f_mul(kjMat3f a, kjMat3f b) {
+KJ_CONST kjMat3f kj_mat3f_mul(kjMat3f a, kjMat3f b) {
     kjMat3f res;
     kjVec3f bv0 = kj_vec3f(b.v[0].x, b.v[1].x, b.v[2].x);
     kjVec3f bv1 = kj_vec3f(b.v[0].y, b.v[1].y, b.v[2].y);
@@ -1318,14 +1357,14 @@ kjMat3f kj_mat3f_mul(kjMat3f a, kjMat3f b) {
     return res;
 }
 
-kjMat3f kj_mat3f_transpose(kjMat3f a) {
+KJ_CONST kjMat3f kj_mat3f_transpose(kjMat3f a) {
     return kj_mat3f(
             a.e[0][0], a.e[1][0], a.e[2][0],
             a.e[0][1], a.e[1][1], a.e[2][1],
             a.e[0][2], a.e[1][2], a.e[2][2]);
 }
 
-kjMat3f kj_mat3f_rotate(f32 angle, f32 x, f32 y, f32 z) {
+KJ_CONST kjMat3f kj_mat3f_rotate(f32 angle, f32 x, f32 y, f32 z) {
     kjMat3f res;
     f32 c = kj_cosf(angle);
     f32 s = kj_sinf(angle);
@@ -1344,25 +1383,24 @@ kjMat3f kj_mat3f_rotate(f32 angle, f32 x, f32 y, f32 z) {
     return res;
 }
 
-kjMat3f kj_mat3f_rotate_vec3f(f32 angle, kjVec3f xyz) {
+KJ_CONST kjMat3f kj_mat3f_rotate_vec3f(f32 angle, kjVec3f xyz) {
     return kj_mat3f_rotate(angle, xyz.x, xyz.y, xyz.z);
 }
 
-kjMat3f kj_mat3f_scale(f32 x, f32 y, f32 z) {
+KJ_CONST kjMat3f kj_mat3f_scale(f32 x, f32 y, f32 z) {
     return kj_mat3f_diag(x, y, z);
 }
 
-kjMat3f kj_mat3f_scale_vec3f(kjVec3f xyz) {
+KJ_CONST kjMat3f kj_mat3f_scale_vec3f(kjVec3f xyz) {
     return kj_mat3f_scale(xyz.x, xyz.y, xyz.z);
 }
 
-kjMat4f kj_mat4f(
+KJ_CONST kjMat4f kj_mat4f(
         f32 e00, f32 e10, f32 e20, f32 e30,
         f32 e01, f32 e11, f32 e21, f32 e31,
         f32 e02, f32 e12, f32 e22, f32 e32,
         f32 e03, f32 e13, f32 e23, f32 e33) {
-    kjMat4f res;
-    kj_zero(&res, kj_isize_of(kjMat4f));
+    kjMat4f res = {0};
     res.e[0][0] = e00;
     res.e[1][0] = e10;
     res.e[2][0] = e20;
@@ -1382,7 +1420,7 @@ kjMat4f kj_mat4f(
     return res;
 }
 
-kjMat4f kj_mat4f_diag(f32 e00, f32 e11, f32 e22, f32 e33) {
+KJ_CONST kjMat4f kj_mat4f_diag(f32 e00, f32 e11, f32 e22, f32 e33) {
     return kj_mat4f(
             e00, 0.0f, 0.0f, 0.0f,
             0.0f, e11, 0.0f, 0.0f,
@@ -1390,23 +1428,22 @@ kjMat4f kj_mat4f_diag(f32 e00, f32 e11, f32 e22, f32 e33) {
             0.0f, 0.0f, 0.0f, e33);
 }
 
-kjMat4f kj_mat4f_ident(void) {
+KJ_CONST kjMat4f kj_mat4f_ident(void) {
     return kj_mat4f_diag(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
-kjMat4f kj_mat4f_zero(void) {
-    kjMat4f res;
-    kj_zero(&res, kj_isize_of(kjMat4f));
+KJ_CONST kjMat4f kj_mat4f_zero(void) {
+    kjMat4f res = {0};
     return res;
 }
 
-kjMat4f kj_mat4f_one(void) {
+KJ_CONST kjMat4f kj_mat4f_one(void) {
     kjMat4f res;
     kj_one(&res, kj_isize_of(kjMat4f));
     return res;
 }
 
-kjMat4f kj_mat4f_mul(kjMat4f a, kjMat4f b) {
+KJ_CONST kjMat4f kj_mat4f_mul(kjMat4f a, kjMat4f b) {
     kjMat4f res;
     for(u32 j = 0; j < 4; j++) {
         for(u32 i = 0; i < 4; i++) {
@@ -1420,7 +1457,7 @@ kjMat4f kj_mat4f_mul(kjMat4f a, kjMat4f b) {
     return res;
 }
 
-kjVec4f kj_mat4f_mul_vec4f(kjMat4f a, kjVec4f b) {
+KJ_CONST kjVec4f kj_mat4f_mul_vec4f(kjMat4f a, kjVec4f b) {
     kjVec4f res;
     res.x =
         a.e[0][0] * b.x + a.e[1][0] * b.y +
@@ -1437,7 +1474,7 @@ kjVec4f kj_mat4f_mul_vec4f(kjMat4f a, kjVec4f b) {
     return res;
 }
 
-kjMat4f kj_mat4f_transpose(kjMat4f a) {
+KJ_CONST kjMat4f kj_mat4f_transpose(kjMat4f a) {
     return kj_mat4f(
             a.e[0][0], a.e[1][0], a.e[2][0], a.e[3][0],
             a.e[0][1], a.e[1][1], a.e[2][1], a.e[3][1],
@@ -1445,7 +1482,7 @@ kjMat4f kj_mat4f_transpose(kjMat4f a) {
             a.e[0][3], a.e[1][3], a.e[2][3], a.e[3][3]);
 }
 
-kjMat4f kj_mat4f_translate(f32 x, f32 y, f32 z) {
+KJ_CONST kjMat4f kj_mat4f_translate(f32 x, f32 y, f32 z) {
     return kj_mat4f(
             1.0f, 0.0f, 0.0f, x,
             0.0f, 1.0f, 0.0f, y,
@@ -1453,11 +1490,11 @@ kjMat4f kj_mat4f_translate(f32 x, f32 y, f32 z) {
             0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-kjMat4f kj_mat4f_translate_vec3f(kjVec3f xyz) {
+KJ_CONST kjMat4f kj_mat4f_translate_vec3f(kjVec3f xyz) {
     return kj_mat4f_translate(xyz.x, xyz.y, xyz.z);
 }
 
-kjMat4f kj_mat4f_rotate(f32 angle, f32 x, f32 y, f32 z) {
+KJ_CONST kjMat4f kj_mat4f_rotate(f32 angle, f32 x, f32 y, f32 z) {
     kjMat4f res = kj_mat4f_ident();
     f32 c = kj_cosf(angle);
     f32 s = kj_sinf(angle);
@@ -1479,20 +1516,20 @@ kjMat4f kj_mat4f_rotate(f32 angle, f32 x, f32 y, f32 z) {
     return res;
 }
 
-kjMat4f kj_mat4f_rotate_vec3f(f32 angle, kjVec3f xyz) {
+KJ_CONST kjMat4f kj_mat4f_rotate_vec3f(f32 angle, kjVec3f xyz) {
     return kj_mat4f_rotate(angle, xyz.x, xyz.y, xyz.z);
 }
 
-kjMat4f kj_mat4f_scale(f32 x, f32 y, f32 z) {
+KJ_CONST kjMat4f kj_mat4f_scale(f32 x, f32 y, f32 z) {
     return kj_mat4f_diag(x, y, z, 1.0f);
 }
 
-kjMat4f kj_mat4f_scale_vec3f(kjVec3f xyz) {
+KJ_CONST kjMat4f kj_mat4f_scale_vec3f(kjVec3f xyz) {
     return kj_mat4f_scale(xyz.x, xyz.y, xyz.z);
 }
 
-kjMat4f kj_mat4f_ortho(f32 l, f32 r, f32 b, f32 t, f32 znear,
-        f32 zfar) {
+KJ_CONST kjMat4f kj_mat4f_ortho(
+        f32 l, f32 r, f32 b, f32 t, f32 znear, f32 zfar) {
     kjMat4f res = kj_mat4f_ident();
     f32 rl = r - l + F32_EPS;
     f32 tb = t - b + F32_EPS;
@@ -1507,7 +1544,7 @@ kjMat4f kj_mat4f_ortho(f32 l, f32 r, f32 b, f32 t, f32 znear,
     return res;
 }
 
-kjMat4f kj_mat4f_ortho_inf(f32 l, f32 r, f32 t, f32 b) {
+KJ_CONST kjMat4f kj_mat4f_ortho_inf(f32 l, f32 r, f32 t, f32 b) {
     kjMat4f res = kj_mat4f_ident();
     f32 rl = r - l + F32_EPS;
     f32 tb = t - b + F32_EPS;
@@ -1520,7 +1557,8 @@ kjMat4f kj_mat4f_ortho_inf(f32 l, f32 r, f32 t, f32 b) {
     return res;
 }
 
-kjMat4f kj_mat4f_perspective(f32 fovy, f32 aspect, f32 znear, f32 zfar) {
+KJ_CONST kjMat4f kj_mat4f_perspective(
+        f32 fovy, f32 aspect, f32 znear, f32 zfar) {
     kjMat4f res = kj_mat4f_zero();
     if(aspect > 0.0f) {
         f32 tanfovy = kj_tanf(0.5f * fovy);
@@ -1533,7 +1571,7 @@ kjMat4f kj_mat4f_perspective(f32 fovy, f32 aspect, f32 znear, f32 zfar) {
     return res;
 }
 
-kjMat4f kj_mat4f_perspective_inf(f32 fovy, f32 aspect, f32 znear) {
+KJ_CONST kjMat4f kj_mat4f_perspective_inf(f32 fovy, f32 aspect, f32 znear) {
     kjMat4f res = kj_mat4f_zero();
     if(aspect > 0.0f) {
         f32 range = kj_tanf(0.5f * fovy) * znear;
@@ -1546,7 +1584,7 @@ kjMat4f kj_mat4f_perspective_inf(f32 fovy, f32 aspect, f32 znear) {
     return res;
 }
 
-kjMat4f kj_mat4f_look_at(kjVec3f eye, kjVec3f target, kjVec3f up) {
+KJ_CONST kjMat4f kj_mat4f_look_at(kjVec3f eye, kjVec3f target, kjVec3f up) {
     kjMat4f res;
     kjVec3f f = kj_vec3f_normalise(kj_vec3f_sub(target, eye));
     kjVec3f s = kj_vec3f_normalise(kj_vec3f_cross(f, up));
@@ -1572,52 +1610,52 @@ kjMat4f kj_mat4f_look_at(kjVec3f eye, kjVec3f target, kjVec3f up) {
 }
 
 #if defined(__cplusplus)
-KJ_INLINE kjMat3f kj_mat3f(f32 e00, f32 e11, f32 e22) {
+KJ_CONST KJ_INLINE kjMat3f kj_mat3f(f32 e00, f32 e11, f32 e22) {
     return kj_mat3f_diag(e00, e11, e22);
 }
 
-KJ_INLINE kjMat3f kj_mat3f(void) {
+KJ_CONST KJ_INLINE kjMat3f kj_mat3f(void) {
     return kj_mat3f_ident();
 }
 
-KJ_INLINE kjMat3f kj_mat3f_rotate(f32 angle, kjVec3f xyz) {
+KJ_CONST KJ_INLINE kjMat3f kj_mat3f_rotate(f32 angle, kjVec3f xyz) {
     return kj_mat3f_rotate_vec3f(angle, xyz);
 }
 
-KJ_INLINE kjMat3f kj_mat3f_scale(kjVec3f xyz) {
+KJ_CONST KJ_INLINE kjMat3f kj_mat3f_scale(kjVec3f xyz) {
     return kj_mat3f_scale_vec3f(xyz);
 }
 
-KJ_INLINE kjMat3f operator*(kjMat3f a, kjMat3f b) {
+KJ_CONST KJ_INLINE kjMat3f operator*(kjMat3f a, kjMat3f b) {
     return kj_mat3f_mul(a, b);
 }
 
-KJ_INLINE kjMat4f kj_mat4f(f32 e00, f32 e11, f32 e22, f32 e33) {
+KJ_CONST KJ_INLINE kjMat4f kj_mat4f(f32 e00, f32 e11, f32 e22, f32 e33) {
     return kj_mat4f_diag(e00, e11, e22, e33);
 }
 
-KJ_INLINE kjMat4f kj_mat4f(void) {
+KJ_CONST KJ_INLINE kjMat4f kj_mat4f(void) {
     return kj_mat4f_ident();
 }
 
-KJ_INLINE kjMat4f kj_mat4f_translate(kjVec3f xyz) {
+KJ_CONST KJ_INLINE kjMat4f kj_mat4f_translate(kjVec3f xyz) {
     return kj_mat4f_translate_vec3f(xyz);
 }
 
-KJ_INLINE kjMat4f kj_mat4f_rotate(f32 angle, kjVec3f xyz) {
+KJ_CONST KJ_INLINE kjMat4f kj_mat4f_rotate(f32 angle, kjVec3f xyz) {
     return kj_mat4f_rotate_vec3f(angle, xyz);
 }
 
-KJ_INLINE kjMat4f kj_mat4f_scale(kjVec3f xyz) {
+KJ_CONST KJ_INLINE kjMat4f kj_mat4f_scale(kjVec3f xyz) {
     return kj_mat4f_scale_vec3f(xyz);
 }
 
-KJ_INLINE kjMat4f operator*(kjMat4f a, kjMat4f b) {
+KJ_CONST KJ_INLINE kjMat4f operator*(kjMat4f a, kjMat4f b) {
     return kj_mat4f_mul(a, b);
 }
 #endif
 
-kjRect2f kj_rect2f(f32 x, f32 y, f32 w, f32 h) {
+KJ_CONST kjRect2f kj_rect2f(f32 x, f32 y, f32 w, f32 h) {
     kjRect2f res;
     res.x = x;
     res.y = y;
@@ -1626,7 +1664,7 @@ kjRect2f kj_rect2f(f32 x, f32 y, f32 w, f32 h) {
     return res;
 }
 
-kjRect2i kj_rect2i(i32 x, i32 y, i32 w, i32 h) {
+KJ_CONST kjRect2i kj_rect2i(i32 x, i32 y, i32 w, i32 h) {
     kjRect2i res;
     res.x = x;
     res.y = y;
@@ -1635,7 +1673,7 @@ kjRect2i kj_rect2i(i32 x, i32 y, i32 w, i32 h) {
     return res;
 }
 
-kjRect2u kj_rect2u(u32 x, u32 y, u32 w, u32 h) {
+KJ_CONST kjRect2u kj_rect2u(u32 x, u32 y, u32 w, u32 h) {
     kjRect2u res;
     res.x = x;
     res.y = y;
@@ -1644,53 +1682,91 @@ kjRect2u kj_rect2u(u32 x, u32 y, u32 w, u32 h) {
     return res;
 }
 
-b32 kj_rect2f_contains(kjRect2f r, f32 x, f32 y) {
+KJ_CONST b32 kj_rect2f_contains(kjRect2f r, f32 x, f32 y) {
+    return r.x <= x && (r.x + r.w) >= x && r.y <= y && (r.y + r.h) >= y;
+}
+
+KJ_CONST b32 kj_rect2i_contains(kjRect2i r, i32 x, i32 y) {
     return (r.x <= x && (r.x + r.w) >= x && r.y <= y && (r.y + r.h) >= y);
 }
 
-b32 kj_rect2i_contains(kjRect2i r, i32 x, i32 y) {
+KJ_CONST b32 kj_rect2u_contains(kjRect2u r, u32 x, u32 y) {
     return (r.x <= x && (r.x + r.w) >= x && r.y <= y && (r.y + r.h) >= y);
 }
 
-b32 kj_rect2u_contains(kjRect2u r, u32 x, u32 y) {
-    return (r.x <= x && (r.x + r.w) >= x && r.y <= y && (r.y + r.h) >= y);
-}
-
-b32 kj_rect2f_contains_vec2f(kjRect2f r, kjVec2f xy) {
+KJ_CONST b32 kj_rect2f_contains_vec2f(kjRect2f r, kjVec2f xy) {
     return (r.x <= xy.x && (r.x + r.w) >= xy.x && r.y <= xy.y &&
             (r.y + r.h) >= xy.y);
 }
 
-b32 kj_rect2i_contains_vec2i(kjRect2i r, kjVec2i xy) {
+KJ_CONST b32 kj_rect2i_contains_vec2i(kjRect2i r, kjVec2i xy) {
     return (r.x <= xy.x && (r.x + r.w) >= xy.x && r.y <= xy.y &&
             (r.y + r.h) >= xy.y);
 }
 
-b32 kj_rect2u_contains_vec2u(kjRect2u r, kjVec2u xy) {
+KJ_CONST b32 kj_rect2u_contains_vec2u(kjRect2u r, kjVec2u xy) {
     return (r.x <= xy.x && (r.x + r.w) >= xy.x && r.y <= xy.y &&
             (r.y + r.h) >= xy.y);
 }
 
-i32 kj_rect2f_extend(kjRect2f r, f32 x, f32 y);
-i32 kj_rect2i_extend(kjRect2i r, i32 x, i32 y);
-i32 kj_rect2u_extend(kjRect2u r, u32 x, u32 y);
-i32 kj_rect2f_extend_vec2f(kjRect2f r, kjVec2f xy);
-i32 kj_rect2i_extend_vec2i(kjRect2i r, kjVec2i xy);
-i32 kj_rect2u_extend_vec2u(kjRect2u r, kjVec2u xy);
+KJ_CONST i32 kj_rect2f_extend(kjRect2f r, f32 x, f32 y) {
+    kj_unused(r);
+    kj_unused(x);
+    kj_unused(y);
+    kj_unimplemented();
+    return 0;
+}
 
-kjVec2f kj_rect2f_centre(kjRect2f r) {
+KJ_CONST i32 kj_rect2i_extend(kjRect2i r, i32 x, i32 y) {
+    kj_unused(r);
+    kj_unused(x);
+    kj_unused(y);
+    kj_unimplemented();
+    return 0;
+}
+
+KJ_CONST i32 kj_rect2u_extend(kjRect2u r, u32 x, u32 y) {
+    kj_unused(r);
+    kj_unused(x);
+    kj_unused(y);
+    kj_unimplemented();
+    return 0;
+}
+
+KJ_CONST i32 kj_rect2f_extend_vec2f(kjRect2f r, kjVec2f xy) {
+    kj_unused(r);
+    kj_unused(xy);
+    kj_unimplemented();
+    return 0;
+}
+
+KJ_CONST i32 kj_rect2i_extend_vec2i(kjRect2i r, kjVec2i xy) {
+    kj_unused(r);
+    kj_unused(xy);
+    kj_unimplemented();
+    return 0;
+}
+
+KJ_CONST i32 kj_rect2u_extend_vec2u(kjRect2u r, kjVec2u xy) {
+    kj_unused(r);
+    kj_unused(xy);
+    kj_unimplemented();
+    return 0;
+}
+
+KJ_CONST kjVec2f kj_rect2f_centre(kjRect2f r) {
     return kj_vec2f((r.x + (r.x + r.w)) / 2.0f, (r.y + (r.y + r.h)) / 2.0f);
 }
 
-kjVec2i kj_rect2i_centre(kjRect2i r) {
+KJ_CONST kjVec2i kj_rect2i_centre(kjRect2i r) {
     return kj_vec2i((r.x + (r.x + r.w)) / 2, (r.y + (r.y + r.h)) / 2);
 }
 
-kjVec2u kj_rect2u_centre(kjRect2u r) {
+KJ_CONST kjVec2u kj_rect2u_centre(kjRect2u r) {
     return kj_vec2u((r.x + (r.x + r.w)) / 2, (r.y + (r.y + r.h)) / 2);
 }
 
-kjRect3f kj_rect3f(f32 x, f32 y, f32 z, f32 w, f32 h, f32 d) {
+KJ_CONST kjRect3f kj_rect3f(f32 x, f32 y, f32 z, f32 w, f32 h, f32 d) {
     kjRect3f res;
     res.x = x;
     res.y = y;
@@ -1701,7 +1777,7 @@ kjRect3f kj_rect3f(f32 x, f32 y, f32 z, f32 w, f32 h, f32 d) {
     return res;
 }
 
-kjRect3i kj_rect3i(i32 x, i32 y, i32 z, i32 w, i32 h, i32 d) {
+KJ_CONST kjRect3i kj_rect3i(i32 x, i32 y, i32 z, i32 w, i32 h, i32 d) {
     kjRect3i res;
     res.x = x;
     res.y = y;
@@ -1712,7 +1788,7 @@ kjRect3i kj_rect3i(i32 x, i32 y, i32 z, i32 w, i32 h, i32 d) {
     return res;
 }
 
-kjRect3u kj_rect3u(u32 x, u32 y, u32 z, u32 w, u32 h, u32 d) {
+KJ_CONST kjRect3u kj_rect3u(u32 x, u32 y, u32 z, u32 w, u32 h, u32 d) {
     kjRect3u res;
     res.x = x;
     res.y = y;
@@ -1723,98 +1799,98 @@ kjRect3u kj_rect3u(u32 x, u32 y, u32 z, u32 w, u32 h, u32 d) {
     return res;
 }
 
-b32 kj_rect3f_contains_xy(kjRect3f r, f32 x, f32 y) {
+KJ_CONST b32 kj_rect3f_contains_xy(kjRect3f r, f32 x, f32 y) {
     return (r.x <= x && (r.x + r.w) >= x && r.y <= y && (r.y + r.h) >= y);
 }
 
-b32 kj_rect3i_contains_xy(kjRect3i r, i32 x, i32 y) {
+KJ_CONST b32 kj_rect3i_contains_xy(kjRect3i r, i32 x, i32 y) {
     return (r.x <= x && (r.x + r.w) >= x && r.y <= y && (r.y + r.h) >= y);
 }
 
-b32 kj_rect3u_contains_xy(kjRect3u r, u32 x, u32 y) {
+KJ_CONST b32 kj_rect3u_contains_xy(kjRect3u r, u32 x, u32 y) {
     return (r.x <= x && (r.x + r.w) >= x && r.y <= y && (r.y + r.h) >= y);
 }
 
-b32 kj_rect3f_contains_vec2f(kjRect3f r, kjVec2f xy) {
+KJ_CONST b32 kj_rect3f_contains_vec2f(kjRect3f r, kjVec2f xy) {
     return (r.x <= xy.x && (r.x + r.w) >= xy.x &&
             r.y <= xy.y && (r.y + r.h) >= xy.y);
 }
 
-b32 kj_rect3i_contains_vec2i(kjRect3i r, kjVec2i xy) {
+KJ_CONST b32 kj_rect3i_contains_vec2i(kjRect3i r, kjVec2i xy) {
     return (r.x <= xy.x && (r.x + r.w) >= xy.x &&
             r.y <= xy.y && (r.y + r.h) >= xy.y);
 }
 
-b32 kj_rect3u_contains_vec2u(kjRect3u r, kjVec2u xy) {
+KJ_CONST b32 kj_rect3u_contains_vec2u(kjRect3u r, kjVec2u xy) {
     return (r.x <= xy.x && (r.x + r.w) >= xy.x &&
             r.y <= xy.y && (r.y + r.h) >= xy.y);
 }
 
-b32 kj_rect3f_contains(kjRect3f r, f32 x, f32 y, f32 z) {
+KJ_CONST b32 kj_rect3f_contains(kjRect3f r, f32 x, f32 y, f32 z) {
     return (r.x <= x && (r.x + r.w) >= x &&
             r.y <= y && (r.y + r.h) >= y &&
             r.z <= z && (r.z + r.d) >= z);
 }
 
-b32 kj_rect3i_contains(kjRect3i r, i32 x, i32 y, i32 z) {
+KJ_CONST b32 kj_rect3i_contains(kjRect3i r, i32 x, i32 y, i32 z) {
     return (r.x <= x && (r.x + r.w) >= x &&
             r.y <= y && (r.y + r.h) >= y &&
             r.z <= z && (r.z + r.d) >= z);
 }
 
-b32 kj_rect3u_contains(kjRect3u r, u32 x, u32 y, u32 z) {
+KJ_CONST b32 kj_rect3u_contains(kjRect3u r, u32 x, u32 y, u32 z) {
     return (r.x <= x && (r.x + r.w) >= x &&
             r.y <= y && (r.y + r.h) >= y &&
             r.z <= z && (r.z + r.d) >= z);
 }
 
-b32 kj_rect3f_contains_vec3f(kjRect3f r, kjVec3f xyz) {
+KJ_CONST b32 kj_rect3f_contains_vec3f(kjRect3f r, kjVec3f xyz) {
     return (r.x <= xyz.x && (r.x + r.w) >= xyz.x &&
             r.y <= xyz.y && (r.y + r.h) >= xyz.y &&
             r.z <= xyz.z && (r.z + r.d) >= xyz.z);
 }
 
-b32 kj_rect3i_contains_vec3i(kjRect3i r, kjVec3i xyz) {
+KJ_CONST b32 kj_rect3i_contains_vec3i(kjRect3i r, kjVec3i xyz) {
     return (r.x <= xyz.x && (r.x + r.w) >= xyz.x &&
             r.y <= xyz.y && (r.y + r.h) >= xyz.y &&
             r.z <= xyz.z && (r.z + r.d) >= xyz.z);
 }
 
-b32 kj_rect3u_contains_vec3u(kjRect3u r, kjVec3u xyz) {
+KJ_CONST b32 kj_rect3u_contains_vec3u(kjRect3u r, kjVec3u xyz) {
     return (r.x <= xyz.x && (r.x + r.w) >= xyz.x &&
             r.y <= xyz.y && (r.y + r.h) >= xyz.y &&
             r.z <= xyz.z && (r.z + r.d) >= xyz.z);
 }
 
-i32 kj_rect3f_extend(kjRect3f r, f32 x, f32 y, f32 z);
-i32 kj_rect3i_extend(kjRect3i r, i32 x, i32 y, i32 z);
-i32 kj_rect3u_extend(kjRect3u r, u32 x, u32 y, u32 z);
-i32 kj_rect3f_extend_vec3f(kjRect3f r, kjVec3f xyz);
-i32 kj_rect3i_extend_vec3i(kjRect3i r, kjVec3i xyz);
-i32 kj_rect3u_extend_vec3u(kjRect3u r, kjVec3u xyz);
+KJ_CONST i32 kj_rect3f_extend(kjRect3f r, f32 x, f32 y, f32 z);
+KJ_CONST i32 kj_rect3i_extend(kjRect3i r, i32 x, i32 y, i32 z);
+KJ_CONST i32 kj_rect3u_extend(kjRect3u r, u32 x, u32 y, u32 z);
+KJ_CONST i32 kj_rect3f_extend_vec3f(kjRect3f r, kjVec3f xyz);
+KJ_CONST i32 kj_rect3i_extend_vec3i(kjRect3i r, kjVec3i xyz);
+KJ_CONST i32 kj_rect3u_extend_vec3u(kjRect3u r, kjVec3u xyz);
 
-kjVec3f kj_rect3f_centre(kjRect3f r) {
+KJ_CONST kjVec3f kj_rect3f_centre(kjRect3f r) {
     return kj_vec3f(
             (r.x + (r.x + r.w)) / 2.0f,
             (r.y + (r.y + r.h)) / 2.0f,
             (r.z + (r.z + r.w)) / 2.0f);
 }
 
-kjVec3i kj_rect3i_centre(kjRect3i r) {
+KJ_CONST kjVec3i kj_rect3i_centre(kjRect3i r) {
     return kj_vec3i(
             (r.x + (r.x + r.w)) / 2,
             (r.y + (r.y + r.h)) / 2,
             (r.z + (r.z + r.w)) / 2);
 }
 
-kjVec3u kj_rect3u_centre(kjRect3u r) {
+KJ_CONST kjVec3u kj_rect3u_centre(kjRect3u r) {
     return kj_vec3u(
             (r.x + (r.x + r.w)) / 2,
             (r.y + (r.y + r.h)) / 2,
             (r.z + (r.z + r.w)) / 2);
 }
 
-kjRgba kj_rgba(u8 r, u8 g, u8 b, u8 a) {
+KJ_CONST kjRgba kj_rgba(u8 r, u8 g, u8 b, u8 a) {
     kjRgba res;
     res.r = r;
     res.b = b;
@@ -1823,7 +1899,7 @@ kjRgba kj_rgba(u8 r, u8 g, u8 b, u8 a) {
     return res;
 }
 
-kjRgba kj_rgba_4f(f32 r, f32 g, f32 b, f32 a) {
+KJ_CONST kjRgba kj_rgba_4f(f32 r, f32 g, f32 b, f32 a) {
     return kj_rgba(
         kj_cast(u8, r * 255.0f + 0.5f),
         kj_cast(u8, g * 255.0f + 0.5f),
@@ -1831,15 +1907,15 @@ kjRgba kj_rgba_4f(f32 r, f32 g, f32 b, f32 a) {
         kj_cast(u8, a * 255.0f + 0.5f));
 }
 
-kjRgba kj_rgba_rgbaf(kjVec4f rgbaf) {
+KJ_CONST kjRgba kj_rgba_rgbaf(kjVec4f rgbaf) {
     return kj_rgba_4f(rgbaf.r, rgbaf.g, rgbaf.b, rgbaf.a);
 }
 
-u32 kj_rgba_pack(kjRgba rgba) {
+KJ_CONST u32 kj_rgba_pack(kjRgba rgba) {
     return (rgba.r << 24) | (rgba.g << 16) | (rgba.b << 8) | (rgba.a << 0);
 }
 
-kjRgba kj_rgba_unpack(u32 packed) {
+KJ_CONST kjRgba kj_rgba_unpack(u32 packed) {
     return kj_rgba(
         kj_cast(u8, (packed & 0xFF000000) >> 24),
         kj_cast(u8, (packed & 0x00FF0000) >> 16),
@@ -1847,7 +1923,7 @@ kjRgba kj_rgba_unpack(u32 packed) {
         kj_cast(u8, (packed & 0x000000FF) >> 0));
 }
 
-kjVec4f kj_rgbaf(f32 r, f32 g, f32 b, f32 a) {
+KJ_CONST kjVec4f kj_rgbaf(f32 r, f32 g, f32 b, f32 a) {
     kjVec4f res;
     res.r = r;
     res.b = b;
@@ -1856,7 +1932,7 @@ kjVec4f kj_rgbaf(f32 r, f32 g, f32 b, f32 a) {
     return res;
 }
 
-kjVec4f kj_rgbaf_4u8(u8 r, u8 g, u8 b, u8 a) {
+KJ_CONST kjVec4f kj_rgbaf_4u8(u8 r, u8 g, u8 b, u8 a) {
     return kj_rgbaf(
         kj_cast(f32, r / 255.0f),
         kj_cast(f32, g / 255.0f),
@@ -1864,11 +1940,11 @@ kjVec4f kj_rgbaf_4u8(u8 r, u8 g, u8 b, u8 a) {
         kj_cast(f32, a / 255.0f));
 }
 
-kjVec4f kj_rgbaf_rgba(kjRgba rgba) {
+KJ_CONST kjVec4f kj_rgbaf_rgba(kjRgba rgba) {
     return kj_rgbaf_4u8(rgba.r, rgba.g, rgba.b, rgba.a);
 }
 
-u32 kj_rgbaf_pack(kjVec4f rgba) {
+KJ_CONST u32 kj_rgbaf_pack(kjVec4f rgba) {
     return
         (kj_cast(u8, rgba.r * 255.0f) << 24) |
         (kj_cast(u8, rgba.g * 255.0f) << 16) |
@@ -1876,7 +1952,7 @@ u32 kj_rgbaf_pack(kjVec4f rgba) {
         (kj_cast(u8, rgba.a * 255.0f) << 0);
 }
 
-kjVec4f kj_rgbaf_unpack(u32 packed) {
+KJ_CONST kjVec4f kj_rgbaf_unpack(u32 packed) {
     return kj_rgbaf(
         kj_cast(f32, ((packed & 0xFF000000) >> 24) / 255.0f),
         kj_cast(f32, ((packed & 0x00FF0000) >> 16) / 255.0f),

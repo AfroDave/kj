@@ -32,6 +32,9 @@ the header. Otherwise include only the header:
 
 ## License
 
-These libraries are in the public domain (or the equivalent where that is not
-possible). You can do anything you want with them. You have no legal obligation
-to do anything else, although I appreciate attribution.
+This software is in the public domain. Where that dedication is not recognized,
+you are granted a perpetual, irrevocable license to copy, distribute, and modify
+the source code as you see fit.
+
+The source code is provided "as is", without warranty of any kind, express or implied.
+No attribution is required, but always appreciated.
