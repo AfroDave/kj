@@ -74,9 +74,6 @@ KJ_EXTERN_BEGIN
 #define KJ_SYS_DLL_EXT "so"
 #define KJ_SYS_EXE_EXT ""
 #else
-#define KJ_SYS_NAME "unknown"
-#define KJ_SYS_DLL_EXT ""
-#define KJ_SYS_EXE_EXT ""
 #error Unsupported Operating System
 #endif
 
@@ -87,7 +84,6 @@ KJ_EXTERN_BEGIN
 #define KJ_ARCH_32_BIT
 #define KJ_ARCH_NAME "x86"
 #else
-#define KJ_ARCH_NAME "unknown"
 #error Unsupported Architecture
 #endif
 
@@ -862,9 +858,12 @@ KJ_API isize kj_snprintf(
 
 /// Strings/Characters
 
+typedef struct kjRune {
+    i32 codepoint;
+    isize size;
+} kjRune;
+
 typedef u8 utf8;
-typedef u16 utf16;
-typedef i32 utf32;
 
 KJ_API b32 kj_char_is_eol(u32 c);
 KJ_API b32 kj_char_is_ws(u32 c);
@@ -874,22 +873,30 @@ KJ_API b32 kj_char_is_alphanum(u32 c);
 KJ_API b32 kj_char_is_hex_digit(u32 c);
 KJ_API b32 kj_char_is_lower(u32 c);
 KJ_API b32 kj_char_is_upper(u32 c);
+KJ_API b32 kj_char_is_path_separator(u32 c);
 
-KJ_API utf32 kj_char_to_lower(u32 c);
-KJ_API utf32 kj_char_to_upper(u32 c);
+KJ_API u32 kj_char_to_lower(u32 c);
+KJ_API u32 kj_char_to_upper(u32 c);
 
 KJ_API isize kj_cstr_count_n(const char* s, isize size);
 KJ_API isize kj_cstr_count(const char* s);
+
 KJ_API isize kj_cstr_cmp_n(const char* s1, const char* s2, isize size);
 KJ_API isize kj_cstr_cmp(const char* s1, const char* s2);
 KJ_API isize kj_cstr_case_cmp_n(const char* s1, const char* s2, isize size);
 KJ_API isize kj_cstr_case_cmp(const char* s1, const char* s2);
+
 KJ_API isize kj_cstr_to_u64(const char* s, u64* v);
 KJ_API isize kj_cstr_to_i64(const char* s, i64* v);
+
 KJ_API const char* kj_cstr_find_n(const char* s, isize size, char c);
 KJ_API const char* kj_cstr_find(const char* s, char c);
 KJ_API const char* kj_cstr_rfind_n(const char* s, isize size, char c);
 KJ_API const char* kj_cstr_rfind(const char* s, char c);
+
+KJ_API char* kj_cstr_replace_char_n(char* s, isize size, char o, char n);
+KJ_API char* kj_cstr_replace_char(char* s, char o, char n);
+
 KJ_API const char* kj_cstr_trim_n(const char* s, isize size, const char** end);
 KJ_API const char* kj_cstr_trim(const char* s, const char** end);
 KJ_API const char* kj_cstr_ltrim_n(const char* s, isize size);
@@ -919,6 +926,11 @@ typedef KJ_RESULT(kjLibFn) kjLibFn$;
 KJ_API kjLib$ kj_lib_open(const char* path);
 KJ_API kjLibFn$ kj_lib_fn(const kjLib* self, const char* name);
 KJ_API void kj_lib_close(const kjLib* self);
+
+/// Filtering
+
+#define KJ_PREDICATE_FN(name) b32 name(const void* value)
+typedef KJ_PREDICATE_FN(kjPredicateFn);
 
 /// Sorting
 
@@ -1486,21 +1498,21 @@ isize kj_snprintf(char* buf, isize size, KJ_FMT_STR const char* fmt, ...) {
 KJ_INLINE b32 kj_char_is_eol(u32 c) {
     if(c <= KJ_MAX_LATIN1) {
         return c == '\r' ||
-               c == '\n';
+               c == '\n' ? KJ_TRUE: KJ_FALSE;
     }
     return KJ_FALSE;
 }
 
 KJ_INLINE b32 kj_char_is_ws(u32 c) {
     if(c <= KJ_MAX_LATIN1) {
-        return c == ' '  ||
-               c == '\t' ||
-               c == '\v' ||
-               c == '\f' ||
-               c == '\r' ||
-               c == '\n' ||
-               c == 0x85 ||
-               c == 0xA0;
+        return (c == ' '  ||
+                c == '\t' ||
+                c == '\v' ||
+                c == '\f' ||
+                c == '\r' ||
+                c == '\n' ||
+                c == 0x85 ||
+                c == 0xA0) ? KJ_TRUE: KJ_FALSE;
     }
     return KJ_FALSE;
 }
@@ -1508,14 +1520,14 @@ KJ_INLINE b32 kj_char_is_ws(u32 c) {
 KJ_INLINE b32 kj_char_is_alpha(u32 c) {
     if(c <= KJ_MAX_LATIN1) {
         return (c >= 'a' && c <= 'z') ||
-               (c >= 'A' && c <='Z');
+               (c >= 'A' && c <='Z') ? KJ_TRUE: KJ_FALSE;
     }
     return KJ_FALSE;
 }
 
 KJ_INLINE b32 kj_char_is_digit(u32 c) {
     if(c <= KJ_MAX_LATIN1) {
-        return (c >= '0' && c <= '9');
+        return (c >= '0' && c <= '9') ? KJ_TRUE: KJ_FALSE;
     }
     return KJ_FALSE;
 }
@@ -1524,7 +1536,7 @@ KJ_INLINE b32 kj_char_is_alphanum(u32 c) {
     if(c <= KJ_MAX_LATIN1) {
         return (c >= 'a' && c <= 'z') ||
                (c >= 'A' && c <= 'Z') ||
-               (c >= '0' && c <= '9');
+               (c >= '0' && c <= '9') ? KJ_TRUE: KJ_FALSE;
     }
     return KJ_FALSE;
 }
@@ -1533,33 +1545,49 @@ KJ_INLINE b32 kj_char_is_hex_digit(u32 c) {
     if(c <= KJ_MAX_LATIN1) {
         return (c >= 'a' && c <= 'f') ||
                (c >= 'A' && c <= 'F') ||
-               (c >= '0' && c <= '9');
+               (c >= '0' && c <= '9') ? KJ_TRUE: KJ_FALSE;
     }
     return KJ_FALSE;
 }
 
 KJ_INLINE b32 kj_char_is_lower(u32 c) {
     if(c <= KJ_MAX_LATIN1) {
-        return (c >= 'a' && c <= 'z');
+        return (c >= 'a' && c <= 'z') ? KJ_TRUE: KJ_FALSE;
     }
     return KJ_FALSE;
 }
 
 KJ_INLINE b32 kj_char_is_upper(u32 c) {
     if(c <= KJ_MAX_LATIN1) {
-        return (c >= 'A' && c <= 'Z');
+        return (c >= 'A' && c <= 'Z') ? KJ_TRUE: KJ_FALSE;
     }
     return KJ_FALSE;
 }
 
-KJ_INLINE utf32 kj_char_to_lower(u32 c) {
+#if defined(KJ_SYS_WIN32)
+KJ_INLINE b32 kj_char_is_path_separator(u32 c) {
+    if(c <= KJ_MAX_LATIN1) {
+        return (c == '\\' || c == '/') ? KJ_TRUE: KJ_FALSE;
+    }
+    return KJ_FALSE;
+}
+#else
+KJ_INLINE b32 kj_char_is_path_separator(u32 c) {
+    if(c <= KJ_MAX_LATIN1) {
+        return (c == '/') ? KJ_TRUE: KJ_FALSE;
+    }
+    return KJ_FALSE;
+}
+#endif
+
+KJ_INLINE u32 kj_char_to_lower(u32 c) {
     if(c <= KJ_MAX_ASCII) {
         return (c >= 'A' && c <= 'Z') ? 'a' + (c - 'A'): c;
     }
     return c;
 }
 
-KJ_INLINE utf32 kj_char_to_upper(u32 c) {
+KJ_INLINE u32 kj_char_to_upper(u32 c) {
     if(c <= KJ_MAX_ASCII) {
         return (c >= 'a' && c <= 'z') ? 'A' + (c - 'a'): c;
     }
@@ -1652,6 +1680,38 @@ isize kj_cstr_to_i64(const char* s, i64* v) {
     return res;
 }
 
+const char* kj_cstr_find_predicate_n(
+        const char* s, isize size, kjPredicateFn* fn) {
+    const char* res = NULL;
+    for(isize i = 0; i < size; i++) {
+        if(fn(&s[i])) {
+            res = &s[i];
+            break;
+        }
+    }
+    return res;
+}
+
+KJ_INLINE const char* kj_cstr_find_predicate(const char* s, kjPredicateFn* fn) {
+    return kj_cstr_find_predicate_n(s, kj_cstr_count(s), fn);
+}
+
+const char* kj_cstr_rfind_predicate_n(
+        const char* s, isize size, kjPredicateFn* fn) {
+    const char* res = NULL;
+    for(isize i = size - 1; i >= 0; i--) {
+        if(fn(&s[i])) {
+            res = &s[i];
+            break;
+        }
+    }
+    return res;
+}
+
+KJ_INLINE const char* kj_cstr_rfind_predicate(const char* s, kjPredicateFn* fn) {
+    return kj_cstr_rfind_predicate_n(s, kj_cstr_count(s), fn);
+}
+
 const char* kj_cstr_find_n(const char* s, isize size, char c) {
     const char* res = NULL;
     for(isize i = 0; i < size; i++) {
@@ -1680,6 +1740,22 @@ const char* kj_cstr_rfind_n(const char* s, isize size, char c) {
 
 KJ_INLINE const char* kj_cstr_rfind(const char* s, char c) {
     return kj_cstr_rfind_n(s, kj_cstr_count(s), c);
+}
+
+char* kj_cstr_replace_char_n(char* s, isize size, char o, char n) {
+    kj_assert(s);
+    char* res = s;
+    for(isize i = 0; i < size; i++) {
+        if(s[i] == o) {
+            s[i] = n;
+            break;
+        }
+    }
+    return res;
+}
+
+KJ_INLINE char* kj_cstr_replace_char(char* s, char o, char n) {
+    return kj_cstr_replace_char_n(s, kj_cstr_count(s), o, n);
 }
 
 const char* kj_cstr_trim_n(const char* s, isize size, const char** end) {
@@ -1711,7 +1787,6 @@ const char* kj_cstr_rtrim_n(const char* s, isize size) {
 KJ_INLINE const char* kj_cstr_rtrim(const char* s) {
     return kj_cstr_rtrim_n(s, kj_cstr_count(s));
 }
-
 
 isize kj_utf8_count_n(const char* s, isize n) {
     isize res = 0;
@@ -2466,7 +2541,7 @@ const char* kj_path_extension_n(const char* path, isize size) {
     const char* res = NULL;
     if(path[size - 1] != '.') {
         for(isize i = size - 1; i >= 0; i--) {
-            if(path[i] == KJ_PATH_SEPARATOR) {
+            if(kj_char_is_path_separator(path[i])) {
                 break;
             } elif(path[i] == '.') {
                 res = &path[i + 1];
@@ -2481,7 +2556,13 @@ KJ_INLINE const char* kj_path_extension(const char* path) {
     return kj_path_extension_n(path, kj_cstr_count(path));
 }
 
+KJ_INTERN KJ_INLINE KJ_PREDICATE_FN(kj_path_is_separator) {
+    return kj_char_is_path_separator(
+            *kj_cast(char*, value)) ? KJ_TRUE: KJ_FALSE;
+}
+
 const char* kj_path_basename_n(const char* path, isize size, const char** end) {
+    kj_assert(path);
     kj_assert(end);
 
     const char* res = NULL;
@@ -2489,8 +2570,8 @@ const char* kj_path_basename_n(const char* path, isize size, const char** end) {
         res = path;
         *end = path + size;
     } else {
-        size = path[size - 1] == KJ_PATH_SEPARATOR ? size - 1: size;
-        res = kj_cstr_rfind_n(path, size, KJ_PATH_SEPARATOR);
+        size = kj_char_is_path_separator(path[size - 1]) ? size - 1: size;
+        res = kj_cstr_rfind_predicate_n(path, size, kj_path_is_separator);
         res = res == NULL ? path: res + 1;
         *end = &path[size] == res ? &path[size + 1]: &path[size];
     }
@@ -2502,6 +2583,7 @@ KJ_INLINE const char* kj_path_basename(const char* path, const char** end) {
 }
 
 const char* kj_path_dirname_n(const char* path, isize size, const char** end) {
+    kj_assert(path);
     kj_assert(end);
 
     const char* res = NULL;
@@ -2660,7 +2742,7 @@ b32 kj_path_is_dir(const char* path) {
         DWORD attr = INVALID_FILE_ATTRIBUTES;
         if((attr = GetFileAttributesW(KJ_WPATH_BUF)) !=
                 INVALID_FILE_ATTRIBUTES) {
-            res = kj_file_attr_to_type(attr) == KJ_DIR;
+            res = kj_file_attr_to_type(attr) == KJ_DIR ? KJ_TRUE: KJ_FALSE;
         }
     }
     return res;
