@@ -31,7 +31,7 @@
 #define KJ_PHI kj_cast(f32, 1.618033988749894f)
 
 KJ_COMPILER_WARNING_BEGIN
-KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_NONSTANDARD)
+KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_ANONYMOUS_STRUCT)
 
 typedef union kjVec2f {
     struct { f32 x, y; };
@@ -737,8 +737,8 @@ KJ_CONST kjVec2u kj_vec2u_mulu(kjVec2u a, u32 b) {
 
 KJ_CONST kjVec2f kj_vec2f_div(kjVec2f a, kjVec2f b) {
     return kj_vec2f(
-            a.x / (b.x + F32_EPS),
-            a.y / (b.y + F32_EPS));
+            a.x / (b.x + KJ_F32_EPS),
+            a.y / (b.y + KJ_F32_EPS));
 }
 
 KJ_CONST kjVec2i kj_vec2i_div(kjVec2i a, kjVec2i b) {
@@ -840,7 +840,7 @@ KJ_CONST kjVec2u kj_vec2u_clampu(kjVec2u a, u32 min, u32 max) {
 }
 
 KJ_CONST kjVec3f kj_vec3f(f32 x, f32 y, f32 z) {
-    kjVec3f res = {0};
+    kjVec3f res;
     res.x = x;
     res.y = y;
     res.z = z;
@@ -964,9 +964,9 @@ KJ_CONST kjVec3u kj_vec3u_mulu(kjVec3u a, u32 b) {
 
 KJ_CONST kjVec3f kj_vec3f_div(kjVec3f a, kjVec3f b) {
     return kj_vec3f(
-            a.x / (b.x + F32_EPS),
-            a.y / (b.y + F32_EPS),
-            a.z / (b.z + F32_EPS));
+            a.x / (b.x + KJ_F32_EPS),
+            a.y / (b.y + KJ_F32_EPS),
+            a.z / (b.z + KJ_F32_EPS));
 }
 
 KJ_CONST kjVec3i kj_vec3i_div(kjVec3i a, kjVec3i b) {
@@ -1206,10 +1206,10 @@ KJ_CONST kjVec4u kj_vec4u_mulu(kjVec4u a, u32 b) {
 
 KJ_CONST kjVec4f kj_vec4f_div(kjVec4f a, kjVec4f b) {
     return kj_vec4f(
-            a.x / (b.x + F32_EPS),
-            a.y / (b.y + F32_EPS),
-            a.z / (b.z + F32_EPS),
-            a.w / (b.w + F32_EPS));
+            a.x / (b.x + KJ_F32_EPS),
+            a.y / (b.y + KJ_F32_EPS),
+            a.z / (b.z + KJ_F32_EPS),
+            a.w / (b.w + KJ_F32_EPS));
 }
 
 KJ_CONST kjVec4i kj_vec4i_div(kjVec4i a, kjVec4i b) {
@@ -1308,7 +1308,7 @@ KJ_CONST kjMat3f kj_mat3f(
         f32 e00, f32 e10, f32 e20,
         f32 e01, f32 e11, f32 e21,
         f32 e02, f32 e12, f32 e22) {
-    kjMat3f res = {0};
+    kjMat3f res;
     res.e[0][0] = e00;
     res.e[1][0] = e10;
     res.e[2][0] = e20;
@@ -1330,7 +1330,8 @@ KJ_CONST kjMat3f kj_mat3f_ident(void) {
 }
 
 KJ_CONST kjMat3f kj_mat3f_zero(void) {
-    kjMat3f res = {0};
+    kjMat3f res;
+    kj_zero(&res, kj_isize_of(kjMat3f));
     return res;
 }
 
@@ -1400,7 +1401,7 @@ KJ_CONST kjMat4f kj_mat4f(
         f32 e01, f32 e11, f32 e21, f32 e31,
         f32 e02, f32 e12, f32 e22, f32 e32,
         f32 e03, f32 e13, f32 e23, f32 e33) {
-    kjMat4f res = {0};
+    kjMat4f res;
     res.e[0][0] = e00;
     res.e[1][0] = e10;
     res.e[2][0] = e20;
@@ -1433,7 +1434,8 @@ KJ_CONST kjMat4f kj_mat4f_ident(void) {
 }
 
 KJ_CONST kjMat4f kj_mat4f_zero(void) {
-    kjMat4f res = {0};
+    kjMat4f res;
+    kj_zero(&res, kj_isize_of(kjMat4f));
     return res;
 }
 
@@ -1531,9 +1533,9 @@ KJ_CONST kjMat4f kj_mat4f_scale_vec3f(kjVec3f xyz) {
 KJ_CONST kjMat4f kj_mat4f_ortho(
         f32 l, f32 r, f32 b, f32 t, f32 znear, f32 zfar) {
     kjMat4f res = kj_mat4f_ident();
-    f32 rl = r - l + F32_EPS;
-    f32 tb = t - b + F32_EPS;
-    f32 fn = zfar - znear + F32_EPS;
+    f32 rl = r - l + KJ_F32_EPS;
+    f32 tb = t - b + KJ_F32_EPS;
+    f32 fn = zfar - znear + KJ_F32_EPS;
 
     res.e[0][0] = 2.0f / rl;
     res.e[1][1] = 2.0f / tb;
@@ -1546,8 +1548,8 @@ KJ_CONST kjMat4f kj_mat4f_ortho(
 
 KJ_CONST kjMat4f kj_mat4f_ortho_inf(f32 l, f32 r, f32 t, f32 b) {
     kjMat4f res = kj_mat4f_ident();
-    f32 rl = r - l + F32_EPS;
-    f32 tb = t - b + F32_EPS;
+    f32 rl = r - l + KJ_F32_EPS;
+    f32 tb = t - b + KJ_F32_EPS;
 
     res.e[0][0] = 2.0f / rl;
     res.e[1][1] = 2.0f / tb;
@@ -1714,7 +1716,7 @@ KJ_CONST i32 kj_rect2f_extend(kjRect2f r, f32 x, f32 y) {
     kj_unused(x);
     kj_unused(y);
     kj_unimplemented();
-    return 0;
+    kj_unreachable();
 }
 
 KJ_CONST i32 kj_rect2i_extend(kjRect2i r, i32 x, i32 y) {
@@ -1722,7 +1724,7 @@ KJ_CONST i32 kj_rect2i_extend(kjRect2i r, i32 x, i32 y) {
     kj_unused(x);
     kj_unused(y);
     kj_unimplemented();
-    return 0;
+    kj_unreachable();
 }
 
 KJ_CONST i32 kj_rect2u_extend(kjRect2u r, u32 x, u32 y) {
@@ -1730,28 +1732,28 @@ KJ_CONST i32 kj_rect2u_extend(kjRect2u r, u32 x, u32 y) {
     kj_unused(x);
     kj_unused(y);
     kj_unimplemented();
-    return 0;
+    kj_unreachable();
 }
 
 KJ_CONST i32 kj_rect2f_extend_vec2f(kjRect2f r, kjVec2f xy) {
     kj_unused(r);
     kj_unused(xy);
     kj_unimplemented();
-    return 0;
+    kj_unreachable();
 }
 
 KJ_CONST i32 kj_rect2i_extend_vec2i(kjRect2i r, kjVec2i xy) {
     kj_unused(r);
     kj_unused(xy);
     kj_unimplemented();
-    return 0;
+    kj_unreachable();
 }
 
 KJ_CONST i32 kj_rect2u_extend_vec2u(kjRect2u r, kjVec2u xy) {
     kj_unused(r);
     kj_unused(xy);
     kj_unimplemented();
-    return 0;
+    kj_unreachable();
 }
 
 KJ_CONST kjVec2f kj_rect2f_centre(kjRect2f r) {
