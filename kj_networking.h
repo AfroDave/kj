@@ -98,7 +98,10 @@ void kj_networking_end(void) {
 }
 
 kjErr kj_socket_open(kjSocket* sock, kjSocketAddr addr) {
-    kj_check(sock == NULL, { return KJ_ERR_INVALID_PARAMETER; });
+    if(sock == NULL) {
+        return KJ_ERR_INVALID_PARAMETER;
+    }
+
     kjErr res = KJ_ERR_NONE;
     i32 type = addr == KJ_SOCKET_ADDR_V4 ? AF_INET: AF_INET6;
     if((sock->handle = socket(
@@ -113,7 +116,9 @@ kjErr kj_socket_open(kjSocket* sock, kjSocketAddr addr) {
 }
 
 void kj_socket_close(kjSocket* sock) {
-    kj_check(sock == NULL || sock->handle == INVALID_SOCKET, { return; });
+    if(sock == NULL || sock->handle == INVALID_SOCKET) {
+        return;
+    }
 
 #if defined(KJ_SYS_WIN32)
     closesocket(sock->handle);
@@ -123,7 +128,9 @@ void kj_socket_close(kjSocket* sock) {
 }
 
 kjErr kj_socket_connect(kjSocket* sock, const char* ip, u16 port) {
-    kj_check(sock == NULL || ip == NULL, { return KJ_ERR_INVALID_PARAMETER; });
+    if(sock == NULL || ip == NULL) {
+        return KJ_ERR_INVALID_PARAMETER;
+    }
 
     kjErr res = KJ_ERR_NONE;
     kj_zero(&sock->addr, kj_isize_of(struct sockaddr_in));
@@ -145,9 +152,9 @@ kjErr kj_socket_connect(kjSocket* sock, const char* ip, u16 port) {
 }
 
 kjErr kj_socket_bind(kjSocket* sock, u16 port, b32 local) {
-    kj_check(sock == NULL || sock->handle == INVALID_SOCKET, {
+    if(sock == NULL || sock->handle == INVALID_SOCKET) {
         return KJ_ERR_INVALID_PARAMETER;
-    });
+    }
 
     kjErr res = KJ_ERR_NONE;
     kj_zero(&sock->addr, kj_isize_of(struct sockaddr_in));
@@ -181,9 +188,9 @@ kjErr kj_socket_bind(kjSocket* sock, u16 port, b32 local) {
 }
 
 kjErr kj_socket_listen(kjSocket* sock, i32 max_conn) {
-    kj_check(sock == NULL || sock->handle == INVALID_SOCKET || max_conn <= 0, {
+    if(sock == NULL || sock->handle == INVALID_SOCKET || max_conn <= 0) {
         return KJ_ERR_INVALID_PARAMETER;
-    });
+    }
 
     kjErr res = KJ_ERR_NONE;
     if(listen(sock->handle, kj_min(max_conn, SOMAXCONN)) == SOCKET_ERROR) {
@@ -198,9 +205,9 @@ kjErr kj_socket_listen(kjSocket* sock, i32 max_conn) {
 }
 
 kjErr kj_socket_accept(kjSocket* sock, kjSocket* client) {
-    kj_check(sock == NULL || sock->handle == INVALID_SOCKET || client == NULL, {
+    if(sock == NULL || sock->handle == INVALID_SOCKET || client == NULL) {
         return KJ_ERR_INVALID_PARAMETER;
-    });
+    }
 
     kjErr res = KJ_ERR_NONE;
     SOCKET s;
@@ -220,15 +227,12 @@ kjErr kj_socket_accept(kjSocket* sock, kjSocket* client) {
 
 isize$ kj_socket_read(kjSocket* sock, void* buf, isize size) {
     isize$ res;
-    kj_zero(&res, kj_isize_of(isize$));
-    kj_check(
-            sock == NULL ||
-            sock->handle == INVALID_SOCKET ||
-            buf == NULL ||
-            size <= 0, {
+    if(sock == NULL || sock->handle == INVALID_SOCKET ||
+       buf == NULL || size <= 0) {
         res.err = KJ_ERR_INVALID_PARAMETER;
         return res;
-    });
+    };
+    kj_zero(&res, kj_isize_of(isize$));
 
     res.val = recv(
             sock->handle,
@@ -252,15 +256,12 @@ isize$ kj_socket_read(kjSocket* sock, void* buf, isize size) {
 
 isize$ kj_socket_write(kjSocket* sock, const void* buf, isize size) {
     isize$ res;
-    kj_zero(&res, kj_isize_of(isize$));
-    kj_check(
-            sock == NULL ||
-            sock->handle == INVALID_SOCKET ||
-            buf == NULL ||
-            size <= 0, {
+    if(sock == NULL || sock->handle == INVALID_SOCKET ||
+       buf == NULL || size <= 0) {
         res.err = KJ_ERR_INVALID_PARAMETER;
         return res;
-    });
+    }
+    kj_zero(&res, kj_isize_of(isize$));
 
     res.val = send(
             sock->handle,

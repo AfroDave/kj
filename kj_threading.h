@@ -155,9 +155,9 @@ KJ_INLINE void kj_sleep_ms(u32 ms) {
 }
 
 kjErr kj_thread(kjThread* thread, kjThreadFn* fn, void* data, u32 flags) {
-    kj_check(thread == NULL || fn == NULL, {
+    if(thread == NULL || fn == NULL) {
         return KJ_ERR_INVALID_PARAMETER;
-    });
+    }
 
     kjErr res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
@@ -185,7 +185,9 @@ kjErr kj_thread(kjThread* thread, kjThreadFn* fn, void* data, u32 flags) {
 }
 
 KJ_INLINE void kj_thread_join(kjThread* thread) {
-    kj_check(thread == NULL, { return; });
+    if(thread == NULL) {
+        return;
+    }
 
 #if defined(KJ_SYS_WIN32)
     WaitForSingleObjectEx(thread->handle, INFINITE, FALSE);
@@ -196,7 +198,9 @@ KJ_INLINE void kj_thread_join(kjThread* thread) {
 }
 
 KJ_INLINE void kj_thread_detach(kjThread* thread) {
-    kj_check(thread == NULL, { return; });
+    if(thread == NULL) {
+        return;
+    }
 
 #if defined(KJ_SYS_WIN32)
     CloseHandle(thread->handle);
@@ -207,7 +211,9 @@ KJ_INLINE void kj_thread_detach(kjThread* thread) {
 }
 
 kjErr kj_mutex(kjMutex* mutex) {
-    kj_check(mutex == NULL, { return KJ_ERR_INVALID_PARAMETER; });
+    if(mutex == NULL) {
+        return KJ_ERR_INVALID_PARAMETER;
+    }
 
     kjErr res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
@@ -221,7 +227,9 @@ kjErr kj_mutex(kjMutex* mutex) {
 }
 
 KJ_INLINE void kj_mutex_lock(kjMutex* mutex) {
-    kj_check(mutex == NULL, { return; });
+    if(mutex == NULL) {
+        return;
+    }
 
 #if defined(KJ_SYS_WIN32)
     EnterCriticalSection(mutex);
@@ -231,7 +239,9 @@ KJ_INLINE void kj_mutex_lock(kjMutex* mutex) {
 }
 
 KJ_INLINE b32 kj_mutex_try_lock(kjMutex* mutex) {
-    kj_check(mutex == NULL, { return KJ_FALSE; });
+    if(mutex == NULL) {
+        return KJ_FALSE;
+    }
 
 #if defined(KJ_SYS_WIN32)
     return TryEnterCriticalSection(mutex) > 0 ? KJ_TRUE: KJ_FALSE;
@@ -241,7 +251,9 @@ KJ_INLINE b32 kj_mutex_try_lock(kjMutex* mutex) {
 }
 
 KJ_INLINE void kj_mutex_unlock(kjMutex* mutex) {
-    kj_check(mutex == NULL, { return; });
+    if(mutex == NULL) {
+        return;
+    }
 
 #if defined(KJ_SYS_WIN32)
     LeaveCriticalSection(mutex);
@@ -251,7 +263,9 @@ KJ_INLINE void kj_mutex_unlock(kjMutex* mutex) {
 }
 
 KJ_INLINE void kj_mutex_destroy(kjMutex* mutex) {
-    kj_check(mutex == NULL, { return; });
+    if(mutex == NULL) {
+        return;
+    }
 
 #if defined(KJ_SYS_WIN32)
     DeleteCriticalSection(mutex);
@@ -261,9 +275,9 @@ KJ_INLINE void kj_mutex_destroy(kjMutex* mutex) {
 }
 
 kjErr kj_semaphore(kjSemaphore* semaphore, i32 count, i32 max) {
-    kj_check(semaphore == NULL || count <= 0, {
+    if(semaphore == NULL || count <= 0) {
         return KJ_ERR_INVALID_PARAMETER;
-    });
+    }
 
     kjErr res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
@@ -280,7 +294,9 @@ kjErr kj_semaphore(kjSemaphore* semaphore, i32 count, i32 max) {
 }
 
 KJ_INLINE b32 kj_semaphore_wait(kjSemaphore* semaphore) {
-    kj_check(semaphore == NULL, { return KJ_FALSE; });
+    if(semaphore == NULL) {
+        return KJ_FALSE;
+    }
 
 #if defined(KJ_SYS_WIN32)
     u32 res = WaitForSingleObject(semaphore, INFINITE);
@@ -291,7 +307,9 @@ KJ_INLINE b32 kj_semaphore_wait(kjSemaphore* semaphore) {
 }
 
 KJ_INLINE b32 kj_semaphore_try_wait(kjSemaphore* semaphore) {
-    kj_check(semaphore == NULL, { return KJ_FALSE; });
+    if(semaphore == NULL) {
+        return KJ_FALSE;
+    }
 
 #if defined(KJ_SYS_WIN32)
     u32 res = WaitForSingleObject(semaphore, 0);
@@ -302,7 +320,9 @@ KJ_INLINE b32 kj_semaphore_try_wait(kjSemaphore* semaphore) {
 }
 
 KJ_INLINE void kj_semaphore_signal(kjSemaphore* semaphore, i32 count) {
-    kj_check(semaphore == NULL || count <= 0, { return; });
+    if(semaphore == NULL || count <= 0) {
+        return;
+    }
 
 #if defined(KJ_SYS_WIN32)
     ReleaseSemaphore(semaphore, count, NULL);
@@ -314,7 +334,9 @@ KJ_INLINE void kj_semaphore_signal(kjSemaphore* semaphore, i32 count) {
 }
 
 KJ_INLINE void kj_semaphore_destroy(kjSemaphore* semaphore) {
-    kj_check(semaphore == NULL, { return; });
+    if(semaphore == NULL) {
+        return;
+    }
 
 #if defined(KJ_SYS_WIN32)
     CloseHandle(semaphore);
