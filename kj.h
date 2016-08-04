@@ -41,9 +41,6 @@ KJ_EXTERN_BEGIN
 #if !defined(VC_EXTRALEAN)
 #define VC_EXTRALEAN
 #endif
-#if !defined(_CRT_SECURE_NO_WARNINGS)
-#define _CRT_SECURE_NO_WARNINGS
-#endif
 #if !defined(_UNICODE)
 #define _UNICODE
 #endif
@@ -51,7 +48,6 @@ KJ_EXTERN_BEGIN
 #define UNICODE
 #endif
 #include <windows.h>
-#include <malloc.h>
 #include <stdio.h>
 #include <stdint.h>
 #define KJ_SYS_NAME "windows"
@@ -101,27 +97,36 @@ KJ_EXTERN_BEGIN
 #define KJ_COMPILER_WARNING_BEGIN __pragma(warning(push))
 #define KJ_COMPILER_WARNING_END __pragma(warning(pop))
 #define KJ_COMPILER_WARNING(W) __pragma(warning(disable:W))
+#define KJ_COMPILER_WARNING_PEDANTIC
 #define KJ_COMPILER_WARNING_ZERO_SIZED_ARRAY 4200
 #define KJ_COMPILER_WARNING_ANONYMOUS_STRUCT 4201
 #define KJ_COMPILER_WARNING_MISSING_BRACES
+#define KJ_COMPILER_WARNING_DEPRECATED 4996
+#define KJ_COMPILER_WARNING_VARIADIC_MACRO
 #elif defined(__clang__)
 #define KJ_COMPILER_CLANG
 #define KJ_PRAGMA(...) _Pragma(kj_str_of(__VA_ARGS__))
 #define KJ_COMPILER_WARNING_BEGIN _Pragma(kj_str_of(clang diagnostic push))
 #define KJ_COMPILER_WARNING_END _Pragma(kj_str_of(clang diagnostic pop))
 #define KJ_COMPILER_WARNING(W) _Pragma(kj_str_of(clang diagnostic ignored W))
-#define KJ_COMPILER_WARNING_ZERO_SIZED_ARRAY kj_str_of(-Wzero-length-array)
-#define KJ_COMPILER_WARNING_ANONYMOUS_STRUCT kj_str_of(-Wpedantic)
-#define KJ_COMPILER_WARNING_MISSING_BRACES kj_str_of(-Wmissing-braces)
+#define KJ_COMPILER_WARNING_PEDANTIC "-Wpedantic"
+#define KJ_COMPILER_WARNING_ZERO_SIZED_ARRAY "-Wzero-length-array"
+#define KJ_COMPILER_WARNING_ANONYMOUS_STRUCT KJ_COMPILER_WARNING_PEDANTIC
+#define KJ_COMPILER_WARNING_MISSING_BRACES "-Wmissing-braces"
+#define KJ_COMPILER_WARNING_VARIADIC_MACRO "-Wgnu-zero-variadic-macro-arguments"
+#define KJ_COMPILER_WARNING_DEPRECATED KJ_COMPILER_WARNING_PEDANTIC
 #elif defined(__GNUC__) || defined(__GNUG__)
 #define KJ_COMPILER_GNU
 #define KJ_PRAGMA(...) _Pragma(kj_str_of(__VA_ARGS__))
 #define KJ_COMPILER_WARNING_BEGIN _Pragma(kj_str_of(GCC diagnostic push))
 #define KJ_COMPILER_WARNING_END _Pragma(kj_str_of(GCC diagnostic pop))
 #define KJ_COMPILER_WARNING(W) _Pragma(kj_str_of(GCC diagnostic ignored W))
-#define KJ_COMPILER_WARNING_ZERO_SIZED_ARRAY kj_str_of(-Wpedantic)
-#define KJ_COMPILER_WARNING_ANONYMOUS_STRUCT kj_str_of(-Wpedantic)
-#define KJ_COMPILER_WARNING_MISSING_BRACES kj_str_of(-Wmissing-braces)
+#define KJ_COMPILER_WARNING_PEDANTIC "-Wpedantic"
+#define KJ_COMPILER_WARNING_ZERO_SIZED_ARRAY KJ_COMPILER_WARNING_PEDANTIC
+#define KJ_COMPILER_WARNING_ANONYMOUS_STRUCT KJ_COMPILER_WARNING_PEDANTIC
+#define KJ_COMPILER_WARNING_MISSING_BRACES "-Wmissing-braces"
+#define KJ_COMPILER_WARNING_DEPRECATED KJ_COMPILER_WARNING_PEDANTIC
+#define KJ_COMPILER_WARNING_VARIADIC_MACRO KJ_COMPILER_WARNING_PEDANTIC
 #else
 #error Unsupported Compiler
 #endif
@@ -420,6 +425,7 @@ typedef uint64_t u64;
 #define KJ_U64_MAX (kj_cast(u64, 0xFFFFFFFFFFFFFFFF))
 #endif
 
+typedef i8 b8;
 typedef i32 b32;
 
 typedef i64 isize;
@@ -485,8 +491,8 @@ typedef enum kjType {
     KJ_TYPE_COUNT
 } kjType;
 
-KJ_API const char* kj_type_to_str(kjType type);
-KJ_API isize kj_type_to_isize(kjType type);
+KJ_API const char* kj_type_str(kjType type);
+KJ_API isize kj_type_isize(kjType type);
 
 #define KJ_ERR_MAP(X)                                                           \
     X(KJ_ERR_NONE, "None")                                                      \
@@ -523,7 +529,7 @@ typedef enum kjErr {
 } kjErr;
 
 KJ_API kjErr kj_err_from_sys(i32 err);
-KJ_API const char* kj_err_to_str(kjErr err);
+KJ_API const char* kj_err_str(kjErr err);
 
 #define kj_is_ok(r) ((r).err == KJ_ERR_NONE)
 #define kj_is_err(r) ((r).err != KJ_ERR_NONE)
@@ -556,11 +562,11 @@ typedef KJ_RESULT_SIZED(void*) void$$;
 /// Memory
 
 enum {
-    KJ_ALLOC_NONE = KJ_BIT_FLAG_NONE,
-    KJ_ALLOC_ZERO = KJ_BIT_FLAG(0)
+    KJ_ALLOC_NONE = KJ_BIT_FLAG_NONE
 };
 
 KJ_API void* kj_global_alloc(isize size, u32 flags);
+KJ_API void* kj_global_zalloc(isize size, u32 flags);
 KJ_API void kj_global_free(void* data, u32 flags);
 KJ_API void* kj_global_realloc(void* data, isize size, u32 flags);
 KJ_API void* kj_global_alloc_aligned(isize size, isize alignment, u32 flags);
@@ -570,6 +576,9 @@ typedef struct kjAllocator kjAllocator;
 #define KJ_ALLOCATOR_ALLOC_FN(name)                                             \
     void* name(const kjAllocator* self, isize size)
 typedef KJ_ALLOCATOR_ALLOC_FN(kjAllocatorAllocFn);
+#define KJ_ALLOCATOR_ZALLOC_FN(name)                                            \
+    void* name(const kjAllocator* self, isize size)
+typedef KJ_ALLOCATOR_ZALLOC_FN(kjAllocatorZallocFn);
 #define KJ_ALLOCATOR_FREE_FN(name)                                              \
     void name(const kjAllocator* self, void* data)
 typedef KJ_ALLOCATOR_FREE_FN(kjAllocatorFreeFn);
@@ -582,6 +591,7 @@ typedef KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kjAllocatorAllocAlignedFn);
 
 typedef struct kjAllocator {
     kjAllocatorAllocFn* alloc;
+    kjAllocatorZallocFn* zalloc;
     kjAllocatorFreeFn* free;
     kjAllocatorReallocFn* realloc;
     kjAllocatorAllocAlignedFn* alloc_aligned;
@@ -590,6 +600,8 @@ typedef struct kjAllocator {
 
 #define kj_allocator_alloc(a, s)                                                \
     kj_cast(kjAllocator*, (a))->alloc(kj_cast(kjAllocator*, (a)), (s))
+#define kj_allocator_zalloc(a, s)                                               \
+    kj_cast(kjAllocator*, (a))->zalloc(kj_cast(kjAllocator*, (a)), (s))
 #define kj_allocator_free(a, p)                                                 \
     kj_cast(kjAllocator*, (a))->free(kj_cast(kjAllocator*, (a)), (p))
 #define kj_allocator_realloc(a, p, s)                                           \
@@ -602,27 +614,61 @@ typedef kjAllocator kjHeapAllocator;
 
 KJ_API kjHeapAllocator kj_heap_allocator(u32 flags);
 KJ_API KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc);
+KJ_API KJ_ALLOCATOR_ZALLOC_FN(kj_heap_zalloc);
 KJ_API KJ_ALLOCATOR_FREE_FN(kj_heap_free);
 KJ_API KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc);
-
-typedef struct kjLinearAllocator {
-    kjAllocator allocator;
-    u8* data;
-    isize size;
-    isize used;
-    isize offset;
-} kjLinearAllocator;
-
-KJ_API kjLinearAllocator kj_linear_allocator(void* data, isize size, u32 flags);
-KJ_API void kj_linear_allocator_reset(kjLinearAllocator* self);
-KJ_API KJ_ALLOCATOR_ALLOC_FN(kj_linear_alloc);
-KJ_API KJ_ALLOCATOR_REALLOC_FN(kj_linear_realloc);
+KJ_API KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj_heap_alloc_aligned);
 
 /// Debug
 
+#define KJ_PRIORITY_MAP(X)                                                      \
+    X(KJ_PRIORITY_CRITICAL, "Critical")                                         \
+    X(KJ_PRIORITY_ERROR, "Error")                                               \
+    X(KJ_PRIORITY_WARN, "Warn")                                                 \
+    X(KJ_PRIORITY_INFO, "Info")                                                 \
+    X(KJ_PRIORITY_DEBUG, "Debug")                                               \
+    X(KJ_PRIORITY_VERBOSE, "Verbose")
+
+typedef enum kjPriority {
+#define KJ_PRIORITY_ENUM(type, name) type,
+    KJ_PRIORITY_MAP(KJ_PRIORITY_ENUM)
+#undef KJ_PRIORITY_ENUM
+    KJ_PRIORITY_COUNT
+} kjPriority;
+
+KJ_API const char* kj_priority_str(kjPriority priority);
+
+#define KJ_LOG_HANDLER(name) void name(                                         \
+        const char* file, isize line, const char* fn,                           \
+        kjPriority priority, void* usr, const char* fmt, ...)
+
+KJ_API KJ_LOG_HANDLER(kj_log_handler);
+
+#if !defined(KJ_CUSTOM_LOG_HANDLER)
+#define KJ_CUSTOM_LOG_HANDLER kj_log_handler
+#endif
+
+#if !defined(KJ_CUSTOM_LOG_USR)
+#define KJ_CUSTOM_LOG_USR NULL
+#endif
+
+#if !defined(kj_log)
+#define kj_log(priority, ...) do {                                              \
+    KJ_CUSTOM_LOG_HANDLER(                                                      \
+            KJ_CUR_FILE, KJ_CUR_LINE, KJ_CUR_FN,                                \
+            priority, KJ_CUSTOM_LOG_USR, __VA_ARGS__);                          \
+} while(0)
+#define kj_log_critical(...) kj_log(KJ_PRIORITY_CRITICAL, __VA_ARGS__)
+#define kj_log_error(...) kj_log(KJ_PRIORITY_ERROR, __VA_ARGS__)
+#define kj_log_warn(...) kj_log(KJ_PRIORITY_WARN, __VA_ARGS__)
+#define kj_log_info(...) kj_log(KJ_PRIORITY_INFO, __VA_ARGS__)
+#define kj_log_debug(...) kj_log(KJ_PRIORITY_DEBUG, __VA_ARGS__)
+#define kj_log_verbose(...) kj_log(KJ_PRIORITY_VERBOSE, __VA_ARGS__)
+#endif
+
 #define KJ_ASSERT_HANDLER(name) void name(                                      \
         const char* expr, const char* file, isize line, const char* fn,         \
-        const char* msg, void* usr)
+        void* usr, const char* fmt, ...)
 
 KJ_API KJ_ASSERT_HANDLER(kj_assert_handler);
 
@@ -639,8 +685,12 @@ KJ_API KJ_ASSERT_HANDLER(kj_assert_handler);
 
 #if defined(KJ_COMPILER_MSVC)
 #define KJ_CUR_FN __FUNCSIG__
-#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+#elif defined(KJ_COMPILER_GNU)
+#define KJ_CUR_FN __extension__ __PRETTY_FUNCTION__
+#elif defined(KJ_COMPILER_CLANG)
 #define KJ_CUR_FN __PRETTY_FUNCTION__
+#else
+#define KJ_CUR_FN __func__
 #endif
 
 #if defined(KJ_COMPILER_MSVC)
@@ -652,25 +702,25 @@ KJ_API KJ_ASSERT_HANDLER(kj_assert_handler);
 #endif
 
 #if !defined(KJ_NO_DEBUG)
-#define kj_assert(expr, msg) do {                                               \
+#define kj_assert(expr, ...) do {                                               \
     if(!(expr)) {                                                               \
         KJ_CUSTOM_ASSERT_HANDLER(                                               \
                 kj_str_of(expr),                                                \
                 KJ_CUR_FILE, KJ_CUR_LINE, KJ_CUR_FN,                            \
-                msg, KJ_CUSTOM_ASSERT_USR);                                     \
+                KJ_CUSTOM_ASSERT_USR, __VA_ARGS__);                             \
         kj_break();                                                             \
     }                                                                           \
 } while(0)
-#define kj_panic(msg) do {                                                      \
+#define kj_panic(...) do {                                                      \
     KJ_CUSTOM_ASSERT_HANDLER(                                                   \
             "PANIC",                                                            \
             KJ_CUR_FILE, KJ_CUR_LINE, KJ_CUR_FN,                                \
-            msg, KJ_CUSTOM_ASSERT_USR);                                         \
+            KJ_CUSTOM_ASSERT_USR, __VA_ARGS__);                                 \
     kj_break();                                                                 \
 } while(0)
 #else
-#define kj_assert(expr, msg)
-#define kj_panic(msg)
+#define kj_assert(expr, ...)
+#define kj_panic(...)
 #endif
 
 #define kj_unimplemented() kj_panic("UNIMPLEMENTED")
@@ -1084,26 +1134,22 @@ KJ_INTERN KJ_TLS char KJ__PATH_BUF[KJ_PATH_MAX + 1] = {0};
 KJ_INTERN KJ_TLS WCHAR KJ__WPATH_BUF[KJ_PATH_MAX + 1] = {0};
 #endif
 
-KJ_INTERN const char* KJ__TYPE_STRS[] = {
-#define KJ_TYPE_NAME(type, name, T) name,
-    KJ_TYPE_MAP(KJ_TYPE_NAME)
+KJ_CONST KJ_INLINE const char* kj_type_str(kjType type) {
+    switch(type) {
+#define KJ_TYPE_NAME(type, name, T) case type: return (name);
+        KJ_TYPE_MAP(KJ_TYPE_NAME)
 #undef KJ_TYPE_NAME
-};
-
-const char* kj_type_to_str(kjType type) {
-    return type <= KJ_TYPE_UNKNOWN || type >= KJ_TYPE_COUNT ?
-        "Unknown": KJ__TYPE_STRS[type];
+        default: return "Unknown";
+    }
 }
 
-KJ_INTERN const isize KJ_TYPE_SIZES[] = {
-#define KJ_TYPE_SIZE(type, name, T) kj_isize_of(T),
-    KJ_TYPE_MAP(KJ_TYPE_SIZE)
-#undef KJ_TYPE_SIZE
-};
-
-isize kj_type_to_isize(kjType type) {
-    return type <= KJ_TYPE_UNKNOWN || type >= KJ_TYPE_COUNT ?
-        -1: KJ_TYPE_SIZES[type];
+KJ_CONST KJ_INLINE isize kj_type_isize(kjType type) {
+    switch(type) {
+#define KJ_TYPE_NAME(type, name, T) case type: return kj_isize_of(T);
+        KJ_TYPE_MAP(KJ_TYPE_NAME)
+#undef KJ_TYPE_NAME
+        default: return 0;
+    }
 }
 
 #if defined(KJ_SYS_WIN32)
@@ -1171,16 +1217,13 @@ kjErr kj_err_from_sys(i32 err) {
 }
 #endif
 
-KJ_INTERN const char* KJ__ERR_STRS[] = {
-#define KJ_ERR_NAME(type, name) name,
-    KJ_ERR_MAP(KJ_ERR_NAME)
+KJ_CONST KJ_INLINE const char* kj_err_str(kjErr err) {
+    switch(err) {
+#define KJ_ERR_NAME(type, name) case (type): return (name);
+        KJ_ERR_MAP(KJ_ERR_NAME)
 #undef KJ_ERR_NAME
-};
-
-const char* kj_err_to_str(kjErr err) {
-    const char* res = err <= KJ_ERR_UNKNOWN || err >= KJ_ERR_COUNT ?
-        "Unknown": KJ__ERR_STRS[err];
-    return res;
+        default: return "Unknown";
+    }
 }
 
 KJ_INTERN KJ_INLINE KJ_ALLOCATOR_ALLOC_FN(kj__dummy_alloc) {
@@ -1208,20 +1251,19 @@ KJ_INTERN KJ_INLINE KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj__dummy_alloc_aligned) {
     return NULL;
 }
 
+#define KJ__DEFAULT_ALIGNMENT (kj_cast(isize, (2 * kj_isize_of(isize))))
+#define KJ__ALIGN_SIZE(s, a) kj_cast(isize, (s) + (a) - 1 + kj_isize_of(isize))
+#define KJ__ALLOC_ADDR(p) (kj_cast(isize*, (p)) - 1)
+#define KJ__HEADER_ALLOC_ADDR(p) (kj_cast(void*, *KJ__ALLOC_ADDR(p)))
+
 void* kj_global_alloc(isize size, u32 flags) {
-    void* res = NULL;
-    if(flags & KJ_ALLOC_ZERO) {
-#if defined(KJ_SYS_WIN32)
-        res = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size);
-#elif defined(KJ_SYS_LINUX)
-        res = calloc(size, kj_isize_of(u8));
-#endif
-    } else {
-#if defined(KJ_SYS_WIN32)
-        res = HeapAlloc(GetProcessHeap(), 0, size);
-#elif defined(KJ_SYS_LINUX)
-        res = malloc(size * kj_isize_of(u8));
-#endif
+    return kj_global_alloc_aligned(size, KJ__DEFAULT_ALIGNMENT, flags);
+}
+
+void* kj_global_zalloc(isize size, u32 flags) {
+    void* res = kj_global_alloc(size, flags);
+    if(res) {
+        kj_zero(res, size);
     }
     return res;
 }
@@ -1239,43 +1281,53 @@ void kj_global_free(void* data, u32 flags) {
 
 void* kj_global_realloc(void* data, isize size, u32 flags) {
     void* res = NULL;
-    if(flags & KJ_ALLOC_ZERO) {
-#if defined(KJ_SYS_WIN32)
-        res = HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, data, size);
-#elif defined(KJ_SYS_LINUX)
-        res = realloc(data, size * kj_isize_of(u8));
-#endif
+    if(data == NULL) {
+        res = kj_global_alloc(size, flags);
+    } elif(size == 0) {
+        kj_global_free(data, flags);
     } else {
+        void* header = KJ__HEADER_ALLOC_ADDR(data);
+        isize aligned = KJ__ALIGN_SIZE(size, KJ__DEFAULT_ALIGNMENT);
 #if defined(KJ_SYS_WIN32)
-        res = HeapReAlloc(GetProcessHeap(), 0, data, size);
+        header = HeapReAlloc(GetProcessHeap(), 0, header, aligned);
 #elif defined(KJ_SYS_LINUX)
-        res = realloc(data, size * kj_isize_of(u8));
+        header = realloc(header, aligned);
 #endif
+        if(header) {
+            res = kj_align_on(
+                    kj_cast(u8*, header) + kj_isize_of(isize),
+                    KJ__DEFAULT_ALIGNMENT);
+            *KJ__ALLOC_ADDR(res) = kj_cast(isize, header);
+        }
     }
     return res;
 }
 
 void* kj_global_alloc_aligned(isize size, isize alignment, u32 flags) {
+    kj_unused(flags);
     void* res = NULL;
-    if(flags & KJ_ALLOC_ZERO) {
+    isize aligned = KJ__ALIGN_SIZE(size, alignment);
+    void* header = NULL;
 #if defined(KJ_SYS_WIN32)
-        res = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size + alignment);
+    header = HeapAlloc(GetProcessHeap(), 0, aligned);
 #elif defined(KJ_SYS_LINUX)
-        res = calloc(size + alignment, kj_isize_of(u8));
+    header = malloc(aligned);
 #endif
-    } else {
-#if defined(KJ_SYS_WIN32)
-        res = HeapAlloc(GetProcessHeap(), 0, size + alignment);
-#elif defined(KJ_SYS_LINUX)
-        res = malloc((size + alignment) * kj_isize_of(u8));
-#endif
+    if(header) {
+        res = kj_align_on(
+                kj_cast(u8*, header) + kj_isize_of(isize),
+                alignment);
+        *KJ__ALLOC_ADDR(res) = kj_cast(isize, header);
     }
-    res = kj_align_on(kj_cast(u8*, res), alignment);
     return res;
 }
 
 KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc) {
     return kj_global_alloc(size, self->flags);
+}
+
+KJ_ALLOCATOR_ALLOC_FN(kj_heap_zalloc) {
+    return kj_global_zalloc(size, self->flags);
 }
 
 KJ_ALLOCATOR_FREE_FN(kj_heap_free) {
@@ -1298,81 +1350,6 @@ kjHeapAllocator kj_heap_allocator(u32 flags) {
     res.alloc_aligned = kj_heap_alloc_aligned;
     res.flags = flags;
     return res;
-}
-
-KJ_ALLOCATOR_ALLOC_FN(kj_linear_alloc) {
-    if(self == NULL || size <= 0) {
-        return NULL;
-    }
-
-    void* res = NULL;
-    kjLinearAllocator* a = kj_cast(kjLinearAllocator*, self);
-    isize new_size = a->used + size;
-    if(new_size < a->size) {
-        a->offset = a->used;
-        res = kj_cast(void*, a->data + a->offset);
-        a->used = new_size;
-    }
-    return res;
-}
-
-KJ_ALLOCATOR_FREE_FN(kj_linear_free) {
-    if(self == NULL || data == NULL) {
-        return;
-    }
-
-    kjLinearAllocator* a = kj_cast(kjLinearAllocator*, self);
-    if(data == (a->data + a->offset)) {
-        a->used = a->offset;
-    }
-}
-
-KJ_ALLOCATOR_REALLOC_FN(kj_linear_realloc) {
-    if(self == NULL || data == NULL || size <= 0) {
-        return NULL;
-    }
-
-    void* res = NULL;
-    kjLinearAllocator* a = kj_cast(kjLinearAllocator*, self);
-    if((a->data + a->offset) == data) {
-        isize new_size = a->used + (size - (a->used - a->offset));
-        if(new_size < a->size) {
-            a->used = new_size;
-            res = data;
-        }
-    }
-    return res;
-}
-
-KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj_linear_alloc_aligned) {
-    kj_unused(self);
-    kj_unused(size);
-    kj_unused(alignment);
-    kj_unimplemented();
-    kj_unreachable();
-}
-
-kjLinearAllocator kj_linear_allocator(void* data, isize size, u32 flags) {
-    kjLinearAllocator res;
-    res.allocator.alloc = kj_linear_alloc;
-    res.allocator.free = kj_linear_free;
-    res.allocator.realloc = kj_linear_realloc;
-    res.allocator.alloc_aligned = kj_linear_alloc_aligned;
-    res.allocator.flags = flags;
-    res.data = kj_cast(u8*, data);
-    res.size = size;
-    res.used = 0;
-    res.offset = 0;
-    return res;
-}
-
-void kj_linear_allocator_reset(kjLinearAllocator* self) {
-    if(self == NULL) {
-        return;
-    }
-
-    self->used = 0;
-    self->offset = 0;
 }
 
 kjStr kj_string(kjAllocator* allocator, const char* s, isize size) {
@@ -1472,22 +1449,59 @@ kjStr kj_string_dup(kjStr s) {
     return kj_string(header->allocator, s, kj_string_size(s));
 }
 
-KJ_ASSERT_HANDLER(kj_assert_handler) {
+KJ_CONST KJ_INLINE const char* kj_priority_str(kjPriority priority) {
+    switch(priority) {
+#define KJ_LOG_CASE(type, name) case type: return (name);
+        KJ_PRIORITY_MAP(KJ_LOG_CASE)
+#undef KJ_LOG_CASE
+        default: return "Unknown";
+    }
+}
+
+KJ_LOG_HANDLER(kj_log_handler) {
     kj_unused(usr);
+    va_list v;
+    va_start(v, fmt);
 #if defined(KJ_SYS_WIN32) && defined(KJ_MESSAGE_BOX)
     static char buf[4096];
     kj_zero(buf, kj_isize_of(buf));
-    kj_snprintf(
+    isize used = kj_snprintf(
             buf, 4096,
-            "FILE: %s\nLINE: %ld\nFUNC: %s\nEXPR: %s\nMSG: %s",
-            file, line, fn, expr, msg == NULL ? "NONE": msg);
-    buf[4095] = '\0';
-    MessageBoxA(NULL, buf, "Assertion", MB_OK);
+            "FILE: %s\nLINE: %ld\nFUNC: %s\nPRIORITY: %s\nMSG:\n",
+            file, line, fn, kj_priority_str(priority));
+    used += kj_vsnprintf(buf + used, 4096 - used, fmt, v);
+    buf[used] = '\0';
+    MessageBoxA(NULL, buf, "Log", MB_OK);
 #else
     kj_printf(
-            "FILE: %s\nLINE: %ld\nFUNC: %s\nEXPR: %s\nMSG: %s",
-            file, line, fn, expr, msg == NULL ? "NONE": msg);
+            "FILE: %s\nLINE: %ld\nFUNC: %s\nPRIORITY: %s\nMSG:\n",
+            file, line, fn, kj_priority_str(priority));
+    kj_vprintf(fmt, v);
 #endif
+    va_end(v);
+}
+
+KJ_ASSERT_HANDLER(kj_assert_handler) {
+    kj_unused(usr);
+    va_list v;
+    va_start(v, fmt);
+#if defined(KJ_SYS_WIN32) && defined(KJ_MESSAGE_BOX)
+    static char buf[4096];
+    kj_zero(buf, kj_isize_of(buf));
+    isize used = kj_snprintf(
+            buf, 4096,
+            "FILE: %s\nLINE: %ld\nFUNC: %s\nEXPR: %s\nMSG:\n",
+            file, line, fn, expr);
+    used += kj_vsnprintf(buf + used, 4096 - used, fmt, v);
+    buf[used] = '\0';
+    MessageBoxA(NULL, buf, "Log", MB_OK);
+#else
+    kj_printf(
+            "FILE: %s\nLINE: %ld\nFUNC: %s\nEXPR: %s\nMSG:\n",
+            file, line, fn, expr);
+    kj_vprintf(fmt, v);
+#endif
+    va_end(v);
 }
 
 KJ_INLINE u16 kj_byte_swap_u16(u16 a) {
@@ -1526,7 +1540,10 @@ isize kj_printf(KJ_FMT_STR const char* fmt, ...) {
 isize kj_vsnprintf(char* buf, isize size, const char* fmt, va_list v) {
     isize res = -1;
 #if defined(KJ_COMPILER_MSVC)
+KJ_COMPILER_WARNING_BEGIN
+KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_DEPRECATED)
     res = _vsnprintf(buf, size, fmt, v);
+KJ_COMPILER_WARNING_END
 #else
     res = vsnprintf(buf, size, fmt, v);
 #endif
@@ -1987,9 +2004,12 @@ KJ_INLINE kjLibFn$ kj_lib_fn(kjLib* self, const char* name) {
         res.err = kj_err_from_sys(GetLastError());
     }
 #elif defined(KJ_SYS_LINUX)
+KJ_COMPILER_WARNING_BEGIN
+KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_PEDANTIC)
     if((res.val = kj_cast(kjLibFn, dlsym(self, name))) == NULL) {
         res.err = kj_err_from_sys(errno);
     }
+KJ_COMPILER_WARNING_END
 #endif
     return res;
 }
@@ -2652,7 +2672,8 @@ const char* kj_path_dir(const char* path, isize size, const char** end) {
     }
 
     const char* res = NULL;
-    size = kj_char_is_separator(path[size - 1]) ? size - 1: kj_str_size(path);
+    size = size == 0 ? kj_str_size(path): size;
+    size = kj_char_is_separator(path[size - 1]) ? size - 1: size;
     *end = kj_str_rfind(path, size, KJ_PATH_SEPARATOR);
     if(path[0] == KJ_PATH_SEPARATOR) {
         *end = *end == path ? *end + 1: *end;
@@ -2884,6 +2905,7 @@ b32 kj_path_is_file(const char* path) {
     }
 #elif defined(KJ_SYS_LINUX)
     struct stat st;
+    kj_zero(&st, kj_isize_of(struct stat));
     kj_syscall2(KJ_SYSCALL_STAT, res, path, &st);
     res = res == 0 ? S_ISREG(st.st_mode) != 0: KJ_FALSE;
 #endif
@@ -2907,6 +2929,7 @@ b32 kj_path_is_dir(const char* path) {
     }
 #elif defined(KJ_SYS_LINUX)
     struct stat st;
+    kj_zero(&st, kj_isize_of(struct stat));
     kj_syscall2(KJ_SYSCALL_STAT, res, path, &st);
     res = res == 0 ? S_ISDIR(st.st_mode) != 0: KJ_FALSE;
 #endif
