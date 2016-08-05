@@ -234,7 +234,7 @@ isize$ kj_socket_read(kjSocket* sock, void* buf, isize size) {
     };
     kj_zero(&res, kj_isize_of(isize$));
 
-    res.val = recv(
+    kj_ok(res) = recv(
             sock->handle,
 #if defined(KJ_SYS_WIN32)
             kj_cast(char*, buf),
@@ -244,7 +244,7 @@ isize$ kj_socket_read(kjSocket* sock, void* buf, isize size) {
             size,
 #endif
             0);
-    if(res.val == SOCKET_ERROR) {
+    if(kj_ok(res) == SOCKET_ERROR) {
 #if defined(KJ_SYS_WIN32)
         res.err = kj_err_from_sys(WSAGetLastError());
 #elif defined(KJ_SYS_LINUX)
@@ -263,7 +263,7 @@ isize$ kj_socket_write(kjSocket* sock, const void* buf, isize size) {
     }
     kj_zero(&res, kj_isize_of(isize$));
 
-    res.val = send(
+    kj_ok(res) = send(
             sock->handle,
 #if defined(KJ_SYS_WIN32)
             kj_cast(const char*, buf),
@@ -273,7 +273,7 @@ isize$ kj_socket_write(kjSocket* sock, const void* buf, isize size) {
             size,
 #endif
             0);
-    if(res.val == SOCKET_ERROR) {
+    if(kj_ok(res) == SOCKET_ERROR) {
 #if defined(KJ_SYS_WIN32)
         res.err = kj_err_from_sys(WSAGetLastError());
 #elif defined(KJ_SYS_LINUX)
