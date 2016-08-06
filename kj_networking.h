@@ -58,8 +58,8 @@ KJ_API kjErr kj_socket_connect(kjSocket* sock, const char* ip, u16 port);
 KJ_API kjErr kj_socket_bind(kjSocket* sock, u16 port, b32 local);
 KJ_API kjErr kj_socket_listen(kjSocket* sock, i32 max_conn);
 KJ_API kjErr kj_socket_accept(kjSocket* sock, kjSocket* client);
-KJ_API isize$ kj_socket_read(kjSocket* sock, void* buf, isize size);
-KJ_API isize$ kj_socket_write(kjSocket* sock, const void* buf, isize size);
+KJ_API isize kj_socket_read(kjSocket* sock, void* buf, isize size);
+KJ_API isize kj_socket_write(kjSocket* sock, const void* buf, isize size);
 
 KJ_EXTERN_END
 
@@ -225,16 +225,14 @@ kjErr kj_socket_accept(kjSocket* sock, kjSocket* client) {
     return res;
 }
 
-isize$ kj_socket_read(kjSocket* sock, void* buf, isize size) {
-    isize$ res;
+isize kj_socket_read(kjSocket* sock, void* buf, isize size) {
     if(sock == NULL || sock->handle == INVALID_SOCKET ||
        buf == NULL || size <= 0) {
-        res.err = KJ_ERR_INVALID_PARAMETER;
-        return res;
+        return KJ_ERR_INVALID_PARAMETER;
     };
-    kj_zero(&res, kj_isize_of(isize$));
 
-    kj_ok(res) = recv(
+    isize res = KJ_ERR_NONE;
+    res = recv(
             sock->handle,
 #if defined(KJ_SYS_WIN32)
             kj_cast(char*, buf),
@@ -244,26 +242,24 @@ isize$ kj_socket_read(kjSocket* sock, void* buf, isize size) {
             size,
 #endif
             0);
-    if(kj_ok(res) == SOCKET_ERROR) {
+    if(res == SOCKET_ERROR) {
 #if defined(KJ_SYS_WIN32)
-        res.err = kj_err_from_sys(WSAGetLastError());
+        res = kj_err_from_sys(WSAGetLastError());
 #elif defined(KJ_SYS_LINUX)
-        res.err = kj_err_from_sys(errno);
+        res = kj_err_from_sys(errno);
 #endif
     }
     return res;
 }
 
-isize$ kj_socket_write(kjSocket* sock, const void* buf, isize size) {
-    isize$ res;
+isize kj_socket_write(kjSocket* sock, const void* buf, isize size) {
     if(sock == NULL || sock->handle == INVALID_SOCKET ||
        buf == NULL || size <= 0) {
-        res.err = KJ_ERR_INVALID_PARAMETER;
-        return res;
+        return KJ_ERR_INVALID_PARAMETER;
     }
-    kj_zero(&res, kj_isize_of(isize$));
 
-    kj_ok(res) = send(
+    isize res = KJ_ERR_NONE;
+    res = send(
             sock->handle,
 #if defined(KJ_SYS_WIN32)
             kj_cast(const char*, buf),
@@ -273,11 +269,11 @@ isize$ kj_socket_write(kjSocket* sock, const void* buf, isize size) {
             size,
 #endif
             0);
-    if(kj_ok(res) == SOCKET_ERROR) {
+    if(res == SOCKET_ERROR) {
 #if defined(KJ_SYS_WIN32)
-        res.err = kj_err_from_sys(WSAGetLastError());
+        res = kj_err_from_sys(WSAGetLastError());
 #elif defined(KJ_SYS_LINUX)
-        res.err = kj_err_from_sys(errno);
+        res = kj_err_from_sys(errno);
 #endif
     }
     return res;

@@ -23,7 +23,7 @@
 KJ_EXTERN_BEGIN
 
 enum {
-    KJ_THREADING_FLAG_NONE = KJ_BIT_FLAG_NONE
+    KJ_THREAD_NONE = KJ_BIT_FLAG_NONE
 };
 
 #if defined(KJ_SYS_WIN32)
@@ -90,16 +90,16 @@ KJ_API void kj_thread_join(kjThread* thread);
 KJ_API void kj_thread_detach(kjThread* thread);
 
 KJ_API kjErr kj_mutex(kjMutex* mutex);
+KJ_API void kj_mutex_destroy(kjMutex* mutex);
 KJ_API void kj_mutex_lock(kjMutex* mutex);
 KJ_API b32 kj_mutex_try_lock(kjMutex* mutex);
 KJ_API void kj_mutex_unlock(kjMutex* mutex);
-KJ_API void kj_mutex_destroy(kjMutex* mutex);
 
-KJ_API kjErr kj_semaphore(kjSemaphore* semaphore, i32 count, i32 max);
+KJ_API kjErr kj_semaphore(kjSemaphore* semaphore, i32 count);
+KJ_API void kj_semaphore_destroy(kjSemaphore* semaphore);
 KJ_API b32 kj_semaphore_wait(kjSemaphore* semaphore);
 KJ_API b32 kj_semaphore_try_wait(kjSemaphore* semaphore);
 KJ_API void kj_semaphore_signal(kjSemaphore* semaphore, i32 count);
-KJ_API void kj_semaphore_destroy(kjSemaphore* semaphore);
 
 KJ_API void kj_atomic_read_fence(void);
 KJ_API void kj_atomic_write_fence(void);
@@ -226,6 +226,18 @@ kjErr kj_mutex(kjMutex* mutex) {
     return res;
 }
 
+KJ_INLINE void kj_mutex_destroy(kjMutex* mutex) {
+    if(mutex == NULL) {
+        return;
+    }
+
+#if defined(KJ_SYS_WIN32)
+    DeleteCriticalSection(mutex);
+#elif defined(KJ_SYS_LINUX)
+    pthread_mutex_destroy(mutex);
+#endif
+}
+
 KJ_INLINE void kj_mutex_lock(kjMutex* mutex) {
     if(mutex == NULL) {
         return;
@@ -262,35 +274,34 @@ KJ_INLINE void kj_mutex_unlock(kjMutex* mutex) {
 #endif
 }
 
-KJ_INLINE void kj_mutex_destroy(kjMutex* mutex) {
-    if(mutex == NULL) {
-        return;
-    }
-
-#if defined(KJ_SYS_WIN32)
-    DeleteCriticalSection(mutex);
-#elif defined(KJ_SYS_LINUX)
-    pthread_mutex_destroy(mutex);
-#endif
-}
-
-kjErr kj_semaphore(kjSemaphore* semaphore, i32 count, i32 max) {
+kjErr kj_semaphore(kjSemaphore* semaphore, i32 count) {
     if(semaphore == NULL || count <= 0) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
     kjErr res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
-    if((*semaphore = CreateSemaphore(NULL, count, max, NULL)) == NULL) {
+    if((*semaphore = CreateSemaphore(NULL, count, count, NULL)) == NULL) {
         res = kj_err_from_sys(GetLastError());
     }
 #elif defined(KJ_SYS_LINUX)
-    kj_unused(max);
     if(sem_init(semaphore, 0, count) == -1) {
         res = kj_err_from_sys(errno);
     }
 #endif
     return res;
+}
+
+KJ_INLINE void kj_semaphore_destroy(kjSemaphore* semaphore) {
+    if(semaphore == NULL) {
+        return;
+    }
+
+#if defined(KJ_SYS_WIN32)
+    CloseHandle(semaphore);
+#elif defined(KJ_SYS_LINUX)
+    sem_destroy(semaphore);
+#endif
 }
 
 KJ_INLINE b32 kj_semaphore_wait(kjSemaphore* semaphore) {
@@ -330,18 +341,6 @@ KJ_INLINE void kj_semaphore_signal(kjSemaphore* semaphore, i32 count) {
     while(count-- > 0) {
         sem_post(semaphore);
     }
-#endif
-}
-
-KJ_INLINE void kj_semaphore_destroy(kjSemaphore* semaphore) {
-    if(semaphore == NULL) {
-        return;
-    }
-
-#if defined(KJ_SYS_WIN32)
-    CloseHandle(semaphore);
-#elif defined(KJ_SYS_LINUX)
-    sem_destroy(semaphore);
 #endif
 }
 
