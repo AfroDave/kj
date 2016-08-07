@@ -24,5 +24,6 @@ kj_gl.h
 kj_gpu.h
 kj_gfx.h
 kj_array.h
+kj_toml.h
 
 glcorearb.h

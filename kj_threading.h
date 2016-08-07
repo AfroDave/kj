@@ -172,9 +172,9 @@ kjErr kj_thread(kjThread* thread, kjThreadFn* fn, void* data, u32 flags) {
         thread->flags = flags;
     }
 #elif defined(KJ_SYS_LINUX)
-    if(kj_err_from_sys(pthread_create(
-        &thread->handle, NULL, kj_cast(void* (*)(void*), fn), data))
-            == KJ_ERR_NONE) {
+    res = kj_err_from_sys(pthread_create(
+        &thread->handle, NULL, kj_cast(void* (*)(void*), fn), data));
+    if(kj_is_ok(res)) {
         thread->id = kj_atomic_inc_u32(&THREAD_COUNTER);
         thread->ctx.fn = fn;
         thread->ctx.data = data;

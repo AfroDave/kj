@@ -95,31 +95,28 @@ KJ_EXTERN_BEGIN
 #define KJ_COMPILER_WARNING_ANONYMOUS_STRUCT 4201
 #define KJ_COMPILER_WARNING_MISSING_BRACES
 #define KJ_COMPILER_WARNING_DEPRECATED 4996
-#define KJ_COMPILER_WARNING_VARIADIC_MACRO
 #elif defined(__clang__)
 #define KJ_COMPILER_CLANG
 #define KJ_PRAGMA(...) _Pragma(kj_str_of(__VA_ARGS__))
-#define KJ_COMPILER_WARNING_BEGIN _Pragma(kj_str_of(clang diagnostic push))
-#define KJ_COMPILER_WARNING_END _Pragma(kj_str_of(clang diagnostic pop))
+#define KJ_COMPILER_WARNING_BEGIN _Pragma("clang diagnostic push")
+#define KJ_COMPILER_WARNING_END _Pragma("clang diagnostic pop")
 #define KJ_COMPILER_WARNING(W) _Pragma(kj_str_of(clang diagnostic ignored W))
 #define KJ_COMPILER_WARNING_PEDANTIC "-Wpedantic"
 #define KJ_COMPILER_WARNING_ZERO_SIZED_ARRAY "-Wzero-length-array"
 #define KJ_COMPILER_WARNING_ANONYMOUS_STRUCT KJ_COMPILER_WARNING_PEDANTIC
 #define KJ_COMPILER_WARNING_MISSING_BRACES "-Wmissing-braces"
-#define KJ_COMPILER_WARNING_VARIADIC_MACRO "-Wgnu-zero-variadic-macro-arguments"
 #define KJ_COMPILER_WARNING_DEPRECATED KJ_COMPILER_WARNING_PEDANTIC
 #elif defined(__GNUC__) || defined(__GNUG__)
 #define KJ_COMPILER_GNU
 #define KJ_PRAGMA(...) _Pragma(kj_str_of(__VA_ARGS__))
-#define KJ_COMPILER_WARNING_BEGIN _Pragma(kj_str_of(GCC diagnostic push))
-#define KJ_COMPILER_WARNING_END _Pragma(kj_str_of(GCC diagnostic pop))
+#define KJ_COMPILER_WARNING_BEGIN _Pragma("GCC diagnostic push")
+#define KJ_COMPILER_WARNING_END _Pragma("GCC diagnostic pop")
 #define KJ_COMPILER_WARNING(W) _Pragma(kj_str_of(GCC diagnostic ignored W))
 #define KJ_COMPILER_WARNING_PEDANTIC "-Wpedantic"
 #define KJ_COMPILER_WARNING_ZERO_SIZED_ARRAY KJ_COMPILER_WARNING_PEDANTIC
 #define KJ_COMPILER_WARNING_ANONYMOUS_STRUCT KJ_COMPILER_WARNING_PEDANTIC
 #define KJ_COMPILER_WARNING_MISSING_BRACES "-Wmissing-braces"
 #define KJ_COMPILER_WARNING_DEPRECATED KJ_COMPILER_WARNING_PEDANTIC
-#define KJ_COMPILER_WARNING_VARIADIC_MACRO KJ_COMPILER_WARNING_PEDANTIC
 #else
 #error Unsupported Compiler
 #endif
@@ -1050,12 +1047,13 @@ KJ_API void kj_read_dir_end(kjReadDir* self);
 typedef struct kjBuffer {
     kjAllocator* allocator;
     isize granularity;
+    isize capacity;
     isize size;
-    isize used;
     u8* data;
 } kjBuffer;
 
-KJ_API kjBuffer kj_buffer(kjAllocator* allocator, isize granularity);
+KJ_API kjErr kj_buffer(
+        kjBuffer* self, kjAllocator* allocator, isize granularity);
 KJ_API void kj_buffer_destroy(kjBuffer* self);
 KJ_API kjErr kj_buffer_write(kjBuffer* self, const void* buf, isize size);
 KJ_API void kj_buffer_reset(kjBuffer* self);
@@ -1503,6 +1501,7 @@ isize kj_vprintf(const char* fmt, va_list v) {
 isize kj_printf(KJ_FMT_STR const char* fmt, ...) {
     isize res = -1;
     va_list v;
+    kj_zero(&v, kj_isize_of(v));
     va_start(v, fmt);
     res = kj_vprintf(fmt, v);
     va_end(v);
@@ -1525,6 +1524,7 @@ KJ_COMPILER_WARNING_END
 isize kj_snprintf(char* buf, isize size, KJ_FMT_STR const char* fmt, ...) {
     isize res = -1;
     va_list v;
+    kj_zero(&v, kj_isize_of(v));
     va_start(v,fmt);
     res = kj_vsnprintf(buf, size, fmt, v);
     va_end(v);
@@ -1669,6 +1669,7 @@ kjErr kj_str_to_u64(u64* value, const char* s, isize size) {
     }
 
     kjErr res = KJ_ERR_NONE;
+    *value = 0;
     size = size == 0 ? kj_str_size(s): size;
     u64 base = 10;
     u64 overflow = KJ_U64_MAX;
@@ -1731,10 +1732,10 @@ kjErr kj_str_to_i64(i64* value, const char* s, isize size) {
 
     kjErr res = KJ_ERR_NONE;
     size = size == 0 ? kj_str_size(s): size;
-    i64 sign = *s == '-' ? s++, -1: 1;
+    i64 sign = *s == '-' ? s++, -1: *s == '+' ? s++, 1: 1;
     u64 u;
     if(kj_is_ok(kj_str_to_u64(&u, s, size))) {
-        if(kj_cast(i64, u) <= KJ_I64_MAX) {
+        if(u <= KJ_I64_MAX) {
             *value = kj_cast(i64, u) * sign;
         } else {
             res = KJ_ERR_RANGE;
@@ -2010,6 +2011,10 @@ void kj_sort_insertion(void* arr, isize count, kjCmpFn cmp, kjSwapFn swap) {
 
 #if defined(KJ_SYS_WIN32)
 KJ_INLINE void kj__systime_to_datetime(SYSTEMTIME* st, kjDateTime* dt) {
+#elif defined(KJ_SYS_LINUX)
+KJ_INLINE void kj__systime_to_datetime(struct tm* tm, kjDateTime* dt) {
+#endif
+#if defined(KJ_SYS_WIN32)
     dt->year = st->wYear;
     dt->month = st->wMonth;
     dt->day = st->wDay;
@@ -2017,24 +2022,45 @@ KJ_INLINE void kj__systime_to_datetime(SYSTEMTIME* st, kjDateTime* dt) {
     dt->minute = st->wMinute;
     dt->second = st->wSecond;
     dt->millisecond = st->wMilliseconds;
+    dt->tz = 0;
+#elif defined(KJ_SYS_LINUX)
+    dt->year = 1900 + tm->tm_year;
+    dt->month = tm->tm_mon + 1;
+    dt->day = tm->tm_mday;
+    dt->hour = tm->tm_hour;
+    dt->minute = tm->tm_min;
+    dt->second = tm->tm_sec;
+    dt->millisecond = 0;
+    dt->tz = 0;
+#endif
 }
 
+#if defined(KJ_SYS_WIN32)
 KJ_INLINE u64 kj__filetime_to_unix(FILETIME* ft) {
     ULARGE_INTEGER ul;
     ul.LowPart = ft->dwLowDateTime;
     ul.HighPart = ft->dwHighDateTime;
     return ul.QuadPart / 10000000 - 11644473600;
 }
+#endif
 
 u64 kj_timestamp_utc(void) {
+#if defined(KJ_SYS_WIN32)
     FILETIME ft;
     GetSystemTimeAsFileTime(&ft);
     return kj__filetime_to_unix(&ft);
+#elif defined(KJ_SYS_LINUX)
+    time_t t;
+    time(&t);
+    return kj_cast(u64, t);
+#endif
 }
 
 u64 kj_datetime_to_timestamp(kjDateTime dt) {
-    u64 res;
+    u64 res = KJ_U64_MAX;
+#if defined(KJ_SYS_WIN32)
     SYSTEMTIME st;
+    kj_zero(&st, kj_isize_of(st));
     st.wYear = dt.year;
     st.wMonth = dt.month;
     st.wDay = dt.day;
@@ -2045,63 +2071,9 @@ u64 kj_datetime_to_timestamp(kjDateTime dt) {
     FILETIME ft;
     SystemTimeToFileTime(&st, &ft);
     res = kj__filetime_to_unix(&ft);
-    return res;
-}
-
-kjDateTime kj_datetime_utc(void) {
-    kjDateTime res;
-    SYSTEMTIME st = {0};
-    GetSystemTime(&st);
-    kj__systime_to_datetime(&st, &res);
-    res.tz = 0;
-    return res;
-}
-
-kjDateTime kj_datetime_local(void) {
-    kjDateTime res;
-    SYSTEMTIME st = {0};
-    GetLocalTime(&st);
-    kj__systime_to_datetime(&st, &res);
-    TIME_ZONE_INFORMATION tz = {0};
-    switch(GetTimeZoneInformation(&tz)) {
-        case 0: { res.tz = kj_cast(i16, tz.Bias); } break;
-        case 1: { res.tz = kj_cast(i16, tz.StandardBias); } break;
-        case 2: { res.tz = kj_cast(i16, tz.DaylightBias); } break;
-    }
-    return res;
-}
-
-u64 kj_time_ms(void) {
-    static LARGE_INTEGER freq = {{0}};
-    if(freq.QuadPart == 0) {
-        QueryPerformanceFrequency(&freq);
-    }
-    LARGE_INTEGER counter;
-    QueryPerformanceCounter(&counter);
-    return (kj_cast(u64, counter.QuadPart) * 1000) /
-        kj_cast(u64, freq.QuadPart);
-}
 #elif defined(KJ_SYS_LINUX)
-KJ_INLINE void kj__systime_to_datetime(struct tm* tm, kjDateTime* dt) {
-    dt->year = 1900 + tm->tm_year;
-    dt->month = tm->tm_mon + 1;
-    dt->day = tm->tm_mday;
-    dt->hour = tm->tm_hour;
-    dt->minute = tm->tm_min;
-    dt->second = tm->tm_sec;
-    dt->millisecond = 0;
-    dt->tz = 0;
-}
-
-u64 kj_timestamp_utc(void) {
-    time_t t;
-    time(&t);
-    return kj_cast(u64, t);
-}
-
-u64 kj_datetime_to_timestamp(kjDateTime dt) {
-    u64 res = 0;
     struct tm tm;
+    kj_zero(&tm, kj_isize_of(struct tm));
     tm.tm_year = dt.year - 1900;
     tm.tm_mon = dt.month - 1;
     tm.tm_mday = dt.day;
@@ -2110,39 +2082,71 @@ u64 kj_datetime_to_timestamp(kjDateTime dt) {
     tm.tm_sec = dt.second;
     time_t t = mktime(&tm);
     res = kj_cast(u64, t);
+#endif
     return res;
 }
 
 kjDateTime kj_datetime_utc(void) {
     kjDateTime res;
+#if defined(KJ_SYS_WIN32)
+    SYSTEMTIME st;
+    kj_zero(&st, kj_isize_of(st));
+    GetSystemTime(&st);
+    kj__systime_to_datetime(&st, &res);
+    res.tz = 0;
+#elif defined(KJ_SYS_LINUX)
     time_t t;
     time(&t);
     struct tm* tm = gmtime(&t);
     kj__systime_to_datetime(tm, &res);
+#endif
     return res;
 }
 
 kjDateTime kj_datetime_local(void) {
     kjDateTime res;
+#if defined(KJ_SYS_WIN32)
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    kj__systime_to_datetime(&st, &res);
+    TIME_ZONE_INFORMATION tz;
+    switch(GetTimeZoneInformation(&tz)) {
+        case 0: { res.tz = kj_cast(i16, tz.Bias); } break;
+        case 1: { res.tz = kj_cast(i16, tz.StandardBias); } break;
+        case 2: { res.tz = kj_cast(i16, tz.DaylightBias); } break;
+    }
+#elif defined(KJ_SYS_LINUX)
     time_t t;
     time(&t);
     struct tm* tm = localtime(&t);
-    res.year = 1900 + tm->tm_year;
-    res.month = tm->tm_mon + 1;
-    res.day = tm->tm_mday;
-    res.hour = tm->tm_hour;
-    res.minute = tm->tm_min;
-    res.second = tm->tm_sec;
-    res.millisecond = 0;
+    kj__systime_to_datetime(tm, &res);
+#endif
     return res;
 }
 
-u64 kj_time_ms(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (ts.tv_sec + ts.tv_nsec) / 1000000;
-}
+#if defined(KJ_SYS_LINUX)
+#if defined(CLOCK_MONOTONIC_RAW)
+#define KJ_CLOCK_MONOTONIC CLOCK_MONOTONIC_RAW
+#else
+#define KJ_CLOCK_MONOTONIC CLOCK_MONOTONIC
 #endif
+#endif
+
+u64 kj_time_ms(void) {
+#if defined(KJ_SYS_WIN32)
+    static LARGE_INTEGER freq = {0};
+    if(freq.QuadPart == 0) {
+        QueryPerformanceFrequency(&freq);
+    }
+    LARGE_INTEGER counter;
+    QueryPerformanceCounter(&counter);
+    return kj_cast(u64, counter.QuadPart * 1000 / freq.QuadPart);
+#elif defined(KJ_SYS_LINUX)
+    struct timespec ts;
+    clock_gettime(KJ_CLOCK_MONOTONIC, &ts);
+    return kj_cast(u64, ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+#endif
+}
 
 u32 kj_hash_str(const char* s, isize size) {
     if(s == NULL || size < 0) {
@@ -2395,7 +2399,8 @@ isize kj_file_read_at(const kjFile* self, void* buf, isize size, i64 offset) {
 
     isize res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
-    OVERLAPPED overlapped = {0};
+    OVERLAPPED overlapped;
+    kj_zero(&overlapped, kj_isize_of(OVERLAPPED));
     overlapped.Offset = kj_cast(u32, ((offset >> 0) & 0xFFFFFFFF));
     overlapped.OffsetHigh = kj_cast(u32, ((offset >> 32) & 0xFFFFFFFF));
     DWORD read = 0;
@@ -2419,7 +2424,8 @@ isize kj_file_write_at(
 
     isize res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
-    OVERLAPPED overlapped = {0};
+    OVERLAPPED overlapped;
+    kj_zero(&overlapped, kj_isize_of(OVERLAPPED));
     overlapped.Offset = kj_cast(u32, ((offset >> 0) & 0xFFFFFFFF));
     overlapped.OffsetHigh = kj_cast(u32, ((offset >> 32) & 0xFFFFFFFF));
     DWORD wrote = 0;
@@ -2459,7 +2465,7 @@ kjErr kj_file_metadata(kjFileMetadata* self, const kjFile* file) {
 
     kjErr res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
-    BY_HANDLE_FILE_INFORMATION info = {0};
+    BY_HANDLE_FILE_INFORMATION info;
     if(GetFileInformationByHandle(*file, &info)) {
         self->size =
             (kj_cast(i64, info.nFileSizeHigh) << 32) |
@@ -2949,11 +2955,18 @@ void kj_read_dir_end(kjReadDir* self) {
 #endif
 }
 
-kjBuffer kj_buffer(kjAllocator* allocator, isize granularity) {
-    kjBuffer res;
-    kj_zero(&res, kj_isize_of(kjBuffer));
-    res.granularity = granularity;
-    res.allocator = allocator;
+kjErr kj_buffer(
+        kjBuffer* self, kjAllocator* allocator, isize granularity) {
+    if(self == NULL || allocator == NULL || granularity <= 0) {
+        return KJ_ERR_INVALID_PARAMETER;
+    }
+
+    kjErr res = KJ_ERR_NONE;
+    self->data = NULL;
+    self->capacity = 0;
+    self->size = 0;
+    self->granularity = granularity;
+    self->allocator = allocator;
     return res;
 }
 
@@ -2970,8 +2983,8 @@ kjErr kj_buffer_write(kjBuffer* self, const void* buf, isize size) {
     }
 
     isize res = KJ_ERR_NONE;
-    if(self->used + size > self->size) {
-        isize new_size = kj_round_to(self->size + size, self->granularity);
+    if(self->size + size > self->capacity) {
+        isize new_size = kj_round_to(self->capacity + size, self->granularity);
         void* new_data = NULL;
         if(self->data) {
              new_data = kj_allocator_realloc(
@@ -2981,19 +2994,19 @@ kjErr kj_buffer_write(kjBuffer* self, const void* buf, isize size) {
         }
         if(new_data) {
             self->data = kj_cast(u8*, new_data);
-            self->size = size;
+            self->capacity = size;
         } else {
             res = KJ_ERR_ALLOC_FAILED;
         }
     }
     if(kj_is_ok(res)) {
-        kj_copy(self->data + self->used, buf, size);
-        self->used += size;
+        kj_copy(self->data + self->size, buf, size);
+        self->size += size;
     }
 
 #if defined(KJ_DEBUG)
-    if(self->used < self->size) {
-        self->data[self->used] = '\0';
+    if(self->size < self->capacity) {
+        self->data[self->size] = '\0';
     }
 #endif
 
@@ -3038,30 +3051,36 @@ isize kj_file_dialog(char* path, isize size, u32 mode, const char* filters) {
                 KJ__WCHAR_BUFB[i] = '\0';
             }
         }
-        OPENFILENAMEW ofn = {0};
+        OPENFILENAMEW ofn;
+        kj_zero(&ofn, kj_isize_of(OPENFILENAMEW));
         ofn.lStructSize = kj_isize_of(OPENFILENAMEW);
+        ofn.hwndOwner = GetActiveWindow();
         ofn.lpstrFilter = KJ__WCHAR_BUFB;
-        ofn.nFilterIndex = 1;
         ofn.lpstrFile = KJ__WCHAR_BUFA;
-        ofn.lpstrFile[0] = '\0';
         ofn.nMaxFile = KJ_PATH_MAX;
-        ofn.lpstrInitialDir = NULL;
-        ofn.lpstrTitle = mode & KJ_DIALOG_OPEN ? L"Open...": L"Save...";
-        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST |
-            OFN_NOLONGNAMES | OFN_NOCHANGEDIR;
+        ofn.lpstrTitle = mode & KJ_DIALOG_OPEN ? L"Open": L"Save As";
+        ofn.Flags =
+            OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST |
+            OFN_NOLONGNAMES | OFN_NOCHANGEDIR | OFN_CREATEPROMPT;
         b32 success = mode & KJ_DIALOG_OPEN ?
             GetOpenFileNameW(&ofn): GetSaveFileNameW(&ofn);
         if(success) {
             res = kj_ucs_to_utf8(path, kj_cast(i32, size), KJ__WCHAR_BUFA);
         } else {
-            res = kj_err_from_sys(GetLastError());
+            switch(CommDlgExtendedError()) {
+                case 0x3003: { res = KJ_ERR_RANGE; } break;
+                case 0x3002: { res = KJ_ERR_NOT_FOUND; } break;
+                default: { res = KJ_ERR_UNKNOWN; } break;
+            }
         }
     }
 #else
     if(gtk_init_check(NULL, NULL)) {
+        GtkWidget* gwindow = gtk_window_new(GTK_WINDOW_POPUP);
         GtkWidget* gdialog = gtk_file_chooser_dialog_new(
-                mode & KJ_DIALOG_OPEN ? "Open...": "Save...",
-                NULL, mode & KJ_DIALOG_OPEN ? GTK_FILE_CHOOSER_ACTION_OPEN:
+                mode & KJ_DIALOG_OPEN ? "Open": "Save As",
+                GTK_WINDOW(gwindow),
+                mode & KJ_DIALOG_OPEN ? GTK_FILE_CHOOSER_ACTION_OPEN:
                 GTK_FILE_CHOOSER_ACTION_SAVE, "_Cancel", GTK_RESPONSE_CANCEL,
                 mode & KJ_DIALOG_OPEN ? "_Open": "_Save", GTK_RESPONSE_ACCEPT,
                 NULL);
@@ -3134,12 +3153,16 @@ isize kj_file_dialog(char* path, isize size, u32 mode, const char* filters) {
         } else {
             res = KJ_ERR_RANGE;
         }
+        while(gtk_events_pending()) {
+            gtk_main_iteration();
+        }
         gtk_widget_destroy(gdialog);
+        gtk_widget_destroy(gwindow);
     } else {
         res = kj_err_from_sys(errno);
     }
 #endif
-    return kj_cast(kjErr, res);
+    return res;
 }
 #endif
 
