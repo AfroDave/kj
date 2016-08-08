@@ -507,8 +507,8 @@ typedef enum kjErr {
 
 KJ_API const char* kj_err_str(kjErr err);
 
-#define kj_is_ok(v) (!(v < KJ_ERR_NONE))
-#define kj_is_err(v) (v < KJ_ERR_NONE)
+#define kj_is_ok(v) (!((v) < KJ_ERR_NONE))
+#define kj_is_err(v) ((v) < KJ_ERR_NONE)
 
 /// Memory
 
@@ -819,28 +819,20 @@ KJ_API b32 kj_char_is_separator(u32 c);
 KJ_API u32 kj_char_to_lower(u32 c);
 KJ_API u32 kj_char_to_upper(u32 c);
 
-KJ_API isize kj_str_size_limit(const char* s, isize limit);
-KJ_API isize kj_str_size(const char* s);
-
-KJ_API isize kj_str_cmp_limit(const char* s1, const char* s2, isize limit);
-KJ_API isize kj_str_cmp(const char* s1, const char* s2);
-KJ_API isize kj_str_case_cmp_limit(const char* s1, const char* s2, isize limit);
-KJ_API isize kj_str_case_cmp(const char* s1, const char* s2);
-
-KJ_API kjErr kj_str_to_u64(u64* value, const char* s, isize size);
-KJ_API kjErr kj_str_to_i64(i64* value, const char* s, isize size);
-
+KJ_API isize kj_str_size(const char* s, isize size);
+KJ_API isize kj_str_cmp(const char* s1, const char* s2, isize size);
+KJ_API isize kj_str_case_cmp(const char* s1, const char* s2, isize size);
+KJ_API isize kj_str_to_u64(u64* value, const char* s, isize size);
+KJ_API isize kj_str_to_i64(i64* value, const char* s, isize size);
+KJ_API isize kj_str_to_f64(f64* value, const char* s, isize size);
 KJ_API const char* kj_str_find(const char* s, isize size, char c);
 KJ_API const char* kj_str_rfind(const char* s, isize size, char c);
-
 KJ_API char* kj_str_replace_char(char* s, isize size, char o, char n);
-
 KJ_API const char* kj_str_trim(const char* s, isize size, const char** end);
 KJ_API const char* kj_str_ltrim(const char* s, isize size);
 KJ_API const char* kj_str_rtrim(const char* s, isize size);
 
-KJ_API isize kj_utf8_count_limit(const char* s, isize limit);
-KJ_API isize kj_utf8_count(const char* s);
+KJ_API isize kj_utf8_count(const char* s, isize size);
 
 #if defined(KJ_SYS_WIN32)
 KJ_API i32 kj_utf8_to_ucs(WCHAR* ws, i32 count, const char* s);
@@ -1283,7 +1275,7 @@ kjStr kj_string(kjAllocator* allocator, const char* s, isize size) {
     }
 
     kjStr res = NULL;
-    size = size == 0 ? kj_str_size(s): size;
+    size = size == 0 ? kj_str_size(s, 0): size;
     kjStrHeader* header = kj_cast(kjStrHeader*, kj_allocator_alloc(
             allocator, kj_isize_of(kjStrHeader) + size + 1));
     if(header) {
@@ -1625,80 +1617,73 @@ KJ_INLINE u32 kj_char_to_upper(u32 c) {
     return c;
 }
 
-KJ_INLINE isize kj_str_size_limit(const char* s, isize limit) {
+KJ_INLINE isize kj_str_size(const char* s, isize size) {
     const char* e = s;
-    while(*e && limit--) { e++; }
+    while(e < (s + size) || (*e && size == 0)) {
+        e++;
+    }
     return (e - s);
 }
 
-KJ_INLINE isize kj_str_size(const char* s) {
-    const char* e = s;
-    while(*e) { e++; }
-    return (e - s);
-}
-
-KJ_INLINE isize kj_str_cmp_limit(const char* s1, const char* s2, isize limit) {
-    if(!limit--) return 0;
-    for(; *s1 && *s2 && limit && *s1 == *s2; s1++, s2++, limit--);
+KJ_INLINE isize kj_str_cmp(const char* s1, const char* s2, isize size) {
+    if(size == 0) {
+        for(; *s1 == *s2 && *s1; s1++, s2++);
+    } else {
+        if(!size--) return 0;
+        for(; *s1 && *s2 && size && *s1 == *s2; s1++, s2++, size--);
+    }
     return *s1 - *s2;
 }
 
-KJ_INLINE isize kj_str_cmp(const char* s1, const char* s2) {
-    for(; *s1 == *s2 && *s1; s1++, s2++);
+KJ_INLINE isize kj_str_case_cmp(const char* s1, const char* s2, isize size) {
+    if(size == 0) {
+        for(; *s1 && kj_char_to_lower(*s1) == kj_char_to_lower(*s2);
+                s1++, s2++);
+    } else {
+        if(!size--) return 0;
+        for(; *s1 && *s2 && size &&
+                kj_char_to_lower(*s1) == kj_char_to_lower(*s2);
+                s1++, s2++, size--);
+    }
     return *s1 - *s2;
 }
 
-KJ_INLINE isize kj_str_case_cmp_limit(
-        const char* s1, const char* s2, isize limit) {
-    if(!limit--) return 0;
-    for(; *s1 && *s2 && limit &&
-            (*s1 == *s2 || kj_char_to_lower(*s1) == kj_char_to_lower(*s2));
-            s1++, s2++, limit--);
-    return *s1 - *s2;
-}
-
-KJ_INLINE isize kj_str_case_cmp(const char* s1, const char* s2) {
-    for(; (*s1 == *s2 || kj_char_to_lower(*s1) == kj_char_to_lower(*s2)) &&
-            *s1; s1++, s2++);
-    return *s1 - *s2;
-}
-
-kjErr kj_str_to_u64(u64* value, const char* s, isize size) {
+isize kj_str_to_u64(u64* value, const char* s, isize size) {
     if(value == NULL || s == NULL || size < 0) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
-    kjErr res = KJ_ERR_NONE;
+    isize res = KJ_ERR_NONE;
     *value = 0;
-    size = size == 0 ? kj_str_size(s): size;
+    size = size == 0 ? kj_str_size(s, 0): size;
     u64 base = 10;
-    u64 overflow = KJ_U64_MAX;
-    if(*s == '0'){
-        if(kj_str_case_cmp_limit(s, "0x", 2) == 0) {
+    if(*s == '0' && size > 1){
+        if(kj_str_case_cmp(s, "0x", 2) == 0) {
             base = 16;
             s += 2;
-        } elif(kj_str_case_cmp_limit(s, "0o", 2) == 0) {
+        } elif(kj_str_case_cmp(s, "0o", 2) == 0) {
             base = 8;
             s += 2;
-        } elif(kj_str_case_cmp_limit(s, "0b", 2) == 0) {
+        } elif(kj_str_case_cmp(s, "0b", 2) == 0) {
             base = 2;
             s += 2;
         } else {
             base = 0;
             res = KJ_ERR_SYNTAX;
         }
-        overflow = KJ_U64_MAX / base + 1;
     }
     if(base > 0) {
+        u64 overflow = KJ_U64_MAX / base + 1;
         u64 v;
         for(isize i = 0; i < size; i++) {
-            char c = s[i];
-            if(c >= '0' && c <= '9') {
-                v = c - '0';
-            } elif(base == 16 && c >= 'a' && c <= 'f') {
-                v = c - 'a' + 10;
-            } elif(base == 16 && c >= 'A' && c <= 'F') {
-                v = c - 'A' + 10;
+            if(s[i] >= '0' && s[i] <= '9') {
+                v = s[i] - '0';
+            } elif(base == 16 && s[i] >= 'a' && s[i] <= 'f') {
+                v = s[i] - 'a' + 10;
+            } elif(base == 16 && s[i] >= 'A' && s[i] <= 'F') {
+                v = s[i] - 'A' + 10;
+            } elif(s[i] == '_') {
+                continue;
             } else {
                 res = KJ_ERR_SYNTAX;
                 break;
@@ -1720,26 +1705,57 @@ kjErr kj_str_to_u64(u64* value, const char* s, isize size) {
                 break;
             }
             *value = tmp;
+            res++;
         }
     }
     return res;
 }
 
-kjErr kj_str_to_i64(i64* value, const char* s, isize size) {
+isize kj_str_to_i64(i64* value, const char* s, isize size) {
     if(value == NULL || s == NULL || size < 0) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
-    kjErr res = KJ_ERR_NONE;
-    size = size == 0 ? kj_str_size(s): size;
-    i64 sign = *s == '-' ? s++, -1: *s == '+' ? s++, 1: 1;
+    isize res = KJ_ERR_NONE;
+    size = size == 0 ? kj_str_size(s, 0): size;
+    i64 sign = *s == '-' ? s++, size--, -1: *s == '+' ? s++, size--, 1: 1;
     u64 u;
-    if(kj_is_ok(kj_str_to_u64(&u, s, size))) {
+    if(kj_is_ok(res = kj_str_to_u64(&u, s, size))) {
         if(u <= KJ_I64_MAX) {
             *value = kj_cast(i64, u) * sign;
         } else {
             res = KJ_ERR_RANGE;
         }
+    }
+    return res;
+}
+
+isize kj_str_to_f64(f64* value, const char* s, isize size) {
+    if(value == NULL || s == NULL || size < 0) {
+        return KJ_ERR_INVALID_PARAMETER;
+    }
+
+    isize res = KJ_ERR_NONE;
+    *value = 0;
+    size = size == 0 ? kj_str_size(s, 0): size;
+    i64 sign = *s == '-' ? s++, size--, -1: *s == '+' ? s++, size--, 1: 1;
+    const char* dot = kj_str_find(s, size, '.');
+    if(dot) {
+        for(isize i = 0; i < size; i++) {
+            if(s[i] >= '0' && s[i] <= '9') {
+                *value = *value * 10 + (s[i] - '0');
+            } elif(s[i] == '_') {
+                continue;
+            } elif(s[i] != '.') {
+                res = KJ_ERR_SYNTAX;
+                break;
+            }
+            res++;
+        }
+        while(++dot < (s + size)) {
+            *value *= 0.1;
+        }
+        *value *= sign;
     } else {
         res = KJ_ERR_SYNTAX;
     }
@@ -1753,12 +1769,13 @@ const char* kj_str_find_predicate(
     }
 
     const char* res = NULL;
-    size = size == 0 ? kj_str_size(s): size;
-    for(isize i = 0; i < size; i++) {
-        if(fn(&s[i])) {
-            res = &s[i];
+    const char* sp = s;
+    while(sp < (s + size) || (*sp && size == 0)) {
+        if(fn(kj_cast(void*, sp))) {
+            res = sp;
             break;
         }
+        sp++;
     }
     return res;
 }
@@ -1770,7 +1787,7 @@ const char* kj_str_rfind_predicate(
     }
 
     const char* res = NULL;
-    size = size == 0 ? kj_str_size(s): size;
+    size = size == 0 ? kj_str_size(s, 0): size;
     for(isize i = size - 1; i >= 0; i--) {
         if(fn(&s[i])) {
             res = &s[i];
@@ -1786,12 +1803,13 @@ const char* kj_str_find(const char* s, isize size, char c) {
     }
 
     const char* res = NULL;
-    size = size == 0 ? kj_str_size(s): size;
-    for(isize i = 0; i < size; i++) {
-        if(s[i] == c) {
-            res = &s[i];
+    const char* sp = s;
+    while(sp < (s + size) || (*sp && size == 0)) {
+        if(*sp == c) {
+            res = sp;
             break;
         }
+        sp++;
     }
     return res;
 }
@@ -1802,7 +1820,7 @@ const char* kj_str_rfind(const char* s, isize size, char c) {
     }
 
     const char* res = NULL;
-    size = size == 0 ? kj_str_size(s): size;
+    size = size == 0 ? kj_str_size(s, 0): size;
     for(isize i = size - 1; i >= 0; i--) {
         if(s[i] == c) {
             res = &s[i];
@@ -1818,12 +1836,11 @@ char* kj_str_replace_char(char* s, isize size, char o, char n) {
     }
 
     char* res = s;
-    size = size == 0 ? kj_str_size(s): size;
-    for(isize i = 0; i < size; i++) {
-        if(s[i] == o) {
-            s[i] = n;
-            break;
+    while(res < (s + size) || *res) {
+        if(*res == o) {
+            *res = n;
         }
+        res++;
     }
     return res;
 }
@@ -1834,7 +1851,7 @@ const char* kj_str_trim(const char* s, isize size, const char** end) {
     }
 
     const char* res = kj_str_ltrim(s, size);
-    size = size == 0 ? kj_str_size(s): size;
+    size = size == 0 ? kj_str_size(s, 0): size;
     *end = kj_str_rtrim(s, size);
     return res;
 }
@@ -1845,8 +1862,12 @@ const char* kj_str_ltrim(const char* s, isize size) {
     }
 
     const char* res = s;
-    size = size == 0 ? kj_str_size(s): size;
-    for(isize i = 0; i < size && kj_char_is_ws(s[i]); i++, res++);
+    while((res < (s + size) || *res)) {
+        if(!kj_char_is_ws(*res)) {
+            break;
+        }
+        res++;
+    }
     return res;
 }
 
@@ -1856,35 +1877,23 @@ const char* kj_str_rtrim(const char* s, isize size) {
     }
 
     const char* res = s + size;
-    size = size == 0 ? kj_str_size(s): size;
+    size = size == 0 ? kj_str_size(s, 0): size;
     for(isize i = size - 1; i >= 0 && kj_char_is_ws(s[i]); i--, res--);
     return res;
 }
 
-isize kj_utf8_count_limit(const char* s, isize limit) {
-    if(s == NULL || limit <= 0) {
-        return -1;
-    }
-
-    isize res = 0;
-    for(; *s && res < limit; s++) {
-        if((*s & 0xC0) != 0x80) {
-            res++;
-        }
-    }
-    return res;
-}
-
-isize kj_utf8_count(const char* s) {
+isize kj_utf8_count(const char* s, isize size) {
     if(s == NULL) {
         return -1;
     }
 
     isize res = 0;
-    while(*s++) {
-        if((*s & 0xC0) != 0x80) {
+    const char* sp = s;
+    while(sp < (s + size) || (*sp && size == 0)) {
+        if((*sp & 0xC0) != 0x80) {
             res++;
         }
+        sp++;
     }
     return res;
 }
@@ -2154,7 +2163,7 @@ u32 kj_hash_str(const char* s, isize size) {
     }
 
     u32 res = 0;
-    size = size == 0 ? kj_str_size(s): size;
+    size = size == 0 ? kj_str_size(s, 0): size;
     for(isize i = 0; i < size; i++) {
         res += (*s++) * (kj_cast(u32, i % KJ_U32_MAX) + 119);
     }
@@ -2578,7 +2587,7 @@ const char* kj_path_ext(const char* path, isize size) {
     }
 
     const char* res = NULL;
-    size = size == 0 ? kj_str_size(path): size;
+    size = size == 0 ? kj_str_size(path, 0): size;
     if(path[size - 1] != '.') {
         for(isize i = size - 1; i >= 0; i--) {
             if(kj_char_is_separator(path[i])) {
@@ -2593,7 +2602,8 @@ const char* kj_path_ext(const char* path, isize size) {
 }
 
 KJ_INTERN KJ_INLINE KJ_PREDICATE_FN(kj_path_is_separator) {
-    return kj_char_is_separator(*kj_cast(char*, value)) ? KJ_TRUE: KJ_FALSE;
+    return value && kj_char_is_separator(*kj_cast(char*, value)) ?
+        KJ_TRUE: KJ_FALSE;
 }
 
 const char* kj_path_base(const char* path, isize size, const char** end) {
@@ -2602,7 +2612,7 @@ const char* kj_path_base(const char* path, isize size, const char** end) {
     }
 
     const char* res = NULL;
-    size = size == 0 ? kj_str_size(path): size;
+    size = size == 0 ? kj_str_size(path, 0): size;
     if(size == 0) {
         res = ".";
     } elif(size == 1) {
@@ -2623,7 +2633,7 @@ const char* kj_path_dir(const char* path, isize size, const char** end) {
     }
 
     const char* res = NULL;
-    size = size == 0 ? kj_str_size(path): size;
+    size = size == 0 ? kj_str_size(path, 0): size;
     size = kj_char_is_separator(path[size - 1]) ? size - 1: size;
     *end = kj_str_rfind_predicate(path, size, kj_path_is_separator);
     if(kj_char_is_separator(path[0])) {
