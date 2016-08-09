@@ -832,6 +832,7 @@ KJ_API i32 kj_ucs_to_utf8(char* s, i32 count, const WCHAR* ws);
 typedef char* kjStr;
 
 #define KJ_STR_HEADER(s) (kj_cast(kjStrHeader*, (s)) - 1)
+#define kj_string_set_size(s, sz) (kj_cast(kjStrHeader*, (s)) - 1)->size = sz
 
 KJ_COMPILER_WARNING_BEGIN
 KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_ZERO_SIZED_ARRAY)
@@ -853,6 +854,8 @@ KJ_API isize kj_string_capacity(kjStr s);
 KJ_API isize kj_string_available(kjStr s);
 KJ_API void kj_string_destroy(kjStr s);
 KJ_API void kj_string_reset(kjStr s);
+KJ_API kjStr kj_string_extend(kjStr s, isize size);
+KJ_API kjStr kj_string_resize(kjStr s, isize size);
 KJ_API kjStr kj_string_append(kjStr s1, kjStr s2);
 KJ_API kjStr kj_string_append_str(kjStr s1, const char* s2, isize size);
 
@@ -986,8 +989,6 @@ KJ_API isize kj_file_spit(const char* path, const void* buf, isize size);
 
 KJ_API kjErr kj_file_metadata(kjFileMetadata* self, const kjFile* file);
 KJ_API kjErr kj_file_metadata_path(kjFileMetadata* self, const char* path);
-KJ_API u64 kj_file_last_write(const kjFile* file);
-KJ_API u64 kj_file_last_write_path(const char* path);
 
 /// Paths
 
@@ -1067,150 +1068,6 @@ KJ_INTERN KJ_TLS char KJ__CHAR_BUF[KJ_PATH_MAX + 1] = {0};
 #if defined(KJ_SYS_WIN32)
 KJ_INTERN KJ_TLS WCHAR KJ__WCHAR_BUFA[KJ_PATH_MAX + 1] = {0};
 KJ_INTERN KJ_TLS WCHAR KJ__WCHAR_BUFB[KJ_PATH_MAX + 1] = {0};
-#endif
-
-#if defined(KJ_SYS_LINUX)
-#if !defined(kj_syscall1)
-#if defined(KJ_ARCH_64_BIT)
-enum {
-    KJ_SYSCALL_CLOSE = 3,
-    KJ_SYSCALL_OPEN = 2,
-    KJ_SYSCALL_LSEEK = 8,
-    KJ_SYSCALL_READ = 0,
-    KJ_SYSCALL_PREAD = 17,
-    KJ_SYSCALL_WRITE = 1,
-    KJ_SYSCALL_PWRITE = 18,
-    KJ_SYSCALL_ACCESS = 21,
-    KJ_SYSCALL_GETCWD = 79,
-    KJ_SYSCALL_CHDIR = 80,
-    KJ_SYSCALL_RENAME = 82,
-    KJ_SYSCALL_MKDIR = 83,
-    KJ_SYSCALL_RMDIR = 84,
-    KJ_SYSCALL_STAT = 4,
-    KJ_SYSCALL_FSTAT = 5,
-    KJ_SYSCALL_FSYNC = 74,
-    KJ_SYSCALL_READLINK = 89
-};
-
-#if defined(KJ_ARCH_X86)
-#define kj_syscall1(call, res, a) do {                                          \
-    __asm__ __volatile__(                                                       \
-        "syscall"                                                               \
-        : "=a" (res)                                                            \
-        : "0" ((call)), "D" ((a))                                               \
-        : "memory");                                                            \
-} while(0)
-#define kj_syscall2(call, res, a, b) do {                                       \
-    __asm__ __volatile__(                                                       \
-        "syscall"                                                               \
-        : "=a" (res)                                                            \
-        : "0" ((call)), "D" ((a)), "S" ((b))                                    \
-        : "memory");                                                            \
-} while(0)
-#define kj_syscall3(call, res, a, b, c) do {                                    \
-    __asm__ __volatile__(                                                       \
-        "syscall"                                                               \
-        : "=a" (res)                                                            \
-        : "0" ((call)), "D" ((a)), "S" ((b)), "d" ((c))                         \
-        : "memory");                                                            \
-} while(0)
-#define kj_syscall4(call, res, a, b, c, d) do {                                 \
-    register __typeof__(d) r10 __asm("r10") = (d);                              \
-    __asm__ __volatile__(                                                       \
-        "syscall"                                                               \
-        : "=a" (res)                                                            \
-        : "0" ((call)), "D" ((a)), "S" ((b)), "d" ((c)), "r" (r10)              \
-        : "memory");                                                            \
-} while(0)
-#define kj_syscall5(call, res, a, b, c, d, e) do {                              \
-    register __typeof__(d) r10 __asm("r10") = (d);                              \
-    register __typeof__(e) r8 __asm("r8") = (e);                                \
-    __asm__ __volatile__(                                                       \
-        "syscall"                                                               \
-        : "=a" (res)                                                            \
-        : "0" ((call)), "D" ((a)), "S" ((b)), "d" ((c)), "r" (r10), "r", (r8)   \
-        : "memory");                                                            \
-} while(0)
-#define kj_syscall6(call, res, a, b, c, d, e, f) do {                           \
-    register __typeof__(d) r10 __asm("r10") = (d);                              \
-    register __typeof__(e) r8 __asm("r8") = (e);                                \
-    register __typeof__(g) r9 __asm("r9") = (f);                                \
-    __asm__ __volatile__(                                                       \
-        "syscall"                                                               \
-        : "=a" (res)                                                            \
-        : "0" ((call)), "D" ((a)), "S" ((b)), "d" ((c)), "r" (r10), "r", (r8),  \
-          "r", (r9)                                                             \
-        : "memory");                                                            \
-} while(0)
-#endif
-#elif defined(KJ_ARCH_32_BIT)
-enum {
-    KJ_SYSCALL_CLOSE = 6,
-    KJ_SYSCALL_OPEN = 5,
-    KJ_SYSCALL_LSEEK = 19,
-    KJ_SYSCALL_READ = 3,
-    KJ_SYSCALL_PREAD = 180,
-    KJ_SYSCALL_WRITE = 4,
-    KJ_SYSCALL_PWRITE = 181,
-    KJ_SYSCALL_ACCESS = 33,
-    KJ_SYSCALL_RENAME = 38,
-    KJ_SYSCALL_GETCWD = 183,
-    KJ_SYSCALL_CHDIR = 12,
-    KJ_SYSCALL_MKDIR = 39,
-    KJ_SYSCALL_RMDIR = 40,
-    KJ_SYSCALL_STAT = 106,
-    KJ_SYSCALL_FSTAT = 108,
-    KJ_SYSCALL_FSYNC = 11,
-    KJ_SYSCALL_READLINK = 85
-};
-
-#if defined(KJ_ARCH_X86)
-#define kj_syscall1(call, res, a) do {                                          \
-    __asm__ __volatile__(                                                       \
-        "int $0x80"                                                             \
-        : "=a" ((res))                                                          \
-        : "0" ((call)), "b" ((a))                                               \
-        : "memory");                                                            \
-} while(0)
-#define kj_syscall2(call, res, a, b) do {                                       \
-    __asm__ __volatile__(                                                       \
-        "int $0x80"                                                             \
-        : "=a" ((res))                                                          \
-        : "0" ((call)), "b" ((a)), "c" ((b))                                    \
-        : "memory");                                                            \
-} while(0)
-#define kj_syscall3(call, res, a, b, c) do {                                    \
-    __asm__ __volatile__(                                                       \
-        "int $0x80"                                                             \
-        : "=a" ((res))                                                          \
-        : "0" ((call)), "b" ((a)), "c" ((b)), "d" ((c)))                        \
-        : "memory");                                                            \
-} while(0)
-#define kj_syscall4(call, res, a, b, c, d) do {                                 \
-    __asm__ __volatile__(                                                       \
-        "int $0x80"                                                             \
-        : "=a" ((res))                                                          \
-        : "0" ((call)), "b" ((a)), "c" ((b)), "d" ((c)), "s" ((d))              \
-        : "memory");                                                            \
-} while(0)
-#define kj_syscall5(call, res, a, b, c, d, e) do {                              \
-    __asm__ __volatile__(                                                       \
-        "int $0x80"                                                             \
-        : "=a" ((res))                                                          \
-        : "0" ((call)), "b" ((a)), "c" ((b)), "d" ((c)), "s" ((d)), "D" ((e))   \
-        : "memory");                                                            \
-} while(0)
-#define kj_syscall6(call, res, a, b, c, d, e, f) kj_panic("x86 syscall6")
-#elif defined(KJ_ARCH_ARM)
-#define kj_syscall1(call, res, a) kj_panic("ARM syscall1")
-#define kj_syscall2(call, res, a, b) kj_panic("ARM syscall2")
-#define kj_syscall3(call, res, a, b, c) kj_panic("ARM syscall3")
-#define kj_syscall4(call, res, a, b, c, d) kj_panic("ARM syscall4")
-#define kj_syscall5(call, res, a, b, c, d, e) kj_panic("ARM syscall5")
-#define kj_syscall6(call, res, a, b, c, d, e, f) kj_panic("ARM syscall6")
-#endif
-#endif
-#endif
 #endif
 
 KJ_INLINE kjErr kj_err_from_sys(i32 err) {
@@ -1500,7 +1357,7 @@ void kj_string_reset(kjStr s) {
     s[0] = '\0';
 }
 
-KJ_INTERN kjStr kj__string_extend(kjStr s, isize size) {
+kjStr kj_string_extend(kjStr s, isize size) {
     if(s == NULL || size <= 0) {
         return NULL;
     }
@@ -1524,6 +1381,10 @@ KJ_INTERN kjStr kj__string_extend(kjStr s, isize size) {
     return res;
 }
 
+kjStr kj_string_resize(kjStr s, isize size) {
+    return kj_string_extend(s, kj_abs(kj_string_size(s) - size));
+}
+
 kjStr kj_string_append(kjStr s1, kjStr s2) {
     return kj_string_append_str(s1, s2, kj_string_size(s2));
 }
@@ -1531,7 +1392,7 @@ kjStr kj_string_append(kjStr s1, kjStr s2) {
 kjStr kj_string_append_str(kjStr s1, const char* s2, isize size) {
     kjStr res = NULL;
     isize s1_size = kj_string_size(s1);
-    res = kj__string_extend(s1, size);
+    res = kj_string_extend(s1, size);
     if(res != NULL) {
         kj_copy(res + s1_size, s2, size);
         kjStrHeader* header = KJ_STR_HEADER(res);
@@ -1776,6 +1637,10 @@ KJ_INLINE u32 kj_char_to_upper(u32 c) {
 }
 
 KJ_INLINE isize kj_str_size(const char* s, isize size) {
+    if(s == NULL || size < 0) {
+        return 0;
+    }
+
     const char* e = s;
     while(e < (s + size) || (*e && size == 0)) {
         e++;
@@ -2212,19 +2077,22 @@ KJ_INLINE u64 kj__filetime_to_unix(FILETIME* ft) {
 #endif
 
 u64 kj_timestamp_utc(void) {
+    u64 res = 0;
 #if defined(KJ_SYS_WIN32)
     FILETIME ft;
     GetSystemTimeAsFileTime(&ft);
-    return kj__filetime_to_unix(&ft);
+    res = kj__filetime_to_unix(&ft);
 #elif defined(KJ_SYS_UNIX)
     time_t t;
-    time(&t);
-    return kj_cast(u64, t);
+    if(time(&t) != kj_cast(time_t, -1)) {
+        res = kj_cast(u64, t);
+    }
 #endif
+    return res;
 }
 
 u64 kj_datetime_to_timestamp(kjDateTime dt) {
-    u64 res = KJ_U64_MAX;
+    u64 res = 0;
 #if defined(KJ_SYS_WIN32)
     SYSTEMTIME st;
     kj_zero(&st, kj_isize_of(st));
@@ -2481,15 +2349,10 @@ kjErr kj_file_open(kjFile* self, const char* path, u32 flags) {
         }
     }
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
     u32 perm = 0666;
-    kj_syscall3(KJ_SYSCALL_OPEN, *self, path, (access | create), perm);
-    res = *self < 0 ? kj_err_from_sys(-*self): KJ_ERR_NONE;
-#else
-    u32 perm = 0666;
-    *self = open(path, (access | create), perm);
-    res = *self < 0 ? kj_err_from_sys(errno): KJ_ERR_NONE;
-#endif
+    if((*self = open(path, (access | create), perm)) == -1) {
+        res = kj_err_from_sys(errno);
+    }
 #endif
     return kj_cast(kjErr, res);
 }
@@ -2505,13 +2368,9 @@ kjErr kj_file_close(const kjFile* self) {
         res = kj_err_from_sys(GetLastError());
     }
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall1(KJ_SYSCALL_CLOSE, res, *self);
-    res = res < 0 ? kj_err_from_sys(res): KJ_ERR_NONE;
-#else
-    res = close(*self);
-    res = res < 0 ? kj_err_from_sys(errno): KJ_ERR_NONE;
-#endif
+    if(close(*self) == -1) {
+        res = kj_err_from_sys(errno);
+    }
 #endif
     return res;
 }
@@ -2529,13 +2388,9 @@ kjErr kj_file_seek(const kjFile* self, i64 offset, kjSeekFrom seek) {
         res = kj_err_from_sys(GetLastError());
     }
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall3(KJ_SYSCALL_LSEEK, res, *self, offset, seek);
-    res = res < 0 ? kj_err_from_sys(res): KJ_ERR_NONE;
-#else
-    res = lseek(*self, offset, seek);
-    res = res < 0 ? kj_err_from_sys(errno): KJ_ERR_NONE;
-#endif
+    if(lseek(*self, offset, seek) == -1) {
+        res = kj_err_from_sys(errno);
+    }
 #endif
     return res;
 }
@@ -2554,13 +2409,9 @@ isize kj_file_read(const kjFile* self, void* buf, isize size) {
         res = kj_err_from_sys(GetLastError());
     }
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall3(KJ_SYSCALL_READ, res, *self, buf, size);
-    res = res < 0 ? kj_cast(isize, kj_err_from_sys(res)): res;
-#else
-    res = read(*self, buf, size);
-    res = res < 0 ? kj_err_from_sys(errno): res;
-#endif
+    if(read(*self, buf, size) == -1) {
+        res = kj_err_from_sys(errno);
+    }
 #endif
     return res;
 }
@@ -2579,13 +2430,9 @@ isize kj_file_write(const kjFile* self, const void* buf, isize size) {
         res = kj_err_from_sys(GetLastError());
     }
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall3(KJ_SYSCALL_WRITE, res, *self, buf, size);
-    res = res < 0 ? kj_cast(isize, kj_err_from_sys(res)): res;
-#else
-    res = write(*self, buf, size);
-    res = res < 0 ? kj_err_from_sys(errno): res;
-#endif
+    if(write(*self, buf, size) == -1) {
+        res = kj_err_from_sys(errno);
+    }
 #endif
     return res;
 }
@@ -2608,13 +2455,9 @@ isize kj_file_read_at(const kjFile* self, void* buf, isize size, i64 offset) {
         res = kj_err_from_sys(GetLastError());
     }
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall4(KJ_SYSCALL_PREAD, res, *self, buf, size, offset);
-    res = res < 0 ? kj_cast(isize, kj_err_from_sys(res)): res;
-#else
-    res = pread(*self, buf, size, offset);
-    res = res < 0 ? kj_err_from_sys(errno): res;
-#endif
+    if(pread(*self, buf, size, offset) == -1) {
+        res = kj_err_from_sys(errno);
+    }
 #endif
     return res;
 }
@@ -2638,13 +2481,9 @@ isize kj_file_write_at(
         res = kj_err_from_sys(GetLastError());
     }
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall4(KJ_SYSCALL_PWRITE, res, *self, buf, size, offset);
-    res = res < 0 ? kj_cast(isize, kj_err_from_sys(res)): res;
-#else
-    res = pwrite(*self, buf, size, offset);
-    res = res < 0 ? kj_err_from_sys(errno): res;
-#endif
+    if(pwrite(*self, buf, size, offset) == -1) {
+        res = kj_err_from_sys(errno);
+    }
 #endif
     return res;
 }
@@ -2660,14 +2499,55 @@ kjErr kj_file_sync(const kjFile* self) {
         res = kj_err_from_sys(GetLastError());
     }
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall1(KJ_SYSCALL_FSYNC, res, *self);
-    res = res < 0 ? kj_err_from_sys(res): KJ_ERR_NONE;
-#else
-    res = fsync(*self);
-    res = res < 0 ? kj_err_from_sys(errno): KJ_ERR_NONE;
+    if(fsync(*self) == -1) {
+        res = kj_err_from_sys(errno);
+    }
 #endif
-#endif
+    return res;
+}
+
+isize kj_file_slurp(
+        void** data, kjAllocator* allocator, const char* path, b32 terminate) {
+    if(data == NULL || allocator == NULL || path == NULL) {
+        return KJ_ERR_INVALID_PARAMETER;
+    }
+
+    isize res = KJ_ERR_NONE;
+    kjFile file;
+    if(kj_is_ok(res = kj_file_open(&file, path, KJ_FILE_READ))) {
+        kjFileMetadata meta;
+        if(kj_is_ok(res = kj_file_metadata(&meta, &file))) {
+            *data = kj_allocator_alloc(allocator, meta.size + 1);
+            if(*data) {
+                if(kj_is_ok(res = kj_file_read(&file, *data, meta.size))) {
+                    if(terminate) {
+                        kj_cast(u8*, *data)[meta.size] = '\0';
+                    }
+                } else {
+                    kj_allocator_free(allocator, *data);
+                    *data = NULL;
+                }
+            } else {
+                res = KJ_ERR_ALLOC_FAILED;
+            }
+        }
+        kj_file_close(&file);
+    }
+    return res;
+}
+
+isize kj_file_spit(const char* path, const void* buf, isize size) {
+    if(path == NULL || buf == NULL || size <= 0) {
+        return KJ_ERR_INVALID_PARAMETER;
+    }
+
+    isize res = KJ_ERR_NONE;
+    kjFile file;
+    res = kj_file_open(&file, path, KJ_FILE_WRITE);
+    if(kj_is_ok(res)) {
+        res = kj_file_write(&file, buf, size);
+        kj_file_close(&file);
+    }
     return res;
 }
 
@@ -2696,14 +2576,9 @@ kjErr kj_file_metadata(kjFileMetadata* self, const kjFile* file) {
 #elif defined(KJ_SYS_UNIX)
     struct stat st;
     kj_zero(&st, kj_isize_of(struct stat));
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall2(KJ_SYSCALL_FSTAT, res, *file, &st);
-    res = res < 0 ? kj_err_from_sys(res): KJ_ERR_NONE;
-#else
-    res = fstat(*file, &st);
-    res = res < 0 ? kj_err_from_sys(errno): KJ_ERR_NONE;
-#endif
-    if(kj_is_ok(res)) {
+    if(fstat(*file, &st) == -1) {
+        res = kj_err_from_sys(errno);
+    } else {
         self->size = st.st_size;
         self->last_access = kj_cast(u64, st.st_atime);
         self->last_write = kj_cast(u64, st.st_mtime);
@@ -2719,72 +2594,8 @@ kjErr kj_file_metadata_path(kjFileMetadata* self, const char* path) {
 
     kjErr res = KJ_ERR_NONE;
     kjFile file;
-    res = kj_file_open(&file, path, KJ_FILE_READ);
-    if(kj_is_ok(res)) {
+    if(kj_is_ok(res = kj_file_open(&file, path, KJ_FILE_READ))) {
         res = kj_file_metadata(self, &file);
-        kj_file_close(&file);
-    }
-    return res;
-}
-
-u64 kj_file_last_write_path(const char* path) {
-    if(path == NULL) {
-        return KJ_U64_MAX;
-    }
-
-    u64 res = KJ_U64_MAX;
-    kjFileMetadata meta;
-    if(kj_is_ok(kj_file_metadata_path(&meta, path))) {
-        res = meta.last_write;
-    }
-    return res;
-}
-
-isize kj_file_slurp(
-        void** data, kjAllocator* allocator, const char* path, b32 terminate) {
-    if(data == NULL || allocator == NULL || path == NULL) {
-        return KJ_ERR_INVALID_PARAMETER;
-    }
-
-    isize res = KJ_ERR_NONE;
-    kjFile file;
-    res = kj_file_open(&file, path, KJ_FILE_READ);
-    if(kj_is_ok(res)) {
-        kjFileMetadata meta;
-        res = kj_file_metadata(&meta, &file);
-        if(kj_is_ok(res)) {
-            *data = kj_allocator_alloc(allocator, meta.size + 1);
-            if(*data) {
-                isize read = kj_file_read(&file, *data, meta.size);
-                if(kj_is_ok(read)) {
-                    if(terminate) {
-                        kj_cast(u8*, *data)[meta.size] = '\0';
-                    }
-                    res = read;
-                } else {
-                    kj_allocator_free(allocator, *data);
-                    *data = NULL;
-                    res = read;
-                }
-            } else {
-                res = KJ_ERR_ALLOC_FAILED;
-            }
-        }
-        kj_file_close(&file);
-    }
-    return res;
-}
-
-isize kj_file_spit(const char* path, const void* buf, isize size) {
-    if(path == NULL || buf == NULL || size <= 0) {
-        return KJ_ERR_INVALID_PARAMETER;
-    }
-
-    isize res = KJ_ERR_NONE;
-    kjFile file;
-    res = kj_file_open(&file, path, KJ_FILE_WRITE);
-    if(kj_is_ok(res)) {
-        res = kj_file_write(&file, buf, size);
         kj_file_close(&file);
     }
     return res;
@@ -2867,13 +2678,9 @@ kjErr kj_path_create_dir(const char* path) {
         res = kj_err_from_sys(GetLastError());
     }
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall2(KJ_SYSCALL_MKDIR, res, path, S_IRWXU | S_IRGRP | S_IROTH);
-    res = res < 0 ? kj_err_from_sys(res): KJ_ERR_NONE;
-#else
-    res = mkdir(path, S_IRWXU | S_IRGRP | S_IROTH);
-    res = res < 0 ? kj_err_from_sys(errno): KJ_ERR_NONE;
-#endif
+    if(mkdir(path, S_IRWXU | S_IRGRP | S_IROTH) == -1) {
+        res = kj_err_from_sys(errno);
+    }
 #endif
     return kj_cast(kjErr, res);
 }
@@ -2890,13 +2697,9 @@ kjErr kj_path_remove_dir(const char* path) {
         res = kj_err_from_sys(GetLastError());
     }
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall1(KJ_SYSCALL_RMDIR, res, path);
-    res = res < 0 ? kj_err_from_sys(res): KJ_ERR_NONE;
-#else
-    res = rmdir(path);
-    res = res < 0 ? kj_err_from_sys(errno): KJ_ERR_NONE;
-#endif
+    if(rmdir(path) == -1) {
+        res = kj_err_from_sys(errno);
+    }
 #endif
     return kj_cast(kjErr, res);
 }
@@ -2925,13 +2728,8 @@ kjErr kj_path_rename(const char* from, const char* to) {
         res = ucs1;
     }
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall2(KJ_SYSCALL_RENAME, res, from, to);
-    res = res < 0 ? kj_err_from_sys(res): KJ_ERR_NONE;
-#else
     res = rename(from, to);
     res = res < 0 ? kj_err_from_sys(errno): KJ_ERR_NONE;
-#endif
 #endif
     return kj_cast(kjErr, res);
 }
@@ -2946,24 +2744,18 @@ isize kj_path_current_dir(char* path, isize size) {
     GetCurrentDirectoryW(kj_count_of(KJ__WCHAR_BUFA), KJ__WCHAR_BUFA);
     res = kj_ucs_to_utf8(path, kj_cast(i32, size), KJ__WCHAR_BUFA);
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall2(
-            KJ_SYSCALL_GETCWD, res,
-            KJ__CHAR_BUF, kj_count_of(KJ__CHAR_BUF));
-    if(res < 0) {
-        res = kj_err_from_sys(res);
-#else
-    char* cwd = getcwd(KJ__CHAR_BUF, kj_count_of(KJ__CHAR_BUF));
-    res = kj_str_size(KJ__CHAR_BUF, 0);
-    if(cwd == NULL) {
+    if(getcwd(KJ__CHAR_BUF, kj_count_of(KJ__CHAR_BUF)) == NULL) {
         res = kj_err_from_sys(errno);
-#endif
-    } elif(res > size) {
-        res = KJ_ERR_RANGE;
     } else {
-        kj_copy(path, KJ__CHAR_BUF, res);
-        path[res] = '\0';
+        res = kj_str_size(KJ__CHAR_BUF, kj_count_of(KJ__CHAR_BUF));
+        if(res > size) {
+            res = KJ_ERR_RANGE;
+        } else {
+            kj_copy(path, KJ__CHAR_BUF, res);
+            path[res] = '\0';
+        }
     }
+
 #endif
     return kj_cast(kjErr, res);
 }
@@ -2980,13 +2772,9 @@ kjErr kj_path_set_current_dir(const char* path) {
         res = kj_err_from_sys(GetLastError());
     }
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall1(KJ_SYSCALL_CHDIR, res, path);
-    res = res < 0 ? kj_err_from_sys(res): KJ_ERR_NONE;
-#else
-    res = chdir(path);
-    res = res < 0 ? kj_err_from_sys(errno): KJ_ERR_NONE;
-#endif
+    if(chdir(path) == -1) {
+        res = kj_err_from_sys(errno);
+    }
 #endif
     return kj_cast(kjErr, res);
 }
@@ -3029,22 +2817,16 @@ isize kj_path_self(char* path, isize size) {
             NULL, KJ__WCHAR_BUFA, kj_count_of(KJ__WCHAR_BUFA));
     res = kj_ucs_to_utf8(path, kj_cast(i32, size), KJ__WCHAR_BUFA);
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall3(
-            KJ_SYSCALL_READLINK, res, "/proc/self/exe",
-            KJ__CHAR_BUF, kj_count_of(KJ__CHAR_BUF));
-    if(res < 0) {
-        res = kj_err_from_sys(res);
-#else
-    res = chdir(path);
-    if(res < 0) {
+    if((res = readlink(
+            "/proc/self/exe", KJ__CHAR_BUF, kj_count_of(KJ__CHAR_BUF))) == -1) {
         res = kj_err_from_sys(errno);
-#endif
-    } elif(res > size) {
-        res = KJ_ERR_RANGE;
     } else {
-        kj_copy(path, KJ__CHAR_BUF, res);
-        path[res] = '\0';
+        if(res > size) {
+            res = KJ_ERR_RANGE;
+        } else {
+            kj_copy(path, KJ__CHAR_BUF, res);
+            path[res] = '\0';
+        }
     }
 #endif
     return res;
@@ -3068,13 +2850,9 @@ b32 kj_path_exists(const char* path) {
         }
     }
 #elif defined(KJ_SYS_UNIX)
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall2(KJ_SYSCALL_ACCESS, res, path, 0);
-    res = res == 0 ? KJ_TRUE: KJ_FALSE;
-#else
-    res = access(path, 0);
-    res = res == 0 ? KJ_TRUE: KJ_FALSE;
-#endif
+    if(access(path, 0) == 0) {
+        res = KJ_TRUE;
+    }
 #endif
     return res;
 }
@@ -3097,12 +2875,9 @@ b32 kj_path_is_file(const char* path) {
 #elif defined(KJ_SYS_UNIX)
     struct stat st;
     kj_zero(&st, kj_isize_of(struct stat));
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall2(KJ_SYSCALL_STAT, res, path, &st);
-#else
-    res = stat(path, &st);
-#endif
-    res = res == 0 ? S_ISREG(st.st_mode) != 0: KJ_FALSE;
+    if(stat(path, &st) == 0) {
+        res = S_ISREG(st.st_mode) != 0;
+    }
 #endif
     return res;
 }
@@ -3125,12 +2900,9 @@ b32 kj_path_is_dir(const char* path) {
 #elif defined(KJ_SYS_UNIX)
     struct stat st;
     kj_zero(&st, kj_isize_of(struct stat));
-#if defined(KJ_SYS_LINUX) && defined(KJ_ARCH_X86)
-    kj_syscall2(KJ_SYSCALL_STAT, res, path, &st);
-#else
-    res = stat(path, &st);
-#endif
-    res = res == 0 ? S_ISDIR(st.st_mode) != 0: KJ_FALSE;
+    if(stat(path, &st) == 0) {
+        res = S_ISDIR(st.st_mode) != 0;
+    }
 #endif
     return res;
 }
@@ -3195,7 +2967,7 @@ kjErr kj_read_dir_next(kjReadDir* self, kjDirEntry* entry) {
     }
     if(result) {
         isize size = kj_str_size(ent->d_name, KJ_PATH_MAX);
-        kj_copy(entry->path, &ent->d_name[0], size);
+        kj_move(entry->path, &ent->d_name[0], size);
         entry->path[size] = '\0';
     } else {
         res = KJ_ERR_NO_MORE_FILES;
@@ -3249,7 +3021,8 @@ kjErr kj_buffer_write(kjBuffer* self, const void* buf, isize size) {
 
     isize res = KJ_ERR_NONE;
     if(self->size + size > self->capacity) {
-        isize new_size = kj_round_to(self->capacity + size, self->granularity);
+        isize new_size = kj_round_to(
+                self->capacity + size, self->granularity) + 1;
         void* new_data = NULL;
         if(self->data) {
              new_data = kj_allocator_realloc(
@@ -3267,13 +3040,8 @@ kjErr kj_buffer_write(kjBuffer* self, const void* buf, isize size) {
     if(kj_is_ok(res)) {
         kj_copy(self->data + self->size, buf, size);
         self->size += size;
-    }
-
-#if defined(KJ_DEBUG)
-    if(self->size < self->capacity) {
         self->data[self->size] = '\0';
     }
-#endif
 
     return kj_cast(kjErr, res);
 }
