@@ -17,12 +17,13 @@
 #define KJ_SIMD_H
 
 #define KJ_SIMD_VERSION_MAJOR 0
-#define KJ_SIMD_VERSION_MINOR 1
-#define KJ_SIMD_VERSION_PATCH 2
+#define KJ_SIMD_VERSION_MINOR 2
+#define KJ_SIMD_VERSION_PATCH 0
 
+#if defined(KJ_ARCH_X86)
 #if defined(KJ_SYS_WIN32)
 #include <intrin.h>
-#elif defined(KJ_SYS_LINUX)
+#elif defined(KJ_SYS_UNIX)
 #include <x86intrin.h>
 #endif
 
@@ -118,5 +119,99 @@ KJ_EXTERN_BEGIN
 #define kj_simdi_xor(a, b) _mm_xor_si128(a, b)
 
 KJ_EXTERN_END
+#endif
+
+#if defined(KJ_ARCH_ARM)
+#include <arm_neon.h>
+
+KJ_EXTERN_BEGIN
+
+#define kj_simd_read_fence()
+#define kj_simd_write_fence()
+#define kj_simd_rw_fence()
+
+#define kj_simdf(a, b, c, d)
+#define kj_simdf_reverse(a, b, c, d)
+#define kj_simdf_all(a)
+#define kj_simdf_zero()
+#define kj_simdf_one()
+
+#define kj_simdf_add(a, b)
+#define kj_simdf_sub(a, b)
+#define kj_simdf_mul(a, b)
+#define kj_simdf_div(a, b)
+
+#define kj_simdf_load(src)
+#define kj_simdf_loadu(src)
+#define kj_simdf_loadr(src)
+#define kj_simdf_store(dst, src)
+#define kj_simdf_storeu(dst, src)
+#define kj_simdf_storer(dst, src)
+
+#define kj_simdf_sqrt(a)
+#define kj_simdf_rsqrt(a)
+#define kj_simdf_rcp(a)
+
+#define kj_simdf_cmpf_eq(a, b)
+#define kj_simdf_cmpf_neq(a, b)
+#define kj_simdf_cmpf_lt(a, b)
+#define kj_simdf_cmpf_nlt(a, b)
+#define kj_simdf_cmpf_le(a, b)
+#define kj_simdf_cmpf_nle(a, b)
+#define kj_simdf_cmpf_gt(a, b)
+#define kj_simdf_cmpf_ngt(a, b)
+#define kj_simdf_cmpf_ge(a, b)
+#define kj_simdf_cmpf_nge(a, b)
+
+#define kj_simdf_cvt(a)
+
+#define kj_simdf_min(a, b)
+#define kj_simdf_max(a, b)
+#define kj_simdf_clamp(a, min, max)
+
+#define kj_simd_shuf_mask(a, b, c, d)
+#define kj_simdf_shuf(a, b, m)
+#define kj_simdf_shuf_abcd(a)
+#define kj_simdf_shuf_abdc(a)
+#define kj_simdf_shuf_acbd(a)
+#define kj_simdf_shuf_acdb(a)
+#define kj_simdf_shuf_adbc(a)
+#define kj_simdf_shuf_adcb(a)
+#define kj_simdf_shuf_bacd(a)
+#define kj_simdf_shuf_badc(a)
+#define kj_simdf_shuf_bcad(a)
+#define kj_simdf_shuf_bcda(a)
+#define kj_simdf_shuf_bdac(a)
+#define kj_simdf_shuf_bdca(a)
+#define kj_simdf_shuf_cabd(a)
+#define kj_simdf_shuf_cadb(a)
+#define kj_simdf_shuf_cbad(a)
+#define kj_simdf_shuf_cbda(a)
+#define kj_simdf_shuf_cdab(a)
+#define kj_simdf_shuf_cdba(a)
+#define kj_simdf_shuf_dabc(a)
+#define kj_simdf_shuf_dacb(a)
+#define kj_simdf_shuf_dbac(a)
+#define kj_simdf_shuf_dbca(a)
+#define kj_simdf_shuf_dcab(a)
+#define kj_simdf_shuf_dcba(a)
+
+#define kj_simdi(a, b, c, d)
+#define kj_simdi_reverse(a, b, c, d)
+#define kj_simdi_all(a)
+#define kj_simdi_zero()
+#define kj_simdi_one()
+
+#define kj_simdi_load(src)
+#define kj_simdi_loadu(src)
+#define kj_simdi_store(dst, src)
+#define kj_simdi_storeu(dst, src)
+
+#define kj_simdi_or(a, b)
+#define kj_simdi_and(a, b)
+#define kj_simdi_xor(a, b)
+
+KJ_EXTERN_END
+#endif
 
 #endif

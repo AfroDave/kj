@@ -17,7 +17,7 @@
 #define KJ_MATH_H
 
 #define KJ_MATH_VERSION_MAJOR 0
-#define KJ_MATH_VERSION_MINOR 4
+#define KJ_MATH_VERSION_MINOR 5
 #define KJ_MATH_VERSION_PATCH 0
 
 #define kj_to_degrees(a) kj_cast(f32, (a) * 57.295779513082320f)
@@ -789,13 +789,18 @@ KJ_CONST f32 kj_vec2f_length(kjVec2f a) {
     return kj_sqrtf(kj_vec2f_length_sq(a));
 }
 
+KJ_COMPILER_WARNING_BEGIN
+KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_LOSS_OF_DATA)
+
 KJ_CONST i32 kj_vec2i_length(kjVec2i a) {
-    return kj_cast(i32, kj_sqrtf(kj_cast(f32, kj_vec2i_length_sq(a))));
+    return kj_sqrtf(kj_vec2i_length_sq(a));
 }
 
 KJ_CONST u32 kj_vec2u_length(kjVec2u a) {
-    return kj_cast(u32, kj_sqrtf(kj_cast(f32, kj_vec2u_length_sq(a))));
+    return kj_sqrtf(kj_vec2u_length_sq(a));
 }
+
+KJ_COMPILER_WARNING_END
 
 KJ_CONST kjVec2f kj_vec2f_normalise(kjVec2f a) {
     return kj_vec2f_div(a, kj_vec2f_all(kj_vec2f_length(a)));
@@ -1026,13 +1031,18 @@ KJ_CONST f32 kj_vec3f_length(kjVec3f a) {
     return kj_sqrtf(kj_vec3f_length_sq(a));
 }
 
+KJ_COMPILER_WARNING_BEGIN
+KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_LOSS_OF_DATA)
+
 KJ_CONST i32 kj_vec3i_length(kjVec3i a) {
-    return kj_cast(i32, kj_sqrtf(kj_cast(f32, kj_vec3i_length_sq(a))));
+    return kj_sqrtf(kj_vec3i_length_sq(a));
 }
 
 KJ_CONST u32 kj_vec3u_length(kjVec3u a) {
-    return kj_cast(u32, kj_sqrtf(kj_cast(f32, kj_vec3u_length_sq(a))));
+    return kj_sqrtf(kj_vec3u_length_sq(a));
 }
+
+KJ_COMPILER_WARNING_END
 
 KJ_CONST kjVec3f kj_vec3f_normalise(kjVec3f a) {
     return kj_vec3f_div(a, kj_vec3f_all(kj_vec3f_length(a)));
@@ -1248,13 +1258,19 @@ KJ_CONST f32 kj_vec4f_length(kjVec4f a) {
     return kj_sqrtf(kj_vec4f_length_sq(a));
 }
 
+KJ_COMPILER_WARNING_BEGIN
+KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_LOSS_OF_DATA)
+
+
 KJ_CONST i32 kj_vec4i_length(kjVec4i a) {
-    return kj_cast(i32, kj_sqrtf(kj_cast(f32, kj_vec4i_length_sq(a))));
+    return kj_sqrtf(kj_vec4i_length_sq(a));
 }
 
 KJ_CONST u32 kj_vec4u_length(kjVec4u a) {
-    return kj_cast(u32, kj_sqrtf(kj_cast(f32, kj_vec4u_length_sq(a))));
+    return kj_sqrtf(kj_vec4u_length_sq(a));
 }
+
+KJ_COMPILER_WARNING_END
 
 KJ_CONST kjVec4f kj_vec4f_normalise(kjVec4f a) {
     return kj_vec4f_div(a, kj_vec4f_all(kj_vec4f_length(a)));
@@ -1864,12 +1880,53 @@ KJ_CONST b32 kj_rect3u_contains_vec3u(kjRect3u r, kjVec3u xyz) {
             r.z <= xyz.z && (r.z + r.d) >= xyz.z);
 }
 
-KJ_CONST i32 kj_rect3f_extend(kjRect3f r, f32 x, f32 y, f32 z);
-KJ_CONST i32 kj_rect3i_extend(kjRect3i r, i32 x, i32 y, i32 z);
-KJ_CONST i32 kj_rect3u_extend(kjRect3u r, u32 x, u32 y, u32 z);
-KJ_CONST i32 kj_rect3f_extend_vec3f(kjRect3f r, kjVec3f xyz);
-KJ_CONST i32 kj_rect3i_extend_vec3i(kjRect3i r, kjVec3i xyz);
-KJ_CONST i32 kj_rect3u_extend_vec3u(kjRect3u r, kjVec3u xyz);
+KJ_CONST i32 kj_rect3f_extend(kjRect3f r, f32 x, f32 y, f32 z) {
+    kj_unused(r);
+    kj_unused(x);
+    kj_unused(y);
+    kj_unused(z);
+    kj_unimplemented();
+    kj_unreachable();
+}
+
+KJ_CONST i32 kj_rect3i_extend(kjRect3i r, i32 x, i32 y, i32 z) {
+    kj_unused(r);
+    kj_unused(x);
+    kj_unused(y);
+    kj_unused(z);
+    kj_unimplemented();
+    kj_unreachable();
+}
+
+KJ_CONST i32 kj_rect3u_extend(kjRect3u r, u32 x, u32 y, u32 z) {
+    kj_unused(r);
+    kj_unused(x);
+    kj_unused(y);
+    kj_unused(z);
+    kj_unimplemented();
+    kj_unreachable();
+}
+
+KJ_CONST i32 kj_rect3f_extend_vec3f(kjRect3f r, kjVec3f xyz) {
+    kj_unused(r);
+    kj_unused(xyz);
+    kj_unimplemented();
+    kj_unreachable();
+}
+
+KJ_CONST i32 kj_rect3i_extend_vec3i(kjRect3i r, kjVec3i xyz) {
+    kj_unused(r);
+    kj_unused(xyz);
+    kj_unimplemented();
+    kj_unreachable();
+}
+
+KJ_CONST i32 kj_rect3u_extend_vec3u(kjRect3u r, kjVec3u xyz) {
+    kj_unused(r);
+    kj_unused(xyz);
+    kj_unimplemented();
+    kj_unreachable();
+}
 
 KJ_CONST kjVec3f kj_rect3f_centre(kjRect3f r) {
     return kj_vec3f(
