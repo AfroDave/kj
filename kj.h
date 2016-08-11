@@ -1,17 +1,19 @@
-// `kj.h`
-//
-// ---------------------------------- LICENSE ----------------------------------
-// This software is in the public domain.  Where that dedication is not
-// recognized, you are granted a perpetual, irrevocable license to copy,
-// distribute, and modify the source code as you see fit.
-//
-// The source code is provided "as is", without warranty of any kind, express
-// or implied. No attribution is required, but always appreciated.
-// =============================================================================
-//
-// usage:
-//      #define KJ_IMPL
-//      #include "kj.h"
+/*
+ * `kj.h`
+ *
+ * ---------------------------------- LICENSE ----------------------------------
+ * This software is in the public domain.  Where that dedication is not
+ * recognized, you are granted a perpetual, irrevocable license to copy,
+ * distribute, and modify the source code as you see fit.
+ *
+ * The source code is provided "as is", without warranty of any kind, express
+ * or implied. No attribution is required, but always appreciated.
+ * =============================================================================
+ *
+ * usage:
+ *      #define KJ_IMPL
+ *     #include "kj.h"
+ */
 
 #ifndef KJ_H
 #define KJ_H
@@ -30,6 +32,30 @@
 
 KJ_EXTERN_BEGIN
 
+#if defined(__x86_64__) || defined(_M_X64) || defined(__amd64__)
+#define KJ_ARCH_64_BIT
+#define KJ_ARCH_X86
+#define KJ_ARCH_NAME "x86_64"
+#elif defined(__i386__) || defined(_M_IX86) || defined(_X86_)
+#define KJ_ARCH_32_BIT
+#define KJ_ARCH_X86
+#define KJ_ARCH_NAME "x86"
+#elif defined(__aarch64__)
+#define KJ_ARCH_64_BIT
+#define KJ_ARCH_ARM
+#define KJ_ARCH_NAME "arm64"
+#elif defined(__arm__) || defined(_M_ARM)
+#define KJ_ARCH_32_BIT
+#define KJ_ARCH_ARM
+#define KJ_ARCH_NAME "arm"
+#elif defined(__mips__)
+#define KJ_ARCH_32_BIT
+#define KJ_ARCH_MIPS
+#define KJ_ARCH_NAME "mips"
+#else
+#error "Unsupported Architecture"
+#endif
+
 #if defined(_WIN32) || defined(_WIN64)
 #if !defined(NOMINMAX)
 #define NOMINMAX
@@ -40,15 +66,10 @@ KJ_EXTERN_BEGIN
 #if !defined(VC_EXTRALEAN)
 #define VC_EXTRALEAN
 #endif
-#if !defined(_UNICODE)
-#define _UNICODE
-#endif
 #if !defined(UNICODE)
 #define UNICODE
 #endif
 #include <windows.h>
-#include <stdarg.h>
-#include <stdint.h>
 #include <stdio.h>
 #define KJ_SYS_WIN32
 #define KJ_SYS_NAME "windows"
@@ -62,14 +83,11 @@ KJ_EXTERN_BEGIN
 #if !defined(_LARGEFILE64_SOURCE)
 #define _LARGEFILE64_SOURCE
 #endif
-#include <dirent.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -85,27 +103,7 @@ KJ_EXTERN_BEGIN
 #define KJ_SYS_EXE_EXT ""
 #define KJ_SYS_UNIX
 #else
-#error Unsupported Operating System
-#endif
-
-#if defined(__x86_64__) || defined(_M_X64)
-#define KJ_ARCH_64_BIT
-#define KJ_ARCH_X86
-#define KJ_ARCH_NAME "x86_64"
-#elif defined(__i386) || defined(_M_IX86)
-#define KJ_ARCH_32_BIT
-#define KJ_ARCH_X86
-#define KJ_ARCH_NAME "x86"
-#elif defined(__aarch64__)
-#define KJ_ARCH_64_BIT
-#define KJ_ARCH_ARM
-#define KJ_ARCH_NAME "arm64"
-#elif defined(__arm__)
-#define KJ_ARCH_32_BIT
-#define KJ_ARCH_ARM
-#define KJ_ARCH_NAME "arm"
-#else
-#error Unsupported Architecture
+#error "Unsupported Operating System"
 #endif
 
 #if !defined(kj_str_of)
@@ -114,64 +112,110 @@ KJ_EXTERN_BEGIN
 
 #if defined(_MSC_VER)
 #define KJ_COMPILER_MSVC
-#define KJ_COMPILER_WARNING_BEGIN __pragma(warning(push))
-#define KJ_COMPILER_WARNING_END __pragma(warning(pop))
-#define KJ_COMPILER_WARNING(W) __pragma(warning(disable:W))
-#define KJ_COMPILER_WARNING_PEDANTIC
-#define KJ_COMPILER_WARNING_ZERO_SIZED_ARRAY 4200
-#define KJ_COMPILER_WARNING_ANONYMOUS_STRUCT 4201
-#define KJ_COMPILER_WARNING_MISSING_BRACES
-#define KJ_COMPILER_WARNING_DEPRECATED 4996
-#define KJ_COMPILER_WARNING_LOSS_OF_DATA 4244
-#define KJ_COMPILER_WARNING_VARIADIC_MACROS
+#define KJ_WARNING_DISABLE_BEGIN __pragma(warning(push))
+#define KJ_WARNING_DISABLE_END __pragma(warning(pop))
+#define KJ_WARNING_DISABLE_ANONYMOUS_STRUCT __pragma(warning(disable:4201))
+#define KJ_WARNING_DISABLE_DEPRECATED __pragma(warning(disable:4996))
+#define KJ_WARNING_DISABLE_LOSS_OF_DATA __pragma(warning(disable:4244))
+#define KJ_WARNING_DISABLE_MISSING_BRACES
+#define KJ_WARNING_DISABLE_VARIADIC_MACROS
+#define KJ_WARNING_DISABLE_ZERO_SIZED_ARRAY __pragma(warning(disable:4200))
+#define KJ_WARNING_DISABLE_STRICT_ALIASING
 #elif defined(__clang__)
+#ifndef va_start
+typedef __builtin_va_list va_list;
+#define va_start(ap, param) __builtin_va_start(ap, param)
+#define va_end(ap) __builtin_va_end(ap)
+#define va_arg(ap, type) __builtin_va_arg(ap, type)
+#endif
 #define KJ_COMPILER_CLANG
-#define KJ_COMPILER_WARNING_BEGIN _Pragma("clang diagnostic push")
-#define KJ_COMPILER_WARNING_END _Pragma("clang diagnostic pop")
-#define KJ_COMPILER_WARNING(W) _Pragma(kj_str_of(clang diagnostic ignored W))
-#define KJ_COMPILER_WARNING_PEDANTIC "-Wpedantic"
-#define KJ_COMPILER_WARNING_ZERO_SIZED_ARRAY "-Wzero-length-array"
-#define KJ_COMPILER_WARNING_ANONYMOUS_STRUCT KJ_COMPILER_WARNING_PEDANTIC
-#define KJ_COMPILER_WARNING_MISSING_BRACES "-Wmissing-braces"
-#define KJ_COMPILER_WARNING_DEPRECATED KJ_COMPILER_WARNING_PEDANTIC
-#define KJ_COMPILER_WARNING_LOSS_OF_DATA KJ_COMPILER_WARNING_PEDANTIC
-#define KJ_COMPILER_WARNING_VARIADIC_MACROS "-Wvariadic-macros"
-#elif defined(__clang__)
+#define KJ_WARNING_DISABLE_BEGIN _Pragma("clang diagnostic push")
+#define KJ_WARNING_DISABLE_END _Pragma("clang diagnostic pop")
+#define KJ_WARNING_DISABLE_ANONYMOUS_STRUCT                                     \
+    _Pragma("clang diagnostic ignored \"-Wc11-extensions\"")                    \
+    _Pragma("clang diagnostic ignored \"-Wgnu-anonymous-struct\"")              \
+    _Pragma("clang diagnostic ignored \"-Wnested-anon-types\"")
+#define KJ_WARNING_DISABLE_DEPRECATED
+#define KJ_WARNING_DISABLE_LOSS_OF_DATA
+#define KJ_WARNING_DISABLE_MISSING_BRACES                                       \
+    _Pragma("clang diagnostic ignored \"-Wmissing-braces\"")
+#define KJ_WARNING_DISABLE_VARIADIC_MACROS                                      \
+    _Pragma("clang diagnostic ignored \"-Wvariadic-macros\"")
+#define KJ_WARNING_DISABLE_ZERO_SIZED_ARRAY                                     \
+    _Pragma("clang diagnostic ignored \"-Wzero-length-array\"")
+#define KJ_WARNING_DISABLE_STRICT_ALIASING
 #elif defined(__GNUC__) || defined(__GNUG__)
+#ifndef va_start
+typedef __builtin_va_list va_list;
+#define va_start(ap, param) __builtin_va_start(ap, param)
+#define va_end(ap) __builtin_va_end(ap)
+#define va_arg(ap, type) __builtin_va_arg(ap, type)
+#endif
 #define KJ_COMPILER_GNU
-#define KJ_COMPILER_WARNING_BEGIN _Pragma("GCC diagnostic push")
-#define KJ_COMPILER_WARNING_END _Pragma("GCC diagnostic pop")
-#define KJ_COMPILER_WARNING(W) _Pragma(kj_str_of(GCC diagnostic ignored W))
-#define KJ_COMPILER_WARNING_PEDANTIC "-Wpedantic"
-#define KJ_COMPILER_WARNING_ZERO_SIZED_ARRAY KJ_COMPILER_WARNING_PEDANTIC
-#define KJ_COMPILER_WARNING_ANONYMOUS_STRUCT KJ_COMPILER_WARNING_PEDANTIC
-#define KJ_COMPILER_WARNING_MISSING_BRACES "-Wmissing-braces"
-#define KJ_COMPILER_WARNING_DEPRECATED KJ_COMPILER_WARNING_PEDANTIC
-#define KJ_COMPILER_WARNING_LOSS_OF_DATA KJ_COMPILER_WARNING_PEDANTIC
-#define KJ_COMPILER_WARNING_VARIADIC_MACROS "-Wvariadic-macros"
+#define KJ_WARNING_DISABLE_BEGIN _Pragma("GCC diagnostic push")
+#define KJ_WARNING_DISABLE_END _Pragma("GCC diagnostic pop")
+#define KJ_WARNING_DISABLE_ANONYMOUS_STRUCT                                     \
+    _Pragma("GCC diagnostic ignored \"-Wpedantic\"")
+#define KJ_WARNING_DISABLE_DEPRECATED
+#define KJ_WARNING_DISABLE_LOSS_OF_DATA
+#define KJ_WARNING_DISABLE_MISSING_BRACES                                       \
+    _Pragma("GCC diagnostic ignored \"-Wmissing-braces\"")
+#define KJ_WARNING_DISABLE_VARIADIC_MACROS
+    _Pragma("GCC diagnostic ignored \"-Wvariadic-macros\"")
+#define KJ_WARNING_DISABLE_ZERO_SIZED_ARRAY                                     \
+    _Pragma("GCC diagnostic ignored \"-Wpedantic\"")
+#define KJ_WARNING_DISABLE_STRICT_ALIASING                                      \
+    _Pragma("GCC diagnostic ignored \"-Wstrict-aliasing\"")
 #else
-#error Unsupported Compiler
+#error "Unsupported Compiler"
 #endif
 
-KJ_COMPILER_WARNING_BEGIN
-KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_VARIADIC_MACROS)
-
+#if !defined(KJ_ALIGN)
 #if defined(KJ_COMPILER_MSVC)
-#define KJ_PRAGMA(...) __pragma(__VA_ARGS__)
+#define kj_align(a) __declspec(align(a))
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#define KJ_PRAGMA(...) _Pragma(kj_str_of(__VA_ARGS__))
+#define kj_align(a) __attribute__((aligned(a)))
+#endif
+#define KJ_ALIGN(a) kj_align(a)
 #endif
 
-KJ_COMPILER_WARNING_BEGIN
+#if defined(KJ_ARCH_X86)
+#if defined(KJ_SYS_WIN32)
+#include <intrin.h>
+#elif defined(KJ_SYS_UNIX)
+#include <x86intrin.h>
+#endif
+
+typedef KJ_ALIGN(16) __m128 f32x4;
+typedef KJ_ALIGN(16) __m128i i32x4;
+#elif defined(KJ_ARCH_ARM) && defined(__ARM_NEON)
+#include <arm_neon.h>
+
+typedef KJ_ALIGN(16) float32x4_t f32x4;
+typedef KJ_ALIGN(16) int32x4_t i32x4;
+#endif
 
 #define KJ_FALSE (0 != 0)
 #define KJ_TRUE (0 == 0)
 
+#if defined(__cplusplus)
+#define KJ_CPP
+#endif
+
+#if defined(__STDC_VERSION__)
+#if __STDC_VERSION__ >= 201112L
+#define KJ_C11
+#endif
+#if __STDC_VERSION__ >= 199901L
+#define KJ_C99
+#endif
+#endif
+
 enum {
-    KJ_MAX_ASCII = 0x7F,
-    KJ_MAX_LATIN1 = 0xFF,
-    KJ_MAX_UNICODE = 0x10FFFF,
-    KJ_BIT_FLAG_NONE = 0,
+    KJ_ASCII_MAX = 0x7F,
+    KJ_LATIN1_MAX = 0xFF,
+    KJ_UNICODE_MAX = 0x10FFFF,
+    KJ_UNICODE_REPLACEMENT = 0xFFFD,
     KJ_PATH_MAX = 4096,
     KJ_NAME_MAX = 255,
 #if defined(KJ_SYS_WIN32)
@@ -196,12 +240,12 @@ enum {
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
 #define KJ_ENDIAN KJ_LE
 #else
-#error Unsupported Endianness
+#error "Unsupported Endianness"
 #endif
 #elif defined(KJ_SYS_WIN32)
 #define KJ_ENDIAN KJ_LE
 #else
-#error Unsupported Endianness
+#error "Unsupported Endianness"
 #endif
 
 #if !defined(NULL)
@@ -224,13 +268,13 @@ enum {
 
 #if !defined(KJ_EXTERN)
 #if defined(KJ_COMPILER_MSVC)
-#if defined(__cplusplus)
+#if defined(KJ_CPP)
 #define KJ_EXTERN extern "C" __declspec(dllexport)
 #else
 #define KJ_EXTERN __declspec(dllexport)
 #endif
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#if defined(__cplusplus)
+#if defined(KJ_CPP)
 #define KJ_EXTERN extern "C"
 #else
 #define KJ_EXTERN
@@ -239,7 +283,7 @@ enum {
 #endif
 
 #if !defined(restrict)
-#if defined(KJ_COMPILER_MSVC) && !defined(__cplusplus) && _MSC_VER <= 1800
+#if defined(KJ_COMPILER_MSVC) && !defined(KJ_CPP) && _MSC_VER <= 1800
 #define restrict __restrict
 #endif
 #endif
@@ -248,7 +292,11 @@ enum {
 #if defined(KJ_COMPILER_MSVC)
 #define KJ_INLINE __forceinline
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+#if defined(KJ_C99)
 #define KJ_INLINE __attribute__((always_inline)) inline
+#else
+#define KJ_INLINE
+#endif
 #endif
 #endif
 
@@ -276,7 +324,7 @@ enum {
 #define KJ_INTERN static
 #endif
 
-/// Utility Macros
+/* Utility Macros */
 
 #if !defined(elif)
 #define elif else if
@@ -294,56 +342,33 @@ enum {
 #if !defined(kj_isize_of)
 #define kj_isize_of(a) (kj_cast(isize, sizeof(a)))
 #define kj_usize_of(a) (kj_cast(usize, sizeof(a)))
-#define KJ_ISIZE_OF(a) kj_isize_of(a)
-#define KJ_USIZE_OF(a) kj_usize_of(a)
 #endif
 
 #if !defined(kj_count_of)
 #define kj_count_of(a) (kj_isize_of(a) / kj_isize_of((a)[0]))
-#define KJ_COUNT_OF(a) kj_count_of(a)
-#endif
-
-#if !defined(kj_str_of)
-#define kj_str_of(a) #a
-#define KJ_STR_OF(a) kj_str_of(a)
 #endif
 
 #if !defined(kj_offset_of)
 #define kj_offset_of(s, m) (kj_cast(isize, (&(kj_cast(s*, 0)->m))))
-#define KJ_OFFSET_OF(s, m) kj_offset_of(s, m)
 #endif
 
 #if !defined(kj_align_of)
 #define kj_align_of(type) (kj_offset_of(struct { u8 c; type member; }, member))
-#define KJ_ALIGN_OF(type) kj_align_of(type)
-#endif
-
-#if !defined(KJ_ALIGN)
-#if defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#define kj_align(a) __attribute__((aligned(a)))
-#define KJ_ALIGN(a) kj_align(a)
-#elif defined(KJ_COMPILER_MSVC)
-#define kj_align(a) __declspec(align(a))
-#define KJ_ALIGN(a) kj_align(a)
-#endif
 #endif
 
 #if !defined(kj_align_on)
 #define kj_align_on(p, a)                                                       \
     kj_cast(void*, (kj_cast(uptr, p) + ((a) - 1)) & ~((a) - 1))
-#define KJ_ALIGN_ON(p, a) kj_align_on(p, a)
 #endif
 
 #if !defined(kj_concat)
-#define kj_join(a, b) kj_join1(a, b)
-#define kj_join1(a, b) kj_join2(a, b)
-#define kj_join2(a, b) a##b
-#define KJ_JOIN(a, b) kj_join(a, b)
+#define KJ_JOIN(a, b) KJ_JOIN1(a, b)
+#define KJ_JOIN1(a, b) KJ_JOIN2(a, b)
+#define KJ_JOIN2(a, b) a##b
 #endif
 
 #if !defined(kj_unused)
 #define kj_unused(a) kj_cast(void, (a))
-#define KJ_UNUSED(a) kj_unused(a)
 #endif
 
 #if !defined(kj_min)
@@ -354,43 +379,28 @@ enum {
 #define kj_lerp(t, min, max) ((1.0f - (t)) * (min) + (t) * (max))
 #define kj_range(a, fmin, fmax, tmin, tmax)                                     \
     (((a) - (fmin)) * ((tmax) - (tmin)) / (((fmax) - (fmin)) + (tmin)))
-#define kj_swap(T, a, b) { T tmp_##__LINE__ = a; a = b; b = tmp_##__LINE__; }
+#define kj_swap(T, a, b)                                                        \
+    do { T tmp_##__LINE__ = a; a = b; b = tmp_##__LINE__; } while(0)
 #define kj_abs(a) ((a) > 0 ? (a): -(a))
 #define kj_sign(a) ((a) >= 0 ? 1: -1)
 #define kj_round_to(a, b) ((a) + (((b) - 1) - (((a) - 1) % (b))))
-#define KJ_MIN(a, b) kj_min(a, b)
-#define KJ_MAX(a, b) kj_max(a, b)
-#define KJ_CLAMP(a, min, max) kj_clamp(a, min, max)
-#define KJ_WRAP(a, min, max) kj_wrap(a, min, max)
-#define KJ_LERP(t, min, max) kj_lerp(t, min, max)
-#define KJ_RANGE(a, fmin, fmax, tmin, tmax) kj_range(a, fmin, fmax, tmin, tmax)
-#define KJ_SWAP(T, a, b) kj_swap(T, a, b)
-#define KJ_ABS(a) kj_abs(a)
-#define KJ_SIGN(a) kj_sign(a)
-#define KJ_ROUND_TO(a, b) kj_round_to(a, b)
 #endif
 
-#if !defined(kj_kb_to_bytes)
-#define kj_kb_to_bytes(a) ((a) * 1024)
-#define kj_mb_to_bytes(a) (kj_kb_to_bytes((a)) * 1024)
-#define kj_gb_to_bytes(a) (kj_mb_to_bytes((a)) * 1024)
-#define kj_tb_to_bytes(a) (kj_gb_to_bytes((a)) * 1024)
-#define kj_bytes_to_kb(a) ((a) / 1024)
-#define kj_bytes_to_mb(a) (kj_bytes_to_kb((a)) / 1024)
-#define kj_bytes_to_gb(a) (kj_bytes_to_mb((a)) / 1024)
-#define kj_bytes_to_tb(a) (kj_bytes_to_gb((a)) / 1024)
-#define KJ_KB_TO_BYTES(a) kj_kb_to_bytes(a)
-#define KJ_MB_TO_BYTES(a) kj_mb_to_bytes(a)
-#define KJ_GB_TO_BYTES(a) kj_gb_to_bytes(a)
-#define KJ_TB_TO_BYTES(a) kj_tb_to_bytes(a)
-#define KJ_BYTES_TO_KB(a) kj_bytes_to_kb(a)
-#define KJ_BYTES_TO_MB(a) kj_bytes_to_mb(a)
-#define KJ_BYTES_TO_GB(a) kj_bytes_to_gb(a)
-#define KJ_BYTES_TO_TB(a) kj_bytes_to_tb(a)
+#if !defined(kj_kb_to_b)
+#define kj_kb_to_b(a) ((a) * 1024)
+#define kj_mb_to_b(a) (kj_kb_to_b((a)) * 1024)
+#define kj_gb_to_b(a) (kj_mb_to_b((a)) * 1024)
+#define kj_tb_to_b(a) (kj_gb_to_b((a)) * 1024)
+#define kj_b_to_kb(a) ((a) / 1024)
+#define kj_b_to_mb(a) (kj_b_to_kb((a)) / 1024)
+#define kj_b_to_gb(a) (kj_b_to_mb((a)) / 1024)
+#define kj_b_to_tb(a) (kj_b_to_gb((a)) / 1024)
 #endif
 
-#if !defined(KJ_BIT_FLAG)
-#define KJ_BIT_FLAG(a) (0x01 << (a))
+#if !defined(KJ_FLAG)
+#define KJ_FLAG(a) (0x01 << (a))
+#define KJ_FLAG_NONE (0)
+#define KJ_FLAG_ALL (I32_MAX)
 #endif
 
 #if !defined(kj_copy)
@@ -406,27 +416,21 @@ enum {
 #define kj_move __builtin_memmove
 #endif
 
-#define KJ_COPY kj_copy
-#define KJ_SET kj_set
-#define KJ_ZERO kj_zero
-#define KJ_MOVE kj_move
 #define kj_one(p, s) kj_set(p, s, 1)
 #define kj_fill(p, s) kj_set(p, s, 0xFF)
-#define KJ_ONE(p, s) KJ_SET(p, s, 1)
-#define KJ_FILL(p, s) KJ_SET(p, s, 0xFF)
 #endif
 
-#if !defined(KJ_TLS)
-#if defined(KJ_COMPILER_MSVC)
-#define kj_tls __declspec(thread)
-#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#define kj_tls __thread
-#endif
-#define KJ_TLS kj_tls
+#if defined(KJ_C11)
+#define KJ_STATIC_ASSERT(expr) _Static_assert(expr, kj_str_of(expr))
+#else
+#define KJ_STATIC_ASSERT(expr)                                                  \
+    typedef void* KJ_JOIN(KJ_STATIC_ASSERT_, __LINE__)[(expr) * 2 - 1]
 #endif
 
-/// Types
+/* Types */
 
+#if defined(KJ_C99)
+#include <stdint.h>
 typedef int8_t i8;
 typedef uint8_t u8;
 typedef int16_t i16;
@@ -435,25 +439,44 @@ typedef int32_t i32;
 typedef uint32_t u32;
 typedef int64_t i64;
 typedef uint64_t u64;
+#elif defined(KJ_COMPILER_MSVC)
+typedef signed __int8 i8;
+typedef unsigned __int8 u8;
+typedef signed __int16 i16;
+typedef unsigned __int16 u16;
+typedef signed __int32 i32;
+typedef unsigned __int32 u32;
+typedef signed __int64 i64;
+typedef unsigned __int64 u64;
+#else
+typedef signed char i8;
+typedef unsigned char u8;
+typedef signed short i16;
+typedef unsigned short u16;
+typedef signed int i32;
+typedef unsigned int u32;
+typedef signed long i64;
+typedef unsigned long u64;
+#endif
 
 #if !defined(KJ_I8_MIN)
-#define KJ_I8_MIN (-128)
-#define KJ_I8_MAX (127)
-#define KJ_I16_MIN (-32768)
-#define KJ_I16_MAX (32767)
-#define KJ_I32_MIN (-2147483648)
-#define KJ_I32_MAX (2147483647)
-#define KJ_I64_MIN (-9223372036854775807)
-#define KJ_I64_MAX (9223372036854775807)
+#define I8_MIN (-128)
+#define I8_MAX (127)
+#define I16_MIN (-32768)
+#define I16_MAX (32767)
+#define I32_MIN (-2147483648)
+#define I32_MAX (2147483647)
+#define I64_MIN (-9223372036854775808)
+#define I64_MAX (9223372036854775807)
 
-#define KJ_U8_MIN (0x00)
-#define KJ_U8_MAX (0xFF)
-#define KJ_U16_MIN (0x0000)
-#define KJ_U16_MAX (0xFFFF)
-#define KJ_U32_MIN (0x00000000)
-#define KJ_U32_MAX (0xFFFFFFFF)
-#define KJ_U64_MIN (0x0000000000000000)
-#define KJ_U64_MAX (0xFFFFFFFFFFFFFFFF)
+#define U8_MIN (0x00)
+#define U8_MAX (0xFF)
+#define U16_MIN (0x0000)
+#define U16_MAX (0xFFFF)
+#define U32_MIN (0x00000000)
+#define U32_MAX (0xFFFFFFFF)
+#define U64_MIN (0x0000000000000000)
+#define U64_MAX (0xFFFFFFFFFFFFFFFF)
 #endif
 
 typedef i8 b8;
@@ -467,19 +490,22 @@ typedef i32 isize;
 typedef u32 usize;
 #endif
 
-#if !defined(KJ_ISIZE_MIN)
-#if defined(KJ_ARCH_64_BIT)
-#define KJ_ISIZE_MIN KJ_I64_MIN
-#define KJ_ISIZE_MAX KJ_I64_MAX
+KJ_STATIC_ASSERT(sizeof(void*) == sizeof(isize));
+KJ_STATIC_ASSERT(sizeof(void*) == sizeof(usize));
 
-#define KJ_USIZE_MIN KJ_U64_MIN
-#define KJ_USIZE_MAX KJ_U64_MAX
-#elif defined(KJ_ARCH_32_BIT)
-#define KJ_ISIZE_MIN KJ_I32_MIN
-#define KJ_ISIZE_MAX KJ_I32_MAX
+#if !defined(ISIZE_MIN)
+#if defined(ARCH_64_BIT)
+#define ISIZE_MIN I64_MIN
+#define ISIZE_MAX I64_MAX
 
-#define KJ_USIZE_MIN KJ_U32_MIN
-#define KJ_USIZE_MAX KJ_U32_MAX
+#define USIZE_MIN U64_MIN
+#define USIZE_MAX U64_MAX
+#elif defined(ARCH_32_BIT)
+#define ISIZE_MIN I32_MIN
+#define ISIZE_MAX I32_MAX
+
+#define USIZE_MIN U32_MIN
+#define USIZE_MAX U32_MAX
 #endif
 #endif
 
@@ -490,27 +516,26 @@ typedef isize dptr;
 typedef float f32;
 typedef double f64;
 
-#if !defined(KJ_F32_MIN)
-#define KJ_F32_MIN kj_cast(f32, -3.402823e+38)
-#define KJ_F32_MAX kj_cast(f32, 3.402823e+38)
-#define KJ_F32_EPS kj_cast(f32, 1.192093e-07)
+#if !defined(F32_MIN)
+#define F32_MIN (-3.402823e+38f)
+#define F32_MAX (3.402823e+38f)
+#define F32_EPS (1.192093e-07f)
 
-#define KJ_F64_MIN kj_cast(f64, -1.797693e+308)
-#define KJ_F64_MAX kj_cast(f64, 1.797693e+308)
-#define KJ_F64_EPS kj_cast(f64, 2.220446e-16)
+#define F64_MIN (-1.797693e+308)
+#define F64_MAX (1.797693e+308)
+#define F64_EPS (2.220446e-16)
 #endif
 
-#define KJ_STATIC_ASSERT(n, a) typedef void* KJ_STATIC_ASSERT_##n[(a) * 2 - 1]
-KJ_STATIC_ASSERT(I8, kj_isize_of(i8) == 1);
-KJ_STATIC_ASSERT(U8, kj_isize_of(u8) == 1);
-KJ_STATIC_ASSERT(I16, kj_isize_of(i16) == 2);
-KJ_STATIC_ASSERT(U16, kj_isize_of(u16) == 2);
-KJ_STATIC_ASSERT(I32, kj_isize_of(i32) == 4);
-KJ_STATIC_ASSERT(U32, kj_isize_of(u32) == 4);
-KJ_STATIC_ASSERT(I64, kj_isize_of(i64) == 8);
-KJ_STATIC_ASSERT(U64, kj_isize_of(u64) == 8);
-KJ_STATIC_ASSERT(F32, kj_isize_of(f32) == 4);
-KJ_STATIC_ASSERT(F64, kj_isize_of(f64) == 8);
+KJ_STATIC_ASSERT(sizeof(i8) == 1);
+KJ_STATIC_ASSERT(sizeof(u8) == 1);
+KJ_STATIC_ASSERT(sizeof(i16) == 2);
+KJ_STATIC_ASSERT(sizeof(u16) == 2);
+KJ_STATIC_ASSERT(sizeof(i32) == 4);
+KJ_STATIC_ASSERT(sizeof(u32) == 4);
+KJ_STATIC_ASSERT(sizeof(i64) == 8);
+KJ_STATIC_ASSERT(sizeof(u64) == 8);
+KJ_STATIC_ASSERT(sizeof(f32) == 4);
+KJ_STATIC_ASSERT(sizeof(f64) == 8);
 
 #define KJ_TYPE_MAP(X)                                                          \
     X(KJ_TYPE_CHAR, "char", char)                                               \
@@ -540,36 +565,47 @@ KJ_STATIC_ASSERT(F64, kj_isize_of(f64) == 8);
     X(KJ_ERR_INTERRUPED, "Interrupted")                                         \
     X(KJ_ERR_ILLEGAL_SEEK, "Illegal Seek")                                      \
     X(KJ_ERR_ALLOC_FAILED, "Allocation Failed")                                 \
-    X(KJ_ERR_ADDR_IN_USE, "Address In Use")                                     \
-    X(KJ_ERR_ADDR_NOT_AVAILABLE, "Address Not Available")                       \
-    X(KJ_ERR_CONNECTION_ABORTED, "Connection Aborted")                          \
-    X(KJ_ERR_CONNECTION_REFUSED, "Connection Refused")                          \
-    X(KJ_ERR_CONNECTION_RESET, "Connection Reset")                              \
-    X(KJ_ERR_NOT_CONNECTED, "Not Connected")                                    \
     X(KJ_ERR_WOULD_BLOCK, "Would Block")                                        \
-    X(KJ_ERR_NO_MORE_FILES, "No More Files")                                    \
     X(KJ_ERR_RANGE, "Out of Range")                                             \
+    X(KJ_ERR_BUSY, "Device or Resource Busy")                                   \
     X(KJ_ERR_SYNTAX, "Invalid Syntax")
 
-typedef enum kjErr {
-    KJ_ERR_UNKNOWN = KJ_I8_MIN,
+enum {
+    KJ_ERR_UNKNOWN = I8_MIN,
 #define KJ_ERR_ENUM(type, name) type,
     KJ_ERR_MAP(KJ_ERR_ENUM)
 #undef KJ_ERR_ENUM
     KJ_ERR_COUNT,
     KJ_ERR_NONE = 0
-} kjErr;
+};
+
+typedef isize kjErr;
 
 KJ_API const char* kj_err_str(kjErr err);
+KJ_API kjErr kj_err_from_sys(void);
 
 #define kj_is_ok(v) (!((v) < KJ_ERR_NONE))
 #define kj_is_err(v) ((v) < KJ_ERR_NONE)
 
-/// Memory
+/* Memory */
 
 enum {
-    KJ_ALLOC_NONE = KJ_BIT_FLAG_NONE
+    KJ_ALLOC_NONE = KJ_FLAG_NONE
 };
+
+#if defined(kj_alloc) && defined(kj_free) && defined(kj_realloc)
+#elif !defined(kj_alloc) && !defined(kj_free) && !defined(kj_realloc)
+#else
+#error "kj_alloc, kj_free and kj_realloc must all be defined."
+#endif
+
+#if !defined(kj_alloc)
+#define kj_alloc(s) kj_global_alloc(s, KJ_ALLOC_NONE)
+#define kj_zalloc(s) kj_global_zalloc(s, KJ_ALLOC_NONE)
+#define kj_free(d) kj_global_free(d, KJ_ALLOC_NONE)
+#define kj_realloc(d, s) kj_global_realloc(d, s, KJ_ALLOC_NONE)
+#define kj_alloc_aligned(s, a) kj_global_alloc_aligned(s, a, KJ_ALLOC_NONE)
+#endif
 
 KJ_API void* kj_global_alloc(isize size, u32 flags);
 KJ_API void* kj_global_zalloc(isize size, u32 flags);
@@ -580,19 +616,19 @@ KJ_API void* kj_global_alloc_aligned(isize size, isize alignment, u32 flags);
 typedef struct kjAllocator kjAllocator;
 
 #define KJ_ALLOCATOR_ALLOC_FN(name)                                             \
-    void* name(const kjAllocator* self, isize size)
+    void* name(kjAllocator* allocator, isize size)
 typedef KJ_ALLOCATOR_ALLOC_FN(kjAllocatorAllocFn);
 #define KJ_ALLOCATOR_ZALLOC_FN(name)                                            \
-    void* name(const kjAllocator* self, isize size)
+    void* name(kjAllocator* allocator, isize size)
 typedef KJ_ALLOCATOR_ZALLOC_FN(kjAllocatorZallocFn);
 #define KJ_ALLOCATOR_FREE_FN(name)                                              \
-    void name(const kjAllocator* self, void* data)
+    void name(kjAllocator* allocator, void* data)
 typedef KJ_ALLOCATOR_FREE_FN(kjAllocatorFreeFn);
 #define KJ_ALLOCATOR_REALLOC_FN(name)                                           \
-    void* name(const kjAllocator* self, void* data, isize size)
+    void* name(kjAllocator* allocator, void* data, isize size)
 typedef KJ_ALLOCATOR_REALLOC_FN(kjAllocatorReallocFn);
 #define KJ_ALLOCATOR_ALLOC_ALIGNED_FN(name)                                     \
-    void* name(const kjAllocator* self, isize size, isize alignment)
+    void* name(kjAllocator* allocator, isize size, isize alignment)
 typedef KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kjAllocatorAllocAlignedFn);
 
 struct kjAllocator {
@@ -616,16 +652,38 @@ struct kjAllocator {
     kj_cast(kjAllocator*, (a))->alloc_aligned(                                  \
             kj_cast(kjAllocator*, (a)), (s), (alignment))
 
-typedef kjAllocator kjHeapAllocator;
-
-KJ_API kjHeapAllocator kj_heap_allocator(u32 flags);
 KJ_API KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc);
 KJ_API KJ_ALLOCATOR_ZALLOC_FN(kj_heap_zalloc);
 KJ_API KJ_ALLOCATOR_FREE_FN(kj_heap_free);
 KJ_API KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc);
 KJ_API KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj_heap_alloc_aligned);
 
-/// Debug
+KJ_GLOBAL const kjAllocator KJ_HEAP_ALLOCATOR = {
+    kj_heap_alloc,
+    kj_heap_zalloc,
+    kj_heap_free,
+    kj_heap_realloc,
+    kj_heap_alloc_aligned,
+    0
+};
+
+typedef struct kjLinearAllocator {
+    kjAllocator allocator;
+    u8* data;
+    isize size;
+    isize used;
+    isize offset;
+} kjLinearAllocator;
+
+KJ_API kjLinearAllocator kj_linear_allocator(void* data, isize size, u32 flags);
+KJ_API void kj_linear_allocator_reset(kjLinearAllocator* self);
+KJ_API KJ_ALLOCATOR_ALLOC_FN(kj_linear_alloc);
+KJ_API KJ_ALLOCATOR_ALLOC_FN(kj_linear_zalloc);
+KJ_API KJ_ALLOCATOR_FREE_FN(kj_linear_free);
+KJ_API KJ_ALLOCATOR_REALLOC_FN(kj_linear_realloc);
+KJ_API KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj_linear_alloc_aligned);
+
+/* Debug */
 
 #define KJ_PRIORITY_MAP(X)                                                      \
     X(KJ_PRIORITY_CRITICAL, "Critical")                                         \
@@ -658,8 +716,8 @@ KJ_API KJ_LOG_HANDLER(kj_log_handler);
 #define KJ_CUSTOM_LOG_USR NULL
 #endif
 
-KJ_COMPILER_WARNING_BEGIN
-KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_VARIADIC_MACROS)
+KJ_WARNING_DISABLE_BEGIN
+KJ_WARNING_DISABLE_VARIADIC_MACROS
 
 #if !defined(kj_log)
 #define kj_log(priority, ...) KJ_CUSTOM_LOG_HANDLER(                            \
@@ -672,8 +730,6 @@ KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_VARIADIC_MACROS)
 #define kj_log_debug(...) kj_log(KJ_PRIORITY_DEBUG, __VA_ARGS__)
 #define kj_log_verbose(...) kj_log(KJ_PRIORITY_VERBOSE, __VA_ARGS__)
 #endif
-
-KJ_COMPILER_WARNING_END
 
 #define KJ_ASSERT_HANDLER(name) void name(                                      \
         const char* expr, const char* file, isize line, const char* fn,         \
@@ -732,9 +788,11 @@ KJ_API KJ_ASSERT_HANDLER(kj_assert_handler);
 #define kj_panic(...)
 #endif
 
+KJ_WARNING_DISABLE_END
+
 #define kj_unimplemented() kj_panic("UNIMPLEMENTED")
 
-/// Endian
+/* Endian */
 
 KJ_API u16 kj_byte_swap_u16(u16 a);
 KJ_API u32 kj_byte_swap_u32(u32 a);
@@ -770,7 +828,7 @@ KJ_API u64 kj_byte_swap_u64(u64 a);
 #endif
 #endif
 
-/// Printing
+/* Printing */
 
 #if defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
 #define KJ_FMT_VARGS(a) __attribute__((format(printf, (a), ((a) + 1))))
@@ -790,14 +848,12 @@ KJ_API isize kj_vsnprintf(char* buf, isize size, const char* fmt, va_list v);
 KJ_API isize kj_snprintf(
         char* buf, isize size, KJ_FMT_STR const char* fmt, ...) KJ_FMT_VARGS(3);
 
-/// Strings/Characters
-
-typedef i32 rune;
+/* Strings/Characters */
 
 typedef u8 utf8;
 
 KJ_API b32 kj_char_is_eol(u32 c);
-KJ_API b32 kj_char_is_ws(u32 c);
+KJ_API b32 kj_char_is_whitespace(u32 c);
 KJ_API b32 kj_char_is_alpha(u32 c);
 KJ_API b32 kj_char_is_digit(u32 c);
 KJ_API b32 kj_char_is_alphanum(u32 c);
@@ -823,10 +879,13 @@ KJ_API const char* kj_str_ltrim(const char* s, isize size);
 KJ_API const char* kj_str_rtrim(const char* s, isize size);
 
 KJ_API isize kj_utf8_count(const char* s, isize size);
+KJ_API isize kj_utf8_size(char c);
 
 #if defined(KJ_SYS_WIN32)
-KJ_API i32 kj_utf8_to_ucs(WCHAR* ws, i32 count, const char* s);
+KJ_API i32 kj_utf8_to_ucs(WCHAR* ws, i32 wcount, const char* s);
 KJ_API i32 kj_ucs_to_utf8(char* s, i32 count, const WCHAR* ws);
+KJ_API WCHAR* kj_utf8_to_ucs_alloc(const char* s);
+KJ_API char* kj_ucs_to_utf8_alloc(const WCHAR* ws);
 #endif
 
 typedef char* kjStr;
@@ -834,9 +893,9 @@ typedef char* kjStr;
 #define KJ_STR_HEADER(s) (kj_cast(kjStrHeader*, (s)) - 1)
 #define kj_string_set_size(s, sz) (kj_cast(kjStrHeader*, (s)) - 1)->size = sz
 
-KJ_COMPILER_WARNING_BEGIN
-KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_ZERO_SIZED_ARRAY)
-KJ_PRAGMA(pack(push, 1))
+KJ_WARNING_DISABLE_BEGIN
+KJ_WARNING_DISABLE_ZERO_SIZED_ARRAY
+#pragma pack(push, 1)
 
 typedef struct kjStrHeader {
     kjAllocator* allocator;
@@ -845,8 +904,8 @@ typedef struct kjStrHeader {
     char data[0];
 } kjStrHeader;
 
-KJ_PRAGMA(pack(pop))
-KJ_COMPILER_WARNING_END
+#pragma pack(pop)
+KJ_WARNING_DISABLE_END
 
 KJ_API kjStr kj_string(kjAllocator* allocator, const char* s, isize capacity);
 KJ_API isize kj_string_size(kjStr s);
@@ -859,25 +918,7 @@ KJ_API kjStr kj_string_resize(kjStr s, isize size);
 KJ_API kjStr kj_string_append(kjStr s1, kjStr s2);
 KJ_API kjStr kj_string_append_str(kjStr s1, const char* s2, isize size);
 
-/// Dynamic Libraries
-
-#if defined(KJ_SYS_WIN32)
-typedef HMODULE kjLib;
-typedef FARPROC kjLibFn;
-#elif defined(KJ_SYS_UNIX)
-typedef void* kjLib;
-typedef void (*kjLibFn)(void);
-#endif
-KJ_API kjErr kj_lib_open(kjLib* self, const char* path);
-KJ_API kjErr kj_lib_fn(const kjLib* self, kjLibFn* fn, const char* name);
-KJ_API void kj_lib_close(const kjLib* self);
-
-/// Filtering
-
-#define KJ_PREDICATE_FN(name) b32 name(const void* value)
-typedef KJ_PREDICATE_FN(kjPredicateFn);
-
-/// Sorting
+/* Sorting */
 
 typedef enum kjOrdering {
     KJ_ORDERING_LESS = -1,
@@ -902,7 +943,7 @@ typedef KJ_SWAP_FN(kjSwapFn);
 KJ_API void kj_sort_insertion(
         void* arr, isize count, kjCmpFn cmp, kjSwapFn swap);
 
-/// Date/Time
+/* Date/Time */
 
 #define KJ_DATETIME_UTC_ISO_FMT "%04d-%02d-%02dT%02d:%02d:%02dZ"
 #define KJ_DATETIME_LOCAL_ISO_FMT "%04d-%02d-%02dT%02d:%02d:%02d%c%02d:%02d"
@@ -930,21 +971,21 @@ KJ_API u64 kj_datetime_to_timestamp(kjDateTime dt);
 
 KJ_API u64 kj_time_ms(void);
 
-/// Hashing
+/* Hashing */
 
 KJ_API u32 kj_hash_str(const char* s, isize size);
 
-/// I/O
+/* I/O */
 
 enum {
-    KJ_FILE_NONE = KJ_BIT_FLAG_NONE,
-    KJ_FILE_READ = KJ_BIT_FLAG(0),
-    KJ_FILE_WRITE = KJ_BIT_FLAG(1),
-    KJ_FILE_RDWR = KJ_FILE_READ | KJ_FILE_WRITE,
-    KJ_FILE_CREATE = KJ_BIT_FLAG(2),
-    KJ_FILE_CREATE_NEW = KJ_BIT_FLAG(3),
-    KJ_FILE_APPEND = KJ_BIT_FLAG(4),
-    KJ_FILE_TRUNCATE = KJ_BIT_FLAG(5)
+    KJ_O_READ = KJ_FLAG(0),
+    KJ_O_WRITE = KJ_FLAG(1),
+    KJ_O_RDWR = KJ_O_READ | KJ_O_WRITE,
+    KJ_O_CREATE = KJ_FLAG(2),
+    KJ_O_CREATE_NEW = KJ_FLAG(3),
+    KJ_O_APPEND = KJ_FLAG(4),
+    KJ_O_TRUNCATE = KJ_FLAG(5),
+    KJ_O_INVALID = KJ_FLAG_ALL
 };
 
 typedef enum kjSeekFrom {
@@ -954,9 +995,11 @@ typedef enum kjSeekFrom {
 } kjSeekFrom;
 
 #if defined(KJ_SYS_WIN32)
-typedef HANDLE kjFile;
+typedef HANDLE kjFd;
+#define KJ_FILE_INVALID NULL
 #elif defined(KJ_SYS_UNIX)
-typedef i32 kjFile;
+typedef i32 kjFd;
+#define KJ_FILE_INVALID -1
 #endif
 
 typedef enum kjFileType {
@@ -972,25 +1015,26 @@ typedef struct kjFileMetadata {
     kjFileType type;
 } kjFileMetadata;
 
-KJ_API kjErr kj_file_create(kjFile* self, const char* path);
-KJ_API kjErr kj_file_open(kjFile* self, const char* path, u32 flags);
-KJ_API kjErr kj_file_close(const kjFile* self);
-KJ_API kjErr kj_file_seek(const kjFile* self, i64 offset, kjSeekFrom seek);
-KJ_API isize kj_file_read(const kjFile* self, void* buf, isize size);
-KJ_API isize kj_file_write(const kjFile* self, const void* buf, isize size);
-KJ_API isize kj_file_read_at(
-        const kjFile* self, void* buf, isize size, i64 offset);
-KJ_API isize kj_file_write_at(
-        const kjFile* self, const void* buf, isize size, i64 offset);
-KJ_API kjErr kj_file_sync(const kjFile* self);
-KJ_API isize kj_file_slurp(
-        void** data, kjAllocator* allocator, const char* path, b32 terminate);
-KJ_API isize kj_file_spit(const char* path, const void* buf, isize size);
+KJ_API kjErr kj_file_create(kjFd* fd, const char* path);
+KJ_API kjErr kj_file_open(kjFd* fd, const char* path, u32 flags);
+KJ_API kjErr kj_file_close(kjFd fd);
+KJ_API isize kj_file_seek(kjFd fd, i64 offset, kjSeekFrom seek);
+KJ_API isize kj_file_read(kjFd fd, void* buf, isize size);
+KJ_API isize kj_file_write(kjFd fd, void* buf, isize size);
+KJ_API isize kj_file_read_at(kjFd fd, void* buf, isize size, i64 offset);
+KJ_API isize kj_file_write_at(kjFd fd, void* buf, isize size, i64 offset);
+KJ_API kjErr kj_file_sync(kjFd fd);
+KJ_API kjErr kj_file_map(void** buf, kjFd fd, u32 flags);
+KJ_API kjErr kj_file_map_path(
+        void** buf, kjFd* fd, const char* path, u32 flags);
+KJ_API kjErr kj_file_unmap(void* buf);
 
-KJ_API kjErr kj_file_metadata(kjFileMetadata* self, const kjFile* file);
-KJ_API kjErr kj_file_metadata_path(kjFileMetadata* self, const char* path);
+KJ_API isize kj_file_slurp(void** buf, const char* path);
 
-/// Paths
+KJ_API kjErr kj_file_metadata(kjFileMetadata* meta, kjFd fd);
+KJ_API kjErr kj_file_metadata_path(kjFileMetadata* meta, const char* path);
+
+/* Paths */
 
 KJ_API const char* kj_path_ext(const char* path, isize size);
 KJ_API const char* kj_path_base(const char* path, isize size, const char** end);
@@ -1006,56 +1050,21 @@ KJ_API b32 kj_path_exists(const char* path);
 KJ_API b32 kj_path_is_file(const char* path);
 KJ_API b32 kj_path_is_dir(const char* path);
 
-typedef struct kjReadDir {
-#if defined(KJ_SYS_WIN32)
-    WIN32_FIND_DATAW find;
-    HANDLE handle;
-    b32 first;
-#elif defined(KJ_SYS_UNIX)
-    DIR* dir;
-#endif
-} kjReadDir;
+/* Buf */
 
-KJ_COMPILER_WARNING_BEGIN
-KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_ANONYMOUS_STRUCT)
-
-typedef struct kjDirEntry {
-    isize count;
-    char path[KJ_PATH_MAX + 1];
-} kjDirEntry;
-
-KJ_COMPILER_WARNING_END
-
-KJ_API kjErr kj_read_dir_begin(kjReadDir* self, const char* path);
-KJ_API kjErr kj_read_dir_next(kjReadDir* self, kjDirEntry* entry);
-KJ_API void kj_read_dir_end(kjReadDir* self);
-
-/// Buffer
-
-typedef struct kjBuffer {
+typedef struct kjBuf {
     kjAllocator* allocator;
-    isize granularity;
-    isize capacity;
     isize size;
+    isize capacity;
+    isize granularity;
     u8* data;
-} kjBuffer;
+} kjBuf;
 
-KJ_API kjErr kj_buffer(
-        kjBuffer* self, kjAllocator* allocator, isize granularity);
-KJ_API void kj_buffer_destroy(kjBuffer* self);
-KJ_API kjErr kj_buffer_write(kjBuffer* self, const void* buf, isize size);
-KJ_API void kj_buffer_reset(kjBuffer* self);
-
-/// Dialog
-
-enum {
-    KJ_DIALOG_OPEN = KJ_BIT_FLAG(0),
-    KJ_DIALOG_SAVE = KJ_BIT_FLAG(1),
-    KJ_DIALOG_DIR = KJ_BIT_FLAG(2)
-};
-
-KJ_API isize kj_file_dialog(
-        char* path, isize size, u32 mode, const char* filters);
+KJ_API kjErr kj_buf(kjBuf* buf, kjAllocator* allocator, isize granularity);
+KJ_API void kj_buf_destroy(kjBuf* buf);
+KJ_API kjBuf kj_buf_slice(kjBuf* buf, isize start, isize end);
+KJ_API kjErr kj_buf_append(kjBuf* buf, const void* data, isize size);
+KJ_API void kj_buf_reset(kjBuf* self);
 
 KJ_EXTERN_END
 
@@ -1063,92 +1072,52 @@ KJ_EXTERN_END
 
 #if defined(KJ_IMPL)
 
-KJ_INTERN KJ_TLS char KJ__CHAR_BUF[KJ_PATH_MAX + 1] = {0};
-
+kjErr kj_err_from_sys(void) {
+    kjErr res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
-KJ_INTERN KJ_TLS WCHAR KJ__WCHAR_BUFA[KJ_PATH_MAX + 1] = {0};
-KJ_INTERN KJ_TLS WCHAR KJ__WCHAR_BUFB[KJ_PATH_MAX + 1] = {0};
-#endif
-
-KJ_INLINE kjErr kj_err_from_sys(i32 err) {
-    switch(err) {
-#if defined(KJ_SYS_WIN32)
-        case ERROR_SUCCESS: return KJ_ERR_NONE;
-        case ERROR_ACCESS_DENIED: return KJ_ERR_PERMISSION_DENIED;
-        case ERROR_ALREADY_EXISTS: return KJ_ERR_ALREADY_EXISTS;
-        case ERROR_FILE_EXISTS: return KJ_ERR_ALREADY_EXISTS;
-        case ERROR_BROKEN_PIPE: return KJ_ERR_BROKEN_PIPE;
-        case ERROR_FILE_NOT_FOUND: return KJ_ERR_NOT_FOUND;
-        case ERROR_PATH_NOT_FOUND: return KJ_ERR_NOT_FOUND;
-        case ERROR_MOD_NOT_FOUND: return KJ_ERR_NOT_FOUND;
-        case ERROR_PROC_NOT_FOUND: return KJ_ERR_NOT_FOUND;
-        case ERROR_NOT_EMPTY: return KJ_ERR_NOT_EMPTY;
-        case ERROR_NO_DATA: return KJ_ERR_BROKEN_PIPE;
-        case ERROR_INVALID_PARAMETER: return KJ_ERR_INVALID_PARAMETER;
-        case ERROR_OPERATION_ABORTED: return KJ_ERR_TIMED_OUT;
-        case ERROR_SEEK: return KJ_ERR_ILLEGAL_SEEK;
-        case ERROR_NEGATIVE_SEEK: return KJ_ERR_ILLEGAL_SEEK;
-        case ERROR_SEEK_ON_DEVICE: return KJ_ERR_ILLEGAL_SEEK;
-        case ERROR_INSUFFICIENT_BUFFER: return KJ_ERR_RANGE;
-        case ERROR_NO_MORE_FILES: return KJ_ERR_NO_MORE_FILES;
-        case WSAEBADF: return KJ_ERR_BAD_HANDLE;
-        case WSAEACCES: return KJ_ERR_PERMISSION_DENIED;
-        case WSAETIMEDOUT: return KJ_ERR_TIMED_OUT;
-        case WSAEINVAL: return KJ_ERR_INVALID_PARAMETER;
-        case WSAEINTR: return KJ_ERR_INTERRUPED;
-        case WSAEADDRINUSE: return KJ_ERR_ADDR_IN_USE;
-        case WSAEADDRNOTAVAIL: return KJ_ERR_ADDR_NOT_AVAILABLE;
-        case WSAECONNABORTED: return KJ_ERR_CONNECTION_ABORTED;
-        case WSAECONNREFUSED: return KJ_ERR_CONNECTION_REFUSED;
-        case WSAECONNRESET: return KJ_ERR_CONNECTION_RESET;
-        case WSAENOTCONN: return KJ_ERR_NOT_CONNECTED;
-        case WSAEWOULDBLOCK: return KJ_ERR_WOULD_BLOCK;
+    switch(GetLastError()) {
+        case ERROR_SUCCESS: res = KJ_ERR_NONE; break;
+        case ERROR_ACCESS_DENIED: res = KJ_ERR_PERMISSION_DENIED; break;
+        case ERROR_ALREADY_EXISTS: res = KJ_ERR_ALREADY_EXISTS; break;
+        case ERROR_FILE_EXISTS: res = KJ_ERR_ALREADY_EXISTS; break;
+        case ERROR_BROKEN_PIPE: res = KJ_ERR_BROKEN_PIPE; break;
+        case ERROR_FILE_NOT_FOUND: res = KJ_ERR_NOT_FOUND; break;
+        case ERROR_PATH_NOT_FOUND: res = KJ_ERR_NOT_FOUND; break;
+        case ERROR_MOD_NOT_FOUND: res = KJ_ERR_NOT_FOUND; break;
+        case ERROR_PROC_NOT_FOUND: res = KJ_ERR_NOT_FOUND; break;
+        case ERROR_NOT_EMPTY: res = KJ_ERR_NOT_EMPTY; break;
+        case ERROR_NO_DATA: res = KJ_ERR_BROKEN_PIPE; break;
+        case ERROR_INVALID_PARAMETER: res = KJ_ERR_INVALID_PARAMETER; break;
+        case ERROR_OPERATION_ABORTED: res = KJ_ERR_TIMED_OUT; break;
+        case ERROR_SEEK: res = KJ_ERR_ILLEGAL_SEEK; break;
+        case ERROR_NEGATIVE_SEEK: res = KJ_ERR_ILLEGAL_SEEK; break;
+        case ERROR_SEEK_ON_DEVICE: res = KJ_ERR_ILLEGAL_SEEK; break;
+        case ERROR_INSUFFICIENT_BUFFER: res = KJ_ERR_RANGE; break;
 #elif defined(KJ_SYS_UNIX)
-        case 0: return KJ_ERR_NONE;
-        case -EBADF:
-        case EBADF: return KJ_ERR_BAD_HANDLE;
-        case -EPERM:
-        case EPERM: return KJ_ERR_PERMISSION_DENIED;
-        case -EACCES:
-        case EACCES: return KJ_ERR_PERMISSION_DENIED;
-        case -EEXIST:
-        case EEXIST: return KJ_ERR_ALREADY_EXISTS;
-        case -EPIPE:
-        case EPIPE: return KJ_ERR_BROKEN_PIPE;
-        case -ENOENT:
-        case ENOENT: return KJ_ERR_NOT_FOUND;
-        case -ENOTEMPTY:
-        case ENOTEMPTY: return KJ_ERR_NOT_EMPTY;
-        case -ETIMEDOUT:
-        case ETIMEDOUT: return KJ_ERR_TIMED_OUT;
-        case -EINVAL:
-        case EINVAL: return KJ_ERR_INVALID_PARAMETER;
-        case -EINTR:
-        case EINTR: return KJ_ERR_INTERRUPED;
-        case -ESPIPE:
-        case ESPIPE: return KJ_ERR_ILLEGAL_SEEK;
-        case -EADDRINUSE:
-        case EADDRINUSE: return KJ_ERR_ADDR_IN_USE;
-        case -EADDRNOTAVAIL:
-        case EADDRNOTAVAIL: return KJ_ERR_ADDR_NOT_AVAILABLE;
-        case -ECONNABORTED:
-        case ECONNABORTED: return KJ_ERR_CONNECTION_ABORTED;
-        case -ECONNREFUSED:
-        case ECONNREFUSED: return KJ_ERR_CONNECTION_REFUSED;
-        case -ECONNRESET:
-        case ECONNRESET: return KJ_ERR_CONNECTION_RESET;
-        case -ENOTCONN:
-        case ENOTCONN: return KJ_ERR_NOT_CONNECTED;
-        case -EAGAIN:
-        case EAGAIN: return KJ_ERR_WOULD_BLOCK;
-        case -ERANGE:
-        case ERANGE: return KJ_ERR_RANGE;
+    switch(errno) {
+        case 0: res = KJ_ERR_NONE; break;
+        case EBADF: res = KJ_ERR_BAD_HANDLE; break;
+        case EPERM: res = KJ_ERR_PERMISSION_DENIED; break;
+        case EACCES: res = KJ_ERR_PERMISSION_DENIED; break;
+        case EEXIST: res = KJ_ERR_ALREADY_EXISTS; break;
+        case EPIPE: res = KJ_ERR_BROKEN_PIPE; break;
+        case ENOENT: res = KJ_ERR_NOT_FOUND; break;
+        case ENOTEMPTY: res = KJ_ERR_NOT_EMPTY; break;
+        case ETIMEDOUT: res = KJ_ERR_TIMED_OUT; break;
+        case EINVAL: res = KJ_ERR_INVALID_PARAMETER; break;
+        case EINTR: res = KJ_ERR_INTERRUPED; break;
+        case ESPIPE: res = KJ_ERR_ILLEGAL_SEEK; break;
+        case EAGAIN: res = KJ_ERR_WOULD_BLOCK; break;
+        case ERANGE: res = KJ_ERR_RANGE; break;
+        case ENOMEM: res = KJ_ERR_ALLOC_FAILED; break;
+        case EBUSY: res = KJ_ERR_BUSY; break;
 #endif
-        default: return KJ_ERR_UNKNOWN;
+        default: res = KJ_ERR_UNKNOWN; break;
     }
+    return res;
 }
 
-KJ_CONST KJ_INLINE const char* kj_err_str(kjErr err) {
+KJ_CONST const char* kj_err_str(kjErr err) {
     switch(err) {
 #define KJ_ERR_NAME(type, name) case (type): return (name);
         KJ_ERR_MAP(KJ_ERR_NAME)
@@ -1158,25 +1127,25 @@ KJ_CONST KJ_INLINE const char* kj_err_str(kjErr err) {
 }
 
 KJ_INLINE KJ_ALLOCATOR_ALLOC_FN(kj__dummy_alloc) {
-    kj_unused(self);
+    kj_unused(allocator);
     kj_unused(size);
     return NULL;
 }
 
 KJ_INLINE KJ_ALLOCATOR_FREE_FN(kj__dummy_free) {
-    kj_unused(self);
+    kj_unused(allocator);
     kj_unused(data);
 }
 
 KJ_INLINE KJ_ALLOCATOR_REALLOC_FN(kj__dummy_realloc) {
-    kj_unused(self);
+    kj_unused(allocator);
     kj_unused(data);
     kj_unused(size);
     return NULL;
 }
 
 KJ_INLINE KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj__dummy_alloc_aligned) {
-    kj_unused(self);
+    kj_unused(allocator);
     kj_unused(size);
     kj_unused(alignment);
     return NULL;
@@ -1246,43 +1215,112 @@ void* kj_global_alloc_aligned(isize size, isize alignment, u32 flags) {
     header = malloc(aligned);
 #endif
     if(header) {
-        res = kj_align_on(
-                kj_cast(u8*, header) + kj_isize_of(isize),
-                alignment);
+        res = kj_align_on(kj_cast(u8*, header) + kj_isize_of(isize), alignment);
         *KJ__ALLOC_ADDR(res) = kj_cast(isize, header);
     }
     return res;
 }
 
-KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc) {
-    return kj_global_alloc(size, self->flags);
+KJ_INLINE KJ_ALLOCATOR_ALLOC_FN(kj_heap_alloc) {
+    return kj_global_alloc(size, allocator->flags);
 }
 
-KJ_ALLOCATOR_ALLOC_FN(kj_heap_zalloc) {
-    return kj_global_zalloc(size, self->flags);
+KJ_INLINE KJ_ALLOCATOR_ALLOC_FN(kj_heap_zalloc) {
+    return kj_global_zalloc(size, allocator->flags);
 }
 
-KJ_ALLOCATOR_FREE_FN(kj_heap_free) {
-    kj_global_free(data, self->flags);
+KJ_INLINE KJ_ALLOCATOR_FREE_FN(kj_heap_free) {
+    kj_global_free(data, allocator->flags);
 }
 
-KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc) {
-    return kj_global_realloc(data, size, self->flags);
+KJ_INLINE KJ_ALLOCATOR_REALLOC_FN(kj_heap_realloc) {
+    return kj_global_realloc(data, size, allocator->flags);
 }
 
-KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj_heap_alloc_aligned) {
-    return kj_global_alloc_aligned(size, alignment, self->flags);
+KJ_INLINE KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj_heap_alloc_aligned) {
+    return kj_global_alloc_aligned(size, alignment, allocator->flags);
 }
 
-kjHeapAllocator kj_heap_allocator(u32 flags) {
-    kjHeapAllocator res;
-    res.alloc = kj_heap_alloc;
-    res.free = kj_heap_free;
-    res.realloc = kj_heap_realloc;
-    res.alloc_aligned = kj_heap_alloc_aligned;
-    res.flags = flags;
+KJ_ALLOCATOR_ALLOC_FN(kj_linear_alloc) {
+    return kj_allocator_alloc_aligned(allocator, size, KJ__DEFAULT_ALIGNMENT);
+}
+
+KJ_ALLOCATOR_ALLOC_FN(kj_linear_zalloc) {
+    void* res = kj_allocator_alloc(allocator, size);
+    if(res) {
+        kj_zero(kj_cast(u8*, res) - size, size);
+    }
     return res;
 }
+
+KJ_ALLOCATOR_FREE_FN(kj_linear_free) {
+    if(allocator == NULL || data == NULL) {
+        return;
+    }
+
+    kjLinearAllocator* a = kj_cast(kjLinearAllocator*, allocator);
+    if(data == (a->data + a->offset)) {
+        a->used = a->offset;
+    }
+}
+
+KJ_ALLOCATOR_REALLOC_FN(kj_linear_realloc) {
+    if(allocator == NULL || data == NULL || size <= 0) {
+        return NULL;
+    }
+
+    void* res = NULL;
+    kjLinearAllocator* a = kj_cast(kjLinearAllocator*, allocator);
+    if((a->data + a->offset) == data) {
+        isize new_size = a->used + (size - (a->used - a->offset));
+        if(new_size < a->size) {
+            a->used = new_size;
+            res = data;
+        }
+    }
+    return res;
+}
+
+KJ_ALLOCATOR_ALLOC_ALIGNED_FN(kj_linear_alloc_aligned) {
+    if(allocator == NULL || size <= 0) {
+        return NULL;
+    }
+
+    void* res = NULL;
+    kjLinearAllocator* a = kj_cast(kjLinearAllocator*, allocator);
+    isize new_size = kj_round_to(a->used + size, alignment);
+    if(new_size < a->size) {
+        a->offset = kj_round_to(a->used, alignment);
+        res = kj_cast(void*, a->data + a->offset);
+        a->used = new_size;
+    }
+    return res;
+}
+
+kjLinearAllocator kj_linear_allocator(void* data, isize size, u32 flags) {
+    kjLinearAllocator res;
+    res.allocator.alloc = kj_linear_alloc;
+    res.allocator.zalloc = kj_linear_zalloc;
+    res.allocator.free = kj_linear_free;
+    res.allocator.realloc = kj_linear_realloc;
+    res.allocator.alloc_aligned = kj_linear_alloc_aligned;
+    res.allocator.flags = flags;
+    res.data = kj_cast(u8*, data);
+    res.size = size;
+    res.used = 0;
+    res.offset = 0;
+    return res;
+}
+
+void kj_linear_allocator_reset(kjLinearAllocator* self) {
+    if(self == NULL) {
+        return;
+    }
+
+    self->used = 0;
+    self->offset = 0;
+}
+
 
 kjStr kj_string(kjAllocator* allocator, const char* s, isize size) {
     if(allocator == NULL || size < 0) {
@@ -1411,7 +1449,7 @@ kjStr kj_string_dup(kjStr s) {
     return kj_string(header->allocator, s, kj_string_size(s));
 }
 
-KJ_CONST KJ_INLINE const char* kj_priority_str(kjPriority priority) {
+KJ_CONST const char* kj_priority_str(kjPriority priority) {
     switch(priority) {
 #define KJ_LOG_CASE(type, name) case type: return (name);
         KJ_PRIORITY_MAP(KJ_LOG_CASE)
@@ -1425,6 +1463,7 @@ KJ_CONST KJ_INLINE const char* kj_priority_str(kjPriority priority) {
 #endif
 
 KJ_LOG_HANDLER(kj_log_handler) {
+    kj_unused(file);
     kj_unused(usr);
     va_list v;
     va_start(v, fmt);
@@ -1432,11 +1471,9 @@ KJ_LOG_HANDLER(kj_log_handler) {
     char buf[4096];
     kj_zero(buf, kj_isize_of(buf));
     isize used = kj_snprintf(
-            buf, kj_isize_of(buf),
-            "FILE: %s\nLINE: %ld\nFUNC: %s\nPRIORITY: %s\nMSG:\n",
+            buf, 4096, "%s:%ld:%s:%s\nMessage: ",
             file, line, fn, kj_priority_str(priority));
     used += kj_vsnprintf(buf + used, kj_isize_of(buf) - used, fmt, v);
-    buf[used] = '\0';
     u32 flags = MB_OK;
     switch(priority) {
         case KJ_PRIORITY_CRITICAL:
@@ -1450,11 +1487,12 @@ KJ_LOG_HANDLER(kj_log_handler) {
             flags |= MB_ICONINFORMATION;
         } break;
     }
-    kj_utf8_to_ucs(KJ__WCHAR_BUFA, kj_count_of(KJ__WCHAR_BUFA), buf);
-    MessageBoxW(NULL, KJ__WCHAR_BUFA, L"Log", flags);
+    WCHAR* ws = kj_utf8_to_ucs_alloc(buf);
+    MessageBoxW(NULL, ws, L"Log", flags);
+    kj_global_free(ws, KJ_ALLOC_NONE);
 #else
     kj_printf(
-            "FILE: %s\nLINE: %ld\nFUNC: %s\nPRIORITY: %s\nMSG:\n",
+            "%s:%ld:%s:%s\nMessage: ",
             file, line, fn, kj_priority_str(priority));
     kj_vprintf(fmt, v);
 #endif
@@ -1462,6 +1500,7 @@ KJ_LOG_HANDLER(kj_log_handler) {
 }
 
 KJ_ASSERT_HANDLER(kj_assert_handler) {
+    kj_unused(file);
     kj_unused(usr);
     va_list v;
     va_start(v, fmt);
@@ -1469,17 +1508,13 @@ KJ_ASSERT_HANDLER(kj_assert_handler) {
     char buf[4096];
     kj_zero(buf, kj_isize_of(buf));
     isize used = kj_snprintf(
-            buf, kj_isize_of(buf),
-            "FILE: %s\nLINE: %ld\nFUNC: %s\nEXPR: %s\nMSG:\n",
-            file, line, fn, expr);
+            buf, 4096, "%s:%ld:%s:%s\nMessage: ", file, line, fn, expr);
     used += kj_vsnprintf(buf + used, kj_isize_of(buf) - used, fmt, v);
-    buf[used] = '\0';
-    kj_utf8_to_ucs(KJ__WCHAR_BUFA, kj_count_of(KJ__WCHAR_BUFA), buf);
-    MessageBoxW(NULL, KJ__WCHAR_BUFA, L"Assert", MB_OK | MB_ICONERROR);
+    WCHAR* ws = kj_utf8_to_ucs_alloc(buf);
+    MessageBoxW(NULL, ws, L"Assert", MB_OK | MB_ICONERROR);
+    kj_global_free(ws, KJ_ALLOC_NONE);
 #else
-    kj_printf(
-            "FILE: %s\nLINE: %ld\nFUNC: %s\nEXPR: %s\nMSG:\n",
-            file, line, fn, expr);
+    kj_printf("%s:%ld:%s:%s\nMessage: ", file, line, fn, expr);
     kj_vprintf(fmt, v);
 #endif
     va_end(v);
@@ -1522,10 +1557,10 @@ isize kj_printf(KJ_FMT_STR const char* fmt, ...) {
 isize kj_vsnprintf(char* buf, isize size, const char* fmt, va_list v) {
     isize res = -1;
 #if defined(KJ_COMPILER_MSVC)
-KJ_COMPILER_WARNING_BEGIN
-KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_DEPRECATED)
+KJ_WARNING_DISABLE_BEGIN
+KJ_WARNING_DISABLE_DEPRECATED
     res = _vsnprintf(buf, size, fmt, v);
-KJ_COMPILER_WARNING_END
+KJ_WARNING_DISABLE_END
 #else
     res = vsnprintf(buf, size, fmt, v);
 #endif
@@ -1543,15 +1578,15 @@ isize kj_snprintf(char* buf, isize size, KJ_FMT_STR const char* fmt, ...) {
 }
 
 KJ_INLINE b32 kj_char_is_eol(u32 c) {
-    if(c <= KJ_MAX_LATIN1) {
+    if(c <= KJ_LATIN1_MAX) {
         return c == '\r' ||
                c == '\n' ? KJ_TRUE: KJ_FALSE;
     }
     return KJ_FALSE;
 }
 
-KJ_INLINE b32 kj_char_is_ws(u32 c) {
-    if(c <= KJ_MAX_LATIN1) {
+KJ_INLINE b32 kj_char_is_whitespace(u32 c) {
+    if(c <= KJ_LATIN1_MAX) {
         return (c == ' '  ||
                 c == '\t' ||
                 c == '\v' ||
@@ -1565,7 +1600,7 @@ KJ_INLINE b32 kj_char_is_ws(u32 c) {
 }
 
 KJ_INLINE b32 kj_char_is_alpha(u32 c) {
-    if(c <= KJ_MAX_LATIN1) {
+    if(c <= KJ_LATIN1_MAX) {
         return (c >= 'a' && c <= 'z') ||
                (c >= 'A' && c <='Z') ? KJ_TRUE: KJ_FALSE;
     }
@@ -1573,14 +1608,14 @@ KJ_INLINE b32 kj_char_is_alpha(u32 c) {
 }
 
 KJ_INLINE b32 kj_char_is_digit(u32 c) {
-    if(c <= KJ_MAX_LATIN1) {
+    if(c <= KJ_LATIN1_MAX) {
         return (c >= '0' && c <= '9') ? KJ_TRUE: KJ_FALSE;
     }
     return KJ_FALSE;
 }
 
 KJ_INLINE b32 kj_char_is_alphanum(u32 c) {
-    if(c <= KJ_MAX_LATIN1) {
+    if(c <= KJ_LATIN1_MAX) {
         return (c >= 'a' && c <= 'z') ||
                (c >= 'A' && c <= 'Z') ||
                (c >= '0' && c <= '9') ? KJ_TRUE: KJ_FALSE;
@@ -1589,7 +1624,7 @@ KJ_INLINE b32 kj_char_is_alphanum(u32 c) {
 }
 
 KJ_INLINE b32 kj_char_is_hex_digit(u32 c) {
-    if(c <= KJ_MAX_LATIN1) {
+    if(c <= KJ_LATIN1_MAX) {
         return (c >= 'a' && c <= 'f') ||
                (c >= 'A' && c <= 'F') ||
                (c >= '0' && c <= '9') ? KJ_TRUE: KJ_FALSE;
@@ -1598,21 +1633,21 @@ KJ_INLINE b32 kj_char_is_hex_digit(u32 c) {
 }
 
 KJ_INLINE b32 kj_char_is_lower(u32 c) {
-    if(c <= KJ_MAX_LATIN1) {
+    if(c <= KJ_LATIN1_MAX) {
         return (c >= 'a' && c <= 'z') ? KJ_TRUE: KJ_FALSE;
     }
     return KJ_FALSE;
 }
 
 KJ_INLINE b32 kj_char_is_upper(u32 c) {
-    if(c <= KJ_MAX_LATIN1) {
+    if(c <= KJ_LATIN1_MAX) {
         return (c >= 'A' && c <= 'Z') ? KJ_TRUE: KJ_FALSE;
     }
     return KJ_FALSE;
 }
 
 KJ_INLINE b32 kj_char_is_separator(u32 c) {
-    if(c <= KJ_MAX_LATIN1) {
+    if(c <= KJ_LATIN1_MAX) {
 #if defined(KJ_SYS_WIN32)
         return (c == '\\' || c == '/') ? KJ_TRUE: KJ_FALSE;
 #else
@@ -1623,14 +1658,14 @@ KJ_INLINE b32 kj_char_is_separator(u32 c) {
 }
 
 KJ_INLINE u32 kj_char_to_lower(u32 c) {
-    if(c <= KJ_MAX_ASCII) {
+    if(c <= KJ_ASCII_MAX) {
         return (c >= 'A' && c <= 'Z') ? 'a' + (c - 'A'): c;
     }
     return c;
 }
 
 KJ_INLINE u32 kj_char_to_upper(u32 c) {
-    if(c <= KJ_MAX_ASCII) {
+    if(c <= KJ_ASCII_MAX) {
         return (c >= 'a' && c <= 'z') ? 'A' + (c - 'a'): c;
     }
     return c;
@@ -1696,9 +1731,10 @@ isize kj_str_to_u64(u64* value, const char* s, isize size) {
         }
     }
     if(base > 0) {
-        u64 overflow = KJ_U64_MAX / base + 1;
+        u64 overflow = U64_MAX / base + 1;
         u64 v;
-        for(isize i = 0; i < size; i++) {
+        isize i;
+        for(i = 0; i < size; i++) {
             if(s[i] >= '0' && s[i] <= '9') {
                 v = s[i] - '0';
             } elif(base == 16 && s[i] >= 'a' && s[i] <= 'f') {
@@ -1716,14 +1752,14 @@ isize kj_str_to_u64(u64* value, const char* s, isize size) {
                 break;
             }
             if(*value > overflow) {
-                *value = KJ_U64_MAX;
+                *value = U64_MAX;
                 res = KJ_ERR_RANGE;
                 break;
             }
             *value *= base;
             u64 tmp = *value + v;
-            if(tmp < *value || tmp > KJ_U64_MAX) {
-                *value = KJ_U64_MAX;
+            if(tmp < *value || tmp > U64_MAX) {
+                *value = U64_MAX;
                 res = KJ_ERR_RANGE;
                 break;
             }
@@ -1744,7 +1780,7 @@ isize kj_str_to_i64(i64* value, const char* s, isize size) {
     i64 sign = *s == '-' ? s++, size--, -1: *s == '+' ? s++, size--, 1: 1;
     u64 u;
     if(kj_is_ok(res = kj_str_to_u64(&u, s, size))) {
-        if(u <= KJ_I64_MAX) {
+        if(u <= I64_MAX) {
             *value = kj_cast(i64, u) * sign;
         } else {
             res = KJ_ERR_RANGE;
@@ -1764,7 +1800,8 @@ isize kj_str_to_f64(f64* value, const char* s, isize size) {
     i64 sign = *s == '-' ? s++, size--, -1: *s == '+' ? s++, size--, 1: 1;
     const char* dot = kj_str_find(s, size, '.');
     if(dot) {
-        for(isize i = 0; i < size; i++) {
+        isize i;
+        for(i = 0; i < size; i++) {
             if(s[i] >= '0' && s[i] <= '9') {
                 *value = *value * 10 + (s[i] - '0');
             } elif(s[i] == '_') {
@@ -1781,41 +1818,6 @@ isize kj_str_to_f64(f64* value, const char* s, isize size) {
         *value *= sign;
     } else {
         res = KJ_ERR_SYNTAX;
-    }
-    return res;
-}
-
-const char* kj_str_find_predicate(
-        const char* s, isize size, kjPredicateFn* fn) {
-    if(s == NULL || size < 0) {
-        return NULL;
-    }
-
-    const char* res = NULL;
-    const char* sp = s;
-    while(sp < (s + size) || (*sp && size == 0)) {
-        if(fn(kj_cast(const void*, sp))) {
-            res = sp;
-            break;
-        }
-        sp++;
-    }
-    return res;
-}
-
-const char* kj_str_rfind_predicate(
-        const char* s, isize size, kjPredicateFn* fn) {
-    if(s == NULL || size < 0) {
-        return NULL;
-    }
-
-    const char* res = NULL;
-    size = size == 0 ? kj_str_size(s, 0): size;
-    for(isize i = size - 1; i >= 0; i--) {
-        if(fn(&s[i])) {
-            res = &s[i];
-            break;
-        }
     }
     return res;
 }
@@ -1844,7 +1846,8 @@ const char* kj_str_rfind(const char* s, isize size, char c) {
 
     const char* res = NULL;
     size = size == 0 ? kj_str_size(s, 0): size;
-    for(isize i = size - 1; i >= 0; i--) {
+    isize i;
+    for(i = size - 1; i >= 0; i--) {
         if(s[i] == c) {
             res = &s[i];
             break;
@@ -1886,7 +1889,7 @@ const char* kj_str_ltrim(const char* s, isize size) {
 
     const char* res = s;
     while((res < (s + size) || *res)) {
-        if(!kj_char_is_ws(*res)) {
+        if(!kj_char_is_whitespace(*res)) {
             break;
         }
         res++;
@@ -1901,7 +1904,8 @@ const char* kj_str_rtrim(const char* s, isize size) {
 
     const char* res = s + size;
     size = size == 0 ? kj_str_size(s, 0): size;
-    for(isize i = size - 1; i >= 0 && kj_char_is_ws(s[i]); i--, res--);
+    isize i;
+    for(i = size - 1; i >= 0 && kj_char_is_whitespace(s[i]); i--, res--);
     return res;
 }
 
@@ -1921,96 +1925,75 @@ isize kj_utf8_count(const char* s, isize size) {
     return res;
 }
 
+KJ_INLINE isize kj_utf8_size(char c) {
+    u8 u = kj_cast(u8, c);
+    isize res = 0;
+    if(u < 0x80) {
+        res = 1;
+    } elif(u >= 0xC2 && u <= 0xDF) {
+        res = 2;
+    } elif(u >= 0xE0 && u <= 0xEF) {
+        res = 3;
+    } elif(u >= 0xF0 && u <= 0xF4) {
+        res = 4;
+    }
+    return res;
+}
+
 #if defined(KJ_SYS_WIN32)
-i32 kj_utf8_to_ucs(WCHAR* ws, i32 count, const char* s) {
-    if(s == NULL || ws == NULL || count <= 0) {
+i32 kj_utf8_to_ucs(WCHAR* ws, i32 wcount, const char* s) {
+    if(s == NULL || ws == NULL || wcount < 0) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
     i32 res = KJ_ERR_NONE;
     res = MultiByteToWideChar(CP_UTF8, 0, s, -1, NULL, 0);
-    if(res < count) {
-        MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, count);
-    } elif(ws != NULL && count != 0) {
-        res = KJ_ERR_RANGE;
+    if(res < wcount) {
+        MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, wcount);
     }
     return res;
 }
 
 i32 kj_ucs_to_utf8(char* s, i32 count, const WCHAR* ws) {
-    if(s == NULL || ws == NULL || count <= 0) {
+    if(s == NULL || ws == NULL || count < 0) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
     i32 res = KJ_ERR_NONE;
     res = WideCharToMultiByte(CP_UTF8, 0, ws, -1, NULL, 0, NULL, NULL);
     if(res < count) {
-        WideCharToMultiByte(
-                CP_UTF8, 0, ws, -1,
-                s, count, NULL, NULL);
-    } elif(s != NULL && count != 0) {
-        res = KJ_ERR_RANGE;
+        WideCharToMultiByte(CP_UTF8, 0, ws, -1, s, count, NULL, NULL);
     }
     return res;
 }
 
-#endif
-
-#if defined(KJ_LIB_IMPL)
-KJ_INLINE kjErr kj_lib_open(kjLib* self, const char* path) {
-    if(self == NULL || path == NULL) {
-        return KJ_ERR_INVALID_PARAMETER;
+WCHAR* kj_utf8_to_ucs_alloc(const char* s) {
+    if(s == NULL) {
+        return NULL;
     }
 
-    isize res = KJ_ERR_NONE;
-#if defined(KJ_SYS_WIN32)
-    res = kj_utf8_to_ucs(KJ__WCHAR_BUFA, kj_isize_of(KJ__WCHAR_BUFA), path);
-    if(kj_is_ok(res)) {
-        if((*self = LoadLibraryW(KJ__WCHAR_BUFA)) == NULL) {
-            res = kj_err_from_sys(GetLastError());
-        }
+    WCHAR* res = NULL;
+    i32 wcount = MultiByteToWideChar(CP_UTF8, 0, s, -1, NULL, 0);
+    if((res = kj_cast(WCHAR*, kj_alloc(wcount * kj_isize_of(WCHAR)))) != NULL) {
+        MultiByteToWideChar(CP_UTF8, 0, s, -1, res, wcount);
     }
-#elif defined(KJ_SYS_UNIX)
-    if((*self = kj_cast(kjLib, dlopen(path, RTLD_LAZY))) == NULL) {
-        res = kj_err_from_sys(errno);
-    }
-#endif
-    return kj_cast(kjErr, res);
-}
-
-KJ_INLINE kjErr kj_lib_fn(const kjLib* self, kjLibFn* fn, const char* name) {
-    if(self == NULL || fn == NULL || name == NULL) {
-        return KJ_ERR_INVALID_PARAMETER;
-    }
-
-    kjErr res = KJ_ERR_NONE;
-#if defined(KJ_SYS_WIN32)
-    if((*fn = GetProcAddress(*self, name)) == NULL) {
-        res = kj_err_from_sys(GetLastError());
-    }
-#elif defined(KJ_SYS_UNIX)
-KJ_COMPILER_WARNING_BEGIN
-KJ_COMPILER_WARNING(KJ_COMPILER_WARNING_PEDANTIC)
-    if((*fn = kj_cast(kjLibFn, dlsym(*self, name))) == NULL) {
-        res = kj_err_from_sys(errno);
-    }
-KJ_COMPILER_WARNING_END
-#endif
     return res;
 }
 
-KJ_INLINE void kj_lib_close(const kjLib* self) {
-    if(self == NULL) {
-        return;
+char* kj_ucs_to_utf8_alloc(const WCHAR* ws) {
+    if(ws == NULL) {
+        return NULL;
     }
 
-#if defined(KJ_SYS_WIN32)
-    FreeLibrary(*self);
-#elif defined(KJ_SYS_UNIX)
-    dlclose(*self);
-#endif
+    char* res = NULL;
+    i32 count = WideCharToMultiByte(CP_UTF8, 0, ws, -1, NULL, 0, NULL, NULL);
+    if((res = kj_cast(char*, kj_alloc(count))) != NULL) {
+        WideCharToMultiByte(CP_UTF8, 0, ws, -1, res, count, NULL, NULL);
+    }
+    return res;
 }
 #endif
+
 
 #define KJ_CMP_FN_DEF(type, name, T)                                            \
     KJ_INLINE KJ_CMP_FN(kj_cmp_##T) {                                           \
@@ -2032,8 +2015,9 @@ KJ_INLINE void kj_lib_close(const kjLib* self) {
 #undef KJ_SWAP_FN_DEF
 
 void kj_sort_insertion(void* arr, isize count, kjCmpFn cmp, kjSwapFn swap) {
-    for(isize i = 1; i < count; i++) {
-        for(isize j = i - 1; j >= 0; j--) {
+    isize i, j;
+    for(i = 1; i < count; i++) {
+        for(j = i - 1; j >= 0; j--) {
             if(cmp(arr, j, j + 1) == KJ_ORDERING_GREATER) {
                 swap(arr, j, j + 1);
             }
@@ -2160,10 +2144,12 @@ kjDateTime kj_datetime_local(void) {
 }
 
 #if defined(KJ_SYS_UNIX)
+#if !defined(KJ_CLOCK_MONOTONIC)
 #if defined(CLOCK_MONOTONIC_RAW)
 #define KJ_CLOCK_MONOTONIC CLOCK_MONOTONIC_RAW
 #elif defined(CLOCK_MONOTONIC)
 #define KJ_CLOCK_MONOTONIC CLOCK_MONOTONIC
+#endif
 #endif
 #endif
 
@@ -2196,59 +2182,57 @@ u32 kj_hash_str(const char* s, isize size) {
 
     u32 res = 0;
     size = size == 0 ? kj_str_size(s, 0): size;
-    for(isize i = 0; i < size; i++) {
-        res += (*s++) * (kj_cast(u32, i % KJ_U32_MAX) + 119);
+    isize i;
+    for(i = 0; i < size; i++) {
+        res += (*s++) * (kj_cast(u32, i % U32_MAX) + 119);
     }
     return res;
 }
 
-#define KJ_FILE_INVALID_FLAGS KJ_U32_MAX
-
-kjErr kj_file_create(kjFile* self, const char* path) {
-    return kj_file_open(
-            self, path, KJ_FILE_WRITE | KJ_FILE_CREATE | KJ_FILE_TRUNCATE);
+kjErr kj_file_create(kjFd* fd, const char* path) {
+    return kj_file_open(fd, path, KJ_O_WRITE | KJ_O_CREATE | KJ_O_TRUNCATE);
 }
 
 KJ_INLINE u32 kj__file_access_flags(u32 flags) {
     u32 res = 0;
 #if defined(KJ_SYS_WIN32)
-    if((flags & KJ_FILE_READ) &&
-      !(flags & KJ_FILE_WRITE) &&
-      !(flags & KJ_FILE_APPEND)) {
+    if((flags & KJ_O_READ) &&
+      !(flags & KJ_O_WRITE) &&
+      !(flags & KJ_O_APPEND)) {
         res = GENERIC_READ;
-    } elif(!(flags & KJ_FILE_READ) &&
-            (flags & KJ_FILE_WRITE) &&
-           !(flags & KJ_FILE_APPEND)) {
+    } elif(!(flags & KJ_O_READ) &&
+            (flags & KJ_O_WRITE) &&
+           !(flags & KJ_O_APPEND)) {
         res = GENERIC_WRITE;
-    } elif((flags & KJ_FILE_READ) &&
-           (flags & KJ_FILE_WRITE) &&
-          !(flags & KJ_FILE_APPEND)) {
+    } elif((flags & KJ_O_READ) &&
+           (flags & KJ_O_WRITE) &&
+          !(flags & KJ_O_APPEND)) {
         res = GENERIC_READ | GENERIC_WRITE;
-    } elif(!(flags & KJ_FILE_READ) &&
-            (flags & KJ_FILE_APPEND)) {
+    } elif(!(flags & KJ_O_READ) &&
+            (flags & KJ_O_APPEND)) {
         res = FILE_GENERIC_WRITE & ~FILE_WRITE_DATA;
-    } elif((flags & KJ_FILE_READ) &&
-           (flags & KJ_FILE_APPEND)) {
+    } elif((flags & KJ_O_READ) &&
+           (flags & KJ_O_APPEND)) {
         res = GENERIC_READ | (FILE_GENERIC_WRITE & ~FILE_WRITE_DATA);
     }
 #elif defined(KJ_SYS_UNIX)
-    if((flags & KJ_FILE_READ) &&
-      !(flags & KJ_FILE_WRITE) &&
-      !(flags & KJ_FILE_APPEND)) {
+    if((flags & KJ_O_READ) &&
+      !(flags & KJ_O_WRITE) &&
+      !(flags & KJ_O_APPEND)) {
         res = O_RDONLY;
-    } elif(!(flags & KJ_FILE_READ) &&
-            (flags & KJ_FILE_WRITE) &&
-           !(flags & KJ_FILE_APPEND)) {
+    } elif(!(flags & KJ_O_READ) &&
+            (flags & KJ_O_WRITE) &&
+           !(flags & KJ_O_APPEND)) {
         res = O_WRONLY;
-    } elif((flags & KJ_FILE_READ) &&
-           (flags & KJ_FILE_WRITE) &&
-          !(flags & KJ_FILE_APPEND)) {
+    } elif((flags & KJ_O_READ) &&
+           (flags & KJ_O_WRITE) &&
+          !(flags & KJ_O_APPEND)) {
         res = O_RDWR;
-    } elif(!(flags & KJ_FILE_READ) &&
-            (flags & KJ_FILE_APPEND)) {
+    } elif(!(flags & KJ_O_READ) &&
+            (flags & KJ_O_APPEND)) {
         res = O_WRONLY | O_APPEND;
-    } elif((flags & KJ_FILE_READ) &&
-           (flags & KJ_FILE_APPEND)) {
+    } elif((flags & KJ_O_READ) &&
+           (flags & KJ_O_APPEND)) {
         res = O_RDWR | O_APPEND;
     }
 #endif
@@ -2258,68 +2242,68 @@ KJ_INLINE u32 kj__file_access_flags(u32 flags) {
 KJ_INLINE u32 kj__file_create_flags(u32 flags) {
     u32 res = 0;
 #if defined(KJ_SYS_WIN32)
-    if(!(flags & KJ_FILE_WRITE) &&
-       !(flags & KJ_FILE_APPEND)) {
-        if((flags & KJ_FILE_TRUNCATE) ||
-           (flags & KJ_FILE_CREATE) ||
-           (flags & KJ_FILE_CREATE_NEW)) {
-            res = KJ_FILE_INVALID_FLAGS;
+    if(!(flags & KJ_O_WRITE) &&
+       !(flags & KJ_O_APPEND)) {
+        if((flags & KJ_O_TRUNCATE) ||
+           (flags & KJ_O_CREATE) ||
+           (flags & KJ_O_CREATE_NEW)) {
+            res = kj_cast(u32, KJ_O_INVALID);
         }
-    } elif(flags & KJ_FILE_APPEND) {
-        if((flags & KJ_FILE_TRUNCATE) &&
-          !(flags & KJ_FILE_CREATE_NEW)) {
-            res = KJ_FILE_INVALID_FLAGS;
+    } elif(flags & KJ_O_APPEND) {
+        if((flags & KJ_O_TRUNCATE) &&
+          !(flags & KJ_O_CREATE_NEW)) {
+            res = kj_cast(u32, KJ_O_INVALID);
         }
     }
     if(res == 0) {
-        if(!(flags & KJ_FILE_CREATE) &&
-           !(flags & KJ_FILE_TRUNCATE) &&
-           !(flags & KJ_FILE_CREATE_NEW)) {
+        if(!(flags & KJ_O_CREATE) &&
+           !(flags & KJ_O_TRUNCATE) &&
+           !(flags & KJ_O_CREATE_NEW)) {
             res = OPEN_EXISTING;
-        } elif((flags & KJ_FILE_CREATE) &&
-              !(flags & KJ_FILE_TRUNCATE) &&
-              !(flags & KJ_FILE_CREATE_NEW)) {
+        } elif((flags & KJ_O_CREATE) &&
+              !(flags & KJ_O_TRUNCATE) &&
+              !(flags & KJ_O_CREATE_NEW)) {
             res = OPEN_ALWAYS;
-        } elif(!(flags & KJ_FILE_CREATE) &&
-                (flags & KJ_FILE_TRUNCATE) &&
-               !(flags & KJ_FILE_CREATE_NEW)) {
+        } elif(!(flags & KJ_O_CREATE) &&
+                (flags & KJ_O_TRUNCATE) &&
+               !(flags & KJ_O_CREATE_NEW)) {
             res = TRUNCATE_EXISTING;
-        } elif((flags & KJ_FILE_CREATE) &&
-               (flags & KJ_FILE_TRUNCATE) &&
-              !(flags & KJ_FILE_CREATE_NEW)) {
+        } elif((flags & KJ_O_CREATE) &&
+               (flags & KJ_O_TRUNCATE) &&
+              !(flags & KJ_O_CREATE_NEW)) {
             res = CREATE_ALWAYS;
-        } elif(flags & KJ_FILE_CREATE_NEW) {
+        } elif(flags & KJ_O_CREATE_NEW) {
             res = CREATE_NEW;
         }
     }
 #elif defined(KJ_SYS_UNIX)
-    if(!(flags & KJ_FILE_WRITE) &&
-       !(flags & KJ_FILE_APPEND)) {
-        if((flags & KJ_FILE_TRUNCATE) ||
-           (flags & KJ_FILE_CREATE) ||
-           (flags & KJ_FILE_CREATE_NEW)) {
-            res = KJ_FILE_INVALID_FLAGS;
+    if(!(flags & KJ_O_WRITE) &&
+       !(flags & KJ_O_APPEND)) {
+        if((flags & KJ_O_TRUNCATE) ||
+           (flags & KJ_O_CREATE) ||
+           (flags & KJ_O_CREATE_NEW)) {
+            res = KJ_O_INVALID;
         }
-    } elif(flags & KJ_FILE_APPEND) {
-        if((flags & KJ_FILE_TRUNCATE) &&
-          !(flags & KJ_FILE_CREATE_NEW)) {
-            res = KJ_FILE_INVALID_FLAGS;
+    } elif(flags & KJ_O_APPEND) {
+        if((flags & KJ_O_TRUNCATE) &&
+          !(flags & KJ_O_CREATE_NEW)) {
+            res = KJ_O_INVALID;
         }
     }
     if(res == 0) {
-        if((flags & KJ_FILE_CREATE) &&
-          !(flags & KJ_FILE_TRUNCATE) &&
-          !(flags & KJ_FILE_CREATE_NEW)) {
+        if((flags & KJ_O_CREATE) &&
+          !(flags & KJ_O_TRUNCATE) &&
+          !(flags & KJ_O_CREATE_NEW)) {
             res = O_CREAT;
-        } elif(!(flags & KJ_FILE_CREATE) &&
-                (flags & KJ_FILE_TRUNCATE) &&
-               !(flags & KJ_FILE_CREATE_NEW)) {
+        } elif(!(flags & KJ_O_CREATE) &&
+                (flags & KJ_O_TRUNCATE) &&
+               !(flags & KJ_O_CREATE_NEW)) {
             res = O_TRUNC;
-        } elif((flags & KJ_FILE_CREATE) &&
-               (flags & KJ_FILE_TRUNCATE) &&
-              !(flags & KJ_FILE_CREATE_NEW)) {
+        } elif((flags & KJ_O_CREATE) &&
+               (flags & KJ_O_TRUNCATE) &&
+              !(flags & KJ_O_CREATE_NEW)) {
             res = O_CREAT | O_TRUNC;
-        } elif(flags & KJ_FILE_CREATE_NEW) {
+        } elif(flags & KJ_O_CREATE_NEW) {
             res = O_CREAT | O_EXCL;
         }
     }
@@ -2327,118 +2311,124 @@ KJ_INLINE u32 kj__file_create_flags(u32 flags) {
     return res;
 }
 
-kjErr kj_file_open(kjFile* self, const char* path, u32 flags) {
-    if(self == NULL || path == NULL) {
+kjErr kj_file_open(kjFd* fd, const char* path, u32 flags) {
+    if(path == NULL) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
-    isize res = KJ_ERR_NONE;
+    kjErr res = KJ_ERR_NONE;
     u32 access = kj__file_access_flags(flags);
     u32 create = kj__file_create_flags(flags);
 #if defined(KJ_SYS_WIN32)
-    res = kj_utf8_to_ucs(KJ__WCHAR_BUFA, kj_isize_of(KJ__WCHAR_BUFA), path);
-    if(kj_is_ok(res)) {
-        *self = CreateFileW(
-                KJ__WCHAR_BUFA, access,
-                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                NULL, create, 0, NULL);
-        if(*self == INVALID_HANDLE_VALUE) {
-            res = kj_err_from_sys(GetLastError());
-        } else {
-            res = KJ_ERR_NONE;
-        }
+    WCHAR* wpath = kj_utf8_to_ucs_alloc(path);
+    *fd = CreateFileW(
+            wpath, access, FILE_SHARE_READ | FILE_SHARE_DELETE,
+            NULL, create, FILE_ATTRIBUTE_NORMAL, NULL);
+    if(*fd == INVALID_HANDLE_VALUE) {
+        *fd = KJ_FILE_INVALID;
+        res = kj_err_from_sys();
     }
+    kj_free(wpath);
 #elif defined(KJ_SYS_UNIX)
     u32 perm = 0666;
-    if((*self = open(path, (access | create), perm)) == -1) {
-        res = kj_err_from_sys(errno);
-    }
-#endif
-    return kj_cast(kjErr, res);
-}
-
-kjErr kj_file_close(const kjFile* self) {
-    if(self == NULL) {
-        return KJ_ERR_INVALID_PARAMETER;
-    }
-
-    kjErr res = KJ_ERR_NONE;
-#if defined(KJ_SYS_WIN32)
-    if(!CloseHandle(*self)) {
-        res = kj_err_from_sys(GetLastError());
-    }
-#elif defined(KJ_SYS_UNIX)
-    if(close(*self) == -1) {
-        res = kj_err_from_sys(errno);
+    if((*fd = open(path, (access | create), perm)) == -1) {
+        *fd = KJ_FILE_INVALID;
+        res = kj_err_from_sys();
     }
 #endif
     return res;
 }
 
-kjErr kj_file_seek(const kjFile* self, i64 offset, kjSeekFrom seek) {
-    if(self == NULL) {
-        return KJ_ERR_INVALID_PARAMETER;
+kjErr kj_file_close(kjFd fd) {
+    if(fd == KJ_FILE_INVALID) {
+        return KJ_ERR_BAD_HANDLE;
     }
 
     kjErr res = KJ_ERR_NONE;
+#if defined(KJ_SYS_WIN32)
+    if(!CloseHandle(fd)) {
+        res = kj_err_from_sys();
+    }
+#elif defined(KJ_SYS_UNIX)
+    if(close(fd) == -1) {
+        res = kj_err_from_sys();
+    }
+#endif
+    return res;
+}
+
+isize kj_file_seek(kjFd fd, i64 offset, kjSeekFrom seek) {
+    if(fd == KJ_FILE_INVALID) {
+        return KJ_ERR_BAD_HANDLE;
+    }
+
+    isize res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
     LARGE_INTEGER li_offset;
     li_offset.QuadPart = offset;
-    if(SetFilePointerEx(*self, li_offset, &li_offset, seek) == 0) {
-        res = kj_err_from_sys(GetLastError());
+    if(SetFilePointerEx(fd, li_offset, &li_offset, seek) == 0) {
+        res = kj_err_from_sys();
+    } else {
+        res = kj_cast(isize, li_offset.QuadPart);
     }
 #elif defined(KJ_SYS_UNIX)
-    if(lseek(*self, offset, seek) == -1) {
-        res = kj_err_from_sys(errno);
+    if((res = lseek64(fd, offset, seek)) == -1) {
+        res = kj_err_from_sys();
     }
 #endif
     return res;
 }
 
-isize kj_file_read(const kjFile* self, void* buf, isize size) {
-    if(self == NULL || buf == NULL || size <= 0) {
+isize kj_file_read(kjFd fd, void* buf, isize size) {
+    if(fd == KJ_FILE_INVALID) {
+        return KJ_ERR_BAD_HANDLE;
+    } elif(buf == NULL || size <= 0) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
     isize res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
     DWORD read = 0;
-    if(ReadFile(*self, buf, kj_cast(DWORD, size), &read, NULL)) {
+    if(ReadFile(fd, buf, kj_cast(DWORD, size), &read, NULL)) {
         res = read;
     } else {
-        res = kj_err_from_sys(GetLastError());
+        res = kj_err_from_sys();
     }
 #elif defined(KJ_SYS_UNIX)
-    if(read(*self, buf, size) == -1) {
-        res = kj_err_from_sys(errno);
+    if((res = read(fd, buf, size)) == -1) {
+        res = kj_err_from_sys();
     }
 #endif
     return res;
 }
 
-isize kj_file_write(const kjFile* self, const void* buf, isize size) {
-    if(self == NULL || buf == NULL || size <= 0) {
+isize kj_file_write(kjFd fd, void* buf, isize size) {
+    if(fd == KJ_FILE_INVALID) {
+        return KJ_ERR_BAD_HANDLE;
+    } elif(buf == NULL || size <= 0) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
     isize res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
     DWORD wrote = 0;
-    if(WriteFile(*self, buf, kj_cast(DWORD, size), &wrote, NULL)) {
+    if(WriteFile(fd, buf, kj_cast(DWORD, size), &wrote, NULL)) {
         res = wrote;
     } else {
-        res = kj_err_from_sys(GetLastError());
+        res = kj_err_from_sys();
     }
 #elif defined(KJ_SYS_UNIX)
-    if(write(*self, buf, size) == -1) {
-        res = kj_err_from_sys(errno);
+    if((res = write(fd, buf, size)) == -1) {
+        res = kj_err_from_sys();
     }
 #endif
     return res;
 }
 
-isize kj_file_read_at(const kjFile* self, void* buf, isize size, i64 offset) {
-    if(self == NULL || buf == NULL || size <= 0) {
+isize kj_file_read_at(kjFd fd, void* buf, isize size, i64 offset) {
+    if(fd == KJ_FILE_INVALID) {
+        return KJ_ERR_BAD_HANDLE;
+    } elif(buf == NULL || size <= 0) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
@@ -2449,22 +2439,23 @@ isize kj_file_read_at(const kjFile* self, void* buf, isize size, i64 offset) {
     overlapped.Offset = kj_cast(u32, ((offset >> 0) & 0xFFFFFFFF));
     overlapped.OffsetHigh = kj_cast(u32, ((offset >> 32) & 0xFFFFFFFF));
     DWORD read = 0;
-    if(ReadFile(*self, buf, kj_cast(DWORD, size), &read, &overlapped)) {
+    if(ReadFile(fd, buf, kj_cast(DWORD, size), &read, &overlapped)) {
         res = read;
     } else {
-        res = kj_err_from_sys(GetLastError());
+        res = kj_err_from_sys();
     }
 #elif defined(KJ_SYS_UNIX)
-    if(pread(*self, buf, size, offset) == -1) {
-        res = kj_err_from_sys(errno);
+    if((res = pread(fd, buf, size, offset)) == -1) {
+        res = kj_err_from_sys();
     }
 #endif
     return res;
 }
 
-isize kj_file_write_at(
-        const kjFile* self, const void* buf, isize size, i64 offset) {
-    if(self == NULL || buf == NULL || size <= 0) {
+isize kj_file_write_at(kjFd fd, void* buf, isize size, i64 offset) {
+    if(fd == KJ_FILE_INVALID) {
+        return KJ_ERR_BAD_HANDLE;
+    } elif(buf == NULL || size <= 0) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
@@ -2475,128 +2466,166 @@ isize kj_file_write_at(
     overlapped.Offset = kj_cast(u32, ((offset >> 0) & 0xFFFFFFFF));
     overlapped.OffsetHigh = kj_cast(u32, ((offset >> 32) & 0xFFFFFFFF));
     DWORD wrote = 0;
-    if(WriteFile(*self, buf, kj_cast(DWORD, size), &wrote, &overlapped)) {
+    if(WriteFile(fd, buf, kj_cast(DWORD, size), &wrote, &overlapped)) {
         res = wrote;
     } else {
-        res = kj_err_from_sys(GetLastError());
+        res = kj_err_from_sys();
     }
 #elif defined(KJ_SYS_UNIX)
-    if(pwrite(*self, buf, size, offset) == -1) {
-        res = kj_err_from_sys(errno);
+    if((res = pwrite(fd, buf, size, offset)) == -1) {
+        res = kj_err_from_sys();
     }
 #endif
     return res;
 }
 
-kjErr kj_file_sync(const kjFile* self) {
-    if(self == NULL) {
+kjErr kj_file_sync(kjFd fd) {
+    if(fd == KJ_FILE_INVALID) {
+        return KJ_ERR_BAD_HANDLE;
+    }
+
+    kjErr res = KJ_ERR_NONE;
+#if defined(KJ_SYS_WIN32)
+    if(!FlushFileBuffers(fd)) {
+        res = kj_err_from_sys();
+    }
+#elif defined(KJ_SYS_UNIX)
+    if(fsync(fd) == -1) {
+        res = kj_err_from_sys();
+    }
+#endif
+    return res;
+}
+
+kjErr kj_file_map(void** buf, kjFd fd, u32 flags) {
+    kj_unused(flags);
+    if(fd == KJ_FILE_INVALID) {
+        return KJ_ERR_BAD_HANDLE;
+    } elif(buf == NULL) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
     kjErr res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
-    if(!FlushFileBuffers(*self)) {
-        res = kj_err_from_sys(GetLastError());
+    kjFd map = CreateFileMappingW(fd, NULL, PAGE_WRITECOPY, 0, 0, NULL);
+    if(map == NULL) {
+        res = kj_err_from_sys();
+    } elif((*buf = MapViewOfFileEx(map, FILE_MAP_COPY, 0, 0, 0, 0)) == NULL) {
+        res = kj_err_from_sys();
     }
 #elif defined(KJ_SYS_UNIX)
-    if(fsync(*self) == -1) {
-        res = kj_err_from_sys(errno);
+    kjFileMetadata meta;
+    if(kj_is_ok(res = kj_file_metadata(&meta, fd))) {
+        if((*buf = mmap(
+                NULL, meta.size, PROT_READ | PROT_WRITE,
+                MAP_PRIVATE, fd, 0)) == MAP_FAILED) {
+            res = kj_err_from_sys();
+        }
     }
 #endif
     return res;
 }
 
-isize kj_file_slurp(
-        void** data, kjAllocator* allocator, const char* path, b32 terminate) {
-    if(data == NULL || allocator == NULL || path == NULL) {
+kjErr kj_file_map_path(void** buf, kjFd* fd, const char* path, u32 flags) {
+    if(fd == NULL) {
+        return KJ_ERR_INVALID_PARAMETER;
+    }
+
+    kjErr res = KJ_ERR_NONE;
+    if(kj_is_ok(res = kj_file_open(fd, path, KJ_O_READ))) {
+        res = kj_file_map(buf, *fd, flags);
+    }
+    return res;
+}
+
+kjErr kj_file_unmap(void* buf) {
+    if(buf == NULL) {
+        return KJ_ERR_INVALID_PARAMETER;
+    }
+
+    kjErr res = KJ_ERR_NONE;
+#if defined(KJ_SYS_WIN32)
+    if(!UnmapViewOfFile(buf)) {
+        res = kj_err_from_sys();
+    }
+#elif defined(KJ_SYS_UNIX)
+    if(munmap(buf, 0) == -1) {
+        res = kj_err_from_sys();
+    }
+#endif
+    return res;
+}
+
+isize kj_file_slurp(void** buf, const char* path) {
+    if(buf == NULL || path == NULL) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
     isize res = KJ_ERR_NONE;
-    kjFile file;
-    if(kj_is_ok(res = kj_file_open(&file, path, KJ_FILE_READ))) {
+    kjFd fd;
+    if(kj_is_ok(res = kj_file_open(&fd, path, KJ_O_READ))) {
         kjFileMetadata meta;
-        if(kj_is_ok(res = kj_file_metadata(&meta, &file))) {
-            *data = kj_allocator_alloc(allocator, meta.size + 1);
-            if(*data) {
-                if(kj_is_ok(res = kj_file_read(&file, *data, meta.size))) {
-                    if(terminate) {
-                        kj_cast(u8*, *data)[meta.size] = '\0';
-                    }
-                } else {
-                    kj_allocator_free(allocator, *data);
-                    *data = NULL;
-                }
+        if(kj_is_ok(res = kj_file_metadata(&meta, fd))) {
+            *buf = kj_alloc(meta.size + 1);
+            if(*buf) {
+                res = kj_file_read(fd, *buf, meta.size);
+                kj_cast(char*, *buf)[res] = '\0';
             } else {
                 res = KJ_ERR_ALLOC_FAILED;
             }
         }
-        kj_file_close(&file);
     }
     return res;
 }
 
-isize kj_file_spit(const char* path, const void* buf, isize size) {
-    if(path == NULL || buf == NULL || size <= 0) {
-        return KJ_ERR_INVALID_PARAMETER;
-    }
-
-    isize res = KJ_ERR_NONE;
-    kjFile file;
-    res = kj_file_open(&file, path, KJ_FILE_WRITE);
-    if(kj_is_ok(res)) {
-        res = kj_file_write(&file, buf, size);
-        kj_file_close(&file);
-    }
-    return res;
-}
-
-kjErr kj_file_metadata(kjFileMetadata* self, const kjFile* file) {
-    if(self == NULL || file == NULL) {
-        return KJ_ERR_INVALID_PARAMETER;
-    }
-
-    isize res = KJ_ERR_NONE;
-#if defined(KJ_SYS_WIN32)
-    BY_HANDLE_FILE_INFORMATION info;
-    if(GetFileInformationByHandle(*file, &info)) {
-        self->size =
-            (kj_cast(i64, info.nFileSizeHigh) << 32) |
-            (kj_cast(i64, info.nFileSizeLow));
-        self->last_access = kj__filetime_to_unix(&info.ftLastAccessTime);
-        self->last_write = kj__filetime_to_unix(&info.ftLastWriteTime);
-        if(info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            self->type = KJ_DIR;
-        } else {
-            self->type = KJ_FILE;
-        }
-    } else {
-        res = kj_err_from_sys(GetLastError());
-    }
-#elif defined(KJ_SYS_UNIX)
-    struct stat st;
-    kj_zero(&st, kj_isize_of(struct stat));
-    if(fstat(*file, &st) == -1) {
-        res = kj_err_from_sys(errno);
-    } else {
-        self->size = st.st_size;
-        self->last_access = kj_cast(u64, st.st_atime);
-        self->last_write = kj_cast(u64, st.st_mtime);
-    }
-#endif
-    return kj_cast(kjErr, res);
-}
-
-kjErr kj_file_metadata_path(kjFileMetadata* self, const char* path) {
-    if(self == NULL || path == NULL) {
+kjErr kj_file_metadata(kjFileMetadata* meta, kjFd fd) {
+    if(fd == KJ_FILE_INVALID) {
+        return KJ_ERR_BAD_HANDLE;
+    } elif(meta == NULL) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
     kjErr res = KJ_ERR_NONE;
-    kjFile file;
-    if(kj_is_ok(res = kj_file_open(&file, path, KJ_FILE_READ))) {
-        res = kj_file_metadata(self, &file);
-        kj_file_close(&file);
+#if defined(KJ_SYS_WIN32)
+    BY_HANDLE_FILE_INFORMATION info;
+    if(GetFileInformationByHandle(fd, &info)) {
+        meta->size =
+            (kj_cast(i64, info.nFileSizeHigh) << 32) |
+            (kj_cast(i64, info.nFileSizeLow));
+        meta->last_access = kj__filetime_to_unix(&info.ftLastAccessTime);
+        meta->last_write = kj__filetime_to_unix(&info.ftLastWriteTime);
+        if(info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            meta->type = KJ_DIR;
+        } else {
+            meta->type = KJ_FILE;
+        }
+    } else {
+        res = kj_err_from_sys();
+    }
+#elif defined(KJ_SYS_UNIX)
+    struct stat st;
+    kj_zero(&st, kj_isize_of(struct stat));
+    if(fstat(fd, &st) == -1) {
+        res = kj_err_from_sys();
+    } else {
+        meta->size = st.st_size;
+        meta->last_access = kj_cast(u64, st.st_atime);
+        meta->last_write = kj_cast(u64, st.st_mtime);
+    }
+#endif
+    return res;
+}
+
+kjErr kj_file_metadata_path(kjFileMetadata* meta, const char* path) {
+    if(meta == NULL || path == NULL) {
+        return KJ_ERR_INVALID_PARAMETER;
+    }
+
+    kjErr res = KJ_ERR_NONE;
+    kjFd fd;
+    if(kj_is_ok(res = kj_file_open(&fd, path, KJ_O_READ))) {
+        res = kj_file_metadata(meta, fd);
+        kj_file_close(fd);
     }
     return res;
 }
@@ -2609,7 +2638,8 @@ const char* kj_path_ext(const char* path, isize size) {
     const char* res = NULL;
     size = size == 0 ? kj_str_size(path, 0): size;
     if(path[size - 1] != '.') {
-        for(isize i = size - 1; i >= 0; i--) {
+        isize i;
+        for(i = size - 1; i >= 0; i--) {
             if(kj_char_is_separator(path[i])) {
                 break;
             } elif(path[i] == '.') {
@@ -2619,11 +2649,6 @@ const char* kj_path_ext(const char* path, isize size) {
         }
     }
     return res;
-}
-
-KJ_INTERN KJ_INLINE KJ_PREDICATE_FN(kj_path_is_separator) {
-    return value && kj_char_is_separator(*kj_cast(const char*, value)) ?
-        KJ_TRUE: KJ_FALSE;
 }
 
 const char* kj_path_base(const char* path, isize size, const char** end) {
@@ -2640,7 +2665,12 @@ const char* kj_path_base(const char* path, isize size, const char** end) {
         *end = path + size;
     } else {
         size = kj_char_is_separator(path[size - 1]) ? size - 1: size;
-        res = kj_str_rfind_predicate(path, size, kj_path_is_separator);
+        res = kj_str_rfind(path, size, KJ_PATH_SEPARATOR);
+#if defined(KJ_SYS_WIN32)
+        if(res == NULL) {
+            res = kj_str_rfind(path, size, '/');
+        }
+#endif
         res = res == NULL ? path: res + 1;
         *end = &path[size] == res ? &path[size + 1]: &path[size];
     }
@@ -2655,7 +2685,12 @@ const char* kj_path_dir(const char* path, isize size, const char** end) {
     const char* res = NULL;
     size = size == 0 ? kj_str_size(path, 0): size;
     size = kj_char_is_separator(path[size - 1]) ? size - 1: size;
-    *end = kj_str_rfind_predicate(path, size, kj_path_is_separator);
+    *end = kj_str_rfind(path, size, KJ_PATH_SEPARATOR);
+#if defined(KJ_SYS_WIN32)
+    if(*end == NULL) {
+        *end = kj_str_rfind(path, size, '/');
+    }
+#endif
     if(kj_char_is_separator(path[0])) {
         *end = *end == path ? *end + 1: *end;
         res = path;
@@ -2671,18 +2706,19 @@ kjErr kj_path_create_dir(const char* path) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
-    isize res = KJ_ERR_NONE;
+    kjErr res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
-    res = kj_utf8_to_ucs(KJ__WCHAR_BUFA, kj_count_of(KJ__WCHAR_BUFA), path);
-    if(kj_is_ok(res) && !CreateDirectoryW(KJ__WCHAR_BUFA, NULL)) {
-        res = kj_err_from_sys(GetLastError());
+    WCHAR* wpath = kj_utf8_to_ucs_alloc(path);
+    if(CreateDirectoryW(wpath, NULL) == FALSE) {
+        res = kj_err_from_sys();
     }
+    kj_free(wpath);
 #elif defined(KJ_SYS_UNIX)
     if(mkdir(path, S_IRWXU | S_IRGRP | S_IROTH) == -1) {
-        res = kj_err_from_sys(errno);
+        res = kj_err_from_sys();
     }
 #endif
-    return kj_cast(kjErr, res);
+    return res;
 }
 
 kjErr kj_path_remove_dir(const char* path) {
@@ -2690,18 +2726,19 @@ kjErr kj_path_remove_dir(const char* path) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
-    isize res = KJ_ERR_NONE;
+    kjErr res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
-    res = kj_utf8_to_ucs(KJ__WCHAR_BUFA, kj_count_of(KJ__WCHAR_BUFA), path);
-    if(kj_is_ok(res) && !RemoveDirectoryW(KJ__WCHAR_BUFA)) {
-        res = kj_err_from_sys(GetLastError());
+    WCHAR* wpath = kj_utf8_to_ucs_alloc(path);
+    if(RemoveDirectoryW(wpath) == FALSE) {
+        res = kj_err_from_sys();
     }
+    kj_free(wpath);
 #elif defined(KJ_SYS_UNIX)
     if(rmdir(path) == -1) {
-        res = kj_err_from_sys(errno);
+        res = kj_err_from_sys();
     }
 #endif
-    return kj_cast(kjErr, res);
+    return res;
 }
 
 kjErr kj_path_rename(const char* from, const char* to) {
@@ -2709,30 +2746,129 @@ kjErr kj_path_rename(const char* from, const char* to) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
-    isize res = KJ_ERR_NONE;
+    kjErr res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
-    i32 ucs1 = kj_utf8_to_ucs(
-            KJ__WCHAR_BUFA, kj_count_of(KJ__WCHAR_BUFA), from);
-    i32 ucs2 = kj_utf8_to_ucs(KJ__WCHAR_BUFB, kj_count_of(KJ__WCHAR_BUFB), to);
-    if(kj_is_ok(ucs1)) {
-        if(kj_is_ok(ucs2)) {
-            if(!MoveFileExW(
-                        KJ__WCHAR_BUFA, KJ__WCHAR_BUFB,
-                        MOVEFILE_REPLACE_EXISTING)) {
-                res = kj_err_from_sys(GetLastError());
-            }
-        } else {
-            res = ucs2;
-        }
-    } else {
-        res = ucs1;
+    WCHAR* wfrom = kj_utf8_to_ucs_alloc(from);
+    WCHAR* wto = kj_utf8_to_ucs_alloc(to);
+    if(MoveFileExW(wfrom, wto, MOVEFILE_REPLACE_EXISTING) == FALSE) {
+        res = kj_err_from_sys();
     }
+    kj_free(wfrom);
+    kj_free(wto);
 #elif defined(KJ_SYS_UNIX)
-    res = rename(from, to);
-    res = res < 0 ? kj_err_from_sys(errno): KJ_ERR_NONE;
+    if(rename(from, to) < 0) {
+        res = kj_err_from_sys();
+    }
 #endif
-    return kj_cast(kjErr, res);
+    return res;
 }
+
+#if defined(KJ_SYS_WIN32)
+KJ_INTERN isize kj__wchar_compute(
+        char* out, isize size, DWORD (*fn)(DWORD, WCHAR*)) {
+    if(out == NULL || size <= 0 || fn == NULL) {
+        return KJ_ERR_INVALID_PARAMETER;
+    }
+
+    isize res = KJ_ERR_NONE;
+    WCHAR stack[512];
+    kj_zero(stack, kj_isize_of(stack));
+    DWORD n = kj_count_of(stack);
+    WCHAR* ptr = stack;
+    WCHAR* heap = NULL;
+    loop {
+        SetLastError(0);
+        n = fn(n, ptr);
+        if(n == 0) {
+            res = kj_err_from_sys();
+            break;
+        } elif(kj_err_from_sys() == KJ_ERR_RANGE) {
+            n *= 2;
+            ptr = kj_cast(WCHAR*, kj_realloc(heap, n * kj_isize_of(WCHAR)));
+            if(ptr == NULL) {
+                kj_free(heap);
+                res = KJ_ERR_ALLOC_FAILED;
+                break;
+            }
+            heap = ptr;
+        } else {
+            res = kj_ucs_to_utf8(out, kj_cast(i32, size), ptr);
+            break;
+        }
+    }
+    kj_free(heap);
+    return res;
+}
+
+KJ_INTERN KJ_INLINE DWORD kj__GetModuleFileNameW(DWORD n, WCHAR* buf) {
+    return GetModuleFileNameW(NULL, buf, n);
+}
+
+KJ_INTERN KJ_INLINE DWORD kj__GetTempPathW(DWORD n, WCHAR* buf) {
+    return GetTempPathW(n, buf);
+}
+
+KJ_INTERN KJ_INLINE DWORD kj__GetCurrentDirectoryW(DWORD n, WCHAR* buf) {
+    return GetCurrentDirectoryW(n, buf);
+}
+#elif defined(KJ_SYS_UNIX)
+KJ_INTERN isize kj__char_compute(
+        char* out, isize size, isize (*fn)(isize, char*)) {
+    if(out == NULL || size <= 0 || fn == NULL) {
+        return KJ_ERR_INVALID_PARAMETER;
+    }
+
+    isize res = KJ_ERR_NONE;
+    char stack[512];
+    kj_zero(stack, kj_isize_of(stack));
+    isize n = kj_count_of(stack);
+    char* ptr = stack;
+    char* heap = NULL;
+    loop {
+        errno = 0;
+        res = fn(n, ptr);
+        if(n == 0) {
+            res = kj_err_from_sys();
+            break;
+        } elif(res == n && errno == ERANGE) {
+            n *= 2;
+            ptr = kj_cast(char*, kj_realloc(heap, n));
+            if(ptr == NULL) {
+                kj_free(heap);
+                res = KJ_ERR_ALLOC_FAILED;
+                break;
+            }
+            heap = ptr;
+        } else {
+            res = kj_str_size(ptr, 0);
+            if(res < size) {
+                kj_copy(out, ptr, res);
+                out[res] = '\0';
+            }
+            break;
+        }
+    }
+    kj_free(heap);
+    return res;
+}
+
+KJ_INTERN KJ_INLINE isize kj__getcwd(isize n, char* buf) {
+    return getcwd(buf, n) == NULL && errno != ERANGE ? 0: n;
+}
+
+KJ_INTERN KJ_INLINE isize kj__readlink_self(isize n, char* buf) {
+    isize res = readlink("/proc/self/exe", buf, n);
+    if(res == -1) {
+        res = 0;
+    } elif(res == n) {
+        errno = ERANGE;
+        buf[res] = '\0';
+    } else {
+        buf[res] = '\0';
+    }
+    return res;
+}
+#endif
 
 isize kj_path_current_dir(char* path, isize size) {
     if(path == NULL || size <= 0) {
@@ -2741,23 +2877,11 @@ isize kj_path_current_dir(char* path, isize size) {
 
     isize res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
-    GetCurrentDirectoryW(kj_count_of(KJ__WCHAR_BUFA), KJ__WCHAR_BUFA);
-    res = kj_ucs_to_utf8(path, kj_cast(i32, size), KJ__WCHAR_BUFA);
+    res = kj__wchar_compute(path, size, kj__GetCurrentDirectoryW);
 #elif defined(KJ_SYS_UNIX)
-    if(getcwd(KJ__CHAR_BUF, kj_count_of(KJ__CHAR_BUF)) == NULL) {
-        res = kj_err_from_sys(errno);
-    } else {
-        res = kj_str_size(KJ__CHAR_BUF, kj_count_of(KJ__CHAR_BUF));
-        if(res > size) {
-            res = KJ_ERR_RANGE;
-        } else {
-            kj_copy(path, KJ__CHAR_BUF, res);
-            path[res] = '\0';
-        }
-    }
-
+    res = kj__char_compute(path, size, kj__getcwd);
 #endif
-    return kj_cast(kjErr, res);
+    return res;
 }
 
 kjErr kj_path_set_current_dir(const char* path) {
@@ -2767,16 +2891,17 @@ kjErr kj_path_set_current_dir(const char* path) {
 
     isize res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
-    res = kj_utf8_to_ucs(KJ__WCHAR_BUFA, kj_count_of(KJ__WCHAR_BUFA), path);
-    if(kj_is_ok(res) && !SetCurrentDirectoryW(KJ__WCHAR_BUFA)) {
-        res = kj_err_from_sys(GetLastError());
+    WCHAR* wpath = kj_utf8_to_ucs_alloc(path);
+    if(SetCurrentDirectoryW(wpath) == FALSE) {
+        res = kj_err_from_sys();
     }
+    kj_free(wpath);
 #elif defined(KJ_SYS_UNIX)
     if(chdir(path) == -1) {
-        res = kj_err_from_sys(errno);
+        res = kj_err_from_sys();
     }
 #endif
-    return kj_cast(kjErr, res);
+    return res;
 }
 
 isize kj_path_tmp_dir(char* path, isize size) {
@@ -2786,9 +2911,7 @@ isize kj_path_tmp_dir(char* path, isize size) {
 
     isize res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
-    DWORD wsize = GetTempPathW(0, NULL);
-    GetTempPathW(wsize, KJ__WCHAR_BUFA);
-    res = kj_ucs_to_utf8(path, kj_cast(i32, size), KJ__WCHAR_BUFA);
+    res = kj__wchar_compute(path, size, kj__GetTempPathW);
 #elif defined(KJ_SYS_UNIX)
     const char* tmp = NULL;
     if((tmp = getenv("TMPDIR")) == NULL) {
@@ -2800,7 +2923,7 @@ isize kj_path_tmp_dir(char* path, isize size) {
         path[tmp_size] = '\0';
         res = tmp_size;
     } else {
-        res = KJ_ERR_RANGE;
+        res = tmp_size;
     }
 #endif
     return res;
@@ -2813,21 +2936,9 @@ isize kj_path_self(char* path, isize size) {
 
     isize res = KJ_ERR_NONE;
 #if defined(KJ_SYS_WIN32)
-    res = GetModuleFileNameW(
-            NULL, KJ__WCHAR_BUFA, kj_count_of(KJ__WCHAR_BUFA));
-    res = kj_ucs_to_utf8(path, kj_cast(i32, size), KJ__WCHAR_BUFA);
+    res = kj__wchar_compute(path, size, kj__GetModuleFileNameW);
 #elif defined(KJ_SYS_UNIX)
-    if((res = readlink(
-            "/proc/self/exe", KJ__CHAR_BUF, kj_count_of(KJ__CHAR_BUF))) == -1) {
-        res = kj_err_from_sys(errno);
-    } else {
-        if(res > size) {
-            res = KJ_ERR_RANGE;
-        } else {
-            kj_copy(path, KJ__CHAR_BUF, res);
-            path[res] = '\0';
-        }
-    }
+    res = kj__char_compute(path, size, kj__readlink_self);
 #endif
     return res;
 }
@@ -2839,16 +2950,14 @@ b32 kj_path_exists(const char* path) {
 
     b32 res = KJ_FALSE;
 #if defined(KJ_SYS_WIN32)
-    i32 ucs = kj_utf8_to_ucs(KJ__WCHAR_BUFA, kj_count_of(KJ__WCHAR_BUFA), path);
-    if(kj_is_ok(ucs)) {
-        HANDLE h = INVALID_HANDLE_VALUE;
-        WIN32_FIND_DATAW find;
-        if((h = FindFirstFileW(KJ__WCHAR_BUFA, &find)) !=
-                INVALID_HANDLE_VALUE) {
-            FindClose(h);
-            res = KJ_TRUE;
-        }
+    WCHAR* wpath = kj_utf8_to_ucs_alloc(path);
+    HANDLE h = INVALID_HANDLE_VALUE;
+    WIN32_FIND_DATAW find;
+    if((h = FindFirstFileW(wpath, &find)) != INVALID_HANDLE_VALUE) {
+        FindClose(h);
+        res = KJ_TRUE;
     }
+    kj_free(wpath);
 #elif defined(KJ_SYS_UNIX)
     if(access(path, 0) == 0) {
         res = KJ_TRUE;
@@ -2864,14 +2973,12 @@ b32 kj_path_is_file(const char* path) {
 
     b32 res = KJ_FALSE;
 #if defined(KJ_SYS_WIN32)
-    i32 ucs = kj_utf8_to_ucs(KJ__WCHAR_BUFA, kj_count_of(KJ__WCHAR_BUFA), path);
-    if(kj_is_ok(ucs)) {
-        DWORD attr = INVALID_FILE_ATTRIBUTES;
-        if((attr = GetFileAttributesW(KJ__WCHAR_BUFA))
-                != INVALID_FILE_ATTRIBUTES) {
-            res = attr & FILE_ATTRIBUTE_DIRECTORY ? KJ_FALSE: KJ_TRUE;
-        }
+    WCHAR* wpath = kj_utf8_to_ucs_alloc(path);
+    DWORD attr = INVALID_FILE_ATTRIBUTES;
+    if((attr = GetFileAttributesW(wpath)) != INVALID_FILE_ATTRIBUTES) {
+        res = attr & FILE_ATTRIBUTE_DIRECTORY ? KJ_FALSE: KJ_TRUE;
     }
+    kj_free(wpath);
 #elif defined(KJ_SYS_UNIX)
     struct stat st;
     kj_zero(&st, kj_isize_of(struct stat));
@@ -2889,14 +2996,12 @@ b32 kj_path_is_dir(const char* path) {
 
     b32 res = KJ_FALSE;
 #if defined(KJ_SYS_WIN32)
-    i32 ucs = kj_utf8_to_ucs(KJ__WCHAR_BUFA, kj_count_of(KJ__WCHAR_BUFA), path);
-    if(kj_is_ok(ucs)) {
-        DWORD attr = INVALID_FILE_ATTRIBUTES;
-        if((attr = GetFileAttributesW(KJ__WCHAR_BUFA)) !=
-                INVALID_FILE_ATTRIBUTES) {
-            res = attr & FILE_ATTRIBUTE_DIRECTORY ? KJ_TRUE: KJ_FALSE;
-        }
+    WCHAR* wpath = kj_utf8_to_ucs_alloc(path);
+    DWORD attr = INVALID_FILE_ATTRIBUTES;
+    if((attr = GetFileAttributesW(wpath)) != INVALID_FILE_ATTRIBUTES) {
+        res = attr & FILE_ATTRIBUTE_DIRECTORY ? KJ_TRUE: KJ_FALSE;
     }
+    kj_free(wpath);
 #elif defined(KJ_SYS_UNIX)
     struct stat st;
     kj_zero(&st, kj_isize_of(struct stat));
@@ -2907,296 +3012,67 @@ b32 kj_path_is_dir(const char* path) {
     return res;
 }
 
-kjErr kj_read_dir_begin(kjReadDir* self, const char* path) {
-    if(self == NULL || path == NULL) {
-        return KJ_ERR_INVALID_PARAMETER;
-    }
-
-    kjErr res = KJ_ERR_NONE;
-    kj_zero(self, kj_isize_of(kjReadDir));
-#if defined(KJ_SYS_WIN32)
-    WIN32_FIND_DATAW find;
-    i32 ucs = kj_utf8_to_ucs(KJ__WCHAR_BUFA, kj_count_of(KJ__WCHAR_BUFA), path);
-    if(kj_is_ok(ucs)) {
-        if(KJ__WCHAR_BUFA[ucs - 1] == KJ_PATH_SEPARATOR) {
-            KJ__WCHAR_BUFA[ucs] = '*';
-            KJ__WCHAR_BUFA[ucs + 1] = '\0';
-        } else {
-            KJ__WCHAR_BUFA[ucs - 1] = KJ_PATH_SEPARATOR;
-            KJ__WCHAR_BUFA[ucs] = '*';
-            KJ__WCHAR_BUFA[ucs + 1] = '\0';
-        }
-        HANDLE handle = FindFirstFileW(KJ__WCHAR_BUFA, &find);
-        if(handle != INVALID_HANDLE_VALUE) {
-            self->find = find;
-            self->handle = handle;
-            self->first = KJ_TRUE;
-        } else {
-            res = kj_err_from_sys(GetLastError());
-        }
-    }
-#elif defined(KJ_SYS_UNIX)
-    if((self->dir = opendir(path)) == NULL) {
-        res = kj_err_from_sys(errno);
-    }
-#endif
-    return kj_cast(kjErr, res);
-}
-
-kjErr kj_read_dir_next(kjReadDir* self, kjDirEntry* entry) {
-    if(self == NULL || entry == NULL) {
-        return KJ_ERR_INVALID_PARAMETER;
-    }
-
-    isize res = KJ_ERR_NONE;
-#if defined(KJ_SYS_WIN32)
-    if(self->first || FindNextFileW(self->handle, &self->find)) {
-        res = kj_ucs_to_utf8(
-                entry->path, kj_count_of(entry->path), self->find.cFileName);
-        entry->count = res - 1;
-        self->first = KJ_FALSE;
-    } else {
-        res = kj_err_from_sys(GetLastError());
-    }
-#elif defined(KJ_SYS_UNIX)
-    struct dirent* result = NULL;
-    struct dirent* ent = kj_cast(struct dirent*, entry->path);
-    i32 err = 0;
-    if((err = readdir_r(self->dir, ent, &result)) != 0) {
-        res = kj_err_from_sys(err);
-    }
-    if(result) {
-        isize size = kj_str_size(ent->d_name, KJ_PATH_MAX);
-        kj_move(entry->path, &ent->d_name[0], size);
-        entry->path[size] = '\0';
-    } else {
-        res = KJ_ERR_NO_MORE_FILES;
-    }
-#endif
-    return kj_cast(kjErr, res);
-}
-
-void kj_read_dir_end(kjReadDir* self) {
-    if(self == NULL) {
-        return;
-    }
-
-#if defined(KJ_SYS_WIN32)
-    if(self->handle) {
-        FindClose(self->handle);
-    }
-#elif defined(KJ_SYS_UNIX)
-    if(self->dir) {
-        closedir(self->dir);
-    }
-#endif
-}
-
-kjErr kj_buffer(
-        kjBuffer* self, kjAllocator* allocator, isize granularity) {
-    if(self == NULL || allocator == NULL || granularity <= 0) {
-        return KJ_ERR_INVALID_PARAMETER;
-    }
-
-    kjErr res = KJ_ERR_NONE;
-    self->data = NULL;
-    self->capacity = 0;
-    self->size = 0;
-    self->granularity = granularity;
-    self->allocator = allocator;
+kjBuf kj_buf_slice(kjBuf* buf, isize start, isize end) {
+    kjBuf res;
+    kj_buf(&res, buf->allocator, end - start + 1);
+    kj_copy(res.data, buf->data + start, end - start);
+    res.size = end - start;
+    res.data[res.size] = '\0';
     return res;
 }
 
-void kj_buffer_destroy(kjBuffer* self) {
-    if(self && self->data) {
-        kj_allocator_free(self->allocator, self->data);
-        self->data = NULL;
+kjErr kj_buf(kjBuf* buf, kjAllocator* allocator, isize granularity) {
+    if(buf == NULL || allocator == NULL || granularity <= 0) {
+        return KJ_ERR_INVALID_PARAMETER;
+    }
+
+    kjErr res = KJ_ERR_NONE;
+    buf->data = NULL;
+    buf->capacity = 0;
+    buf->size = 0;
+    buf->granularity = granularity;
+    buf->allocator = allocator;
+    return res;
+}
+
+void kj_buf_destroy(kjBuf* buf) {
+    if(buf && buf->data) {
+        kj_allocator_free(buf->allocator, buf->data);
+        buf->data = NULL;
     }
 }
 
-kjErr kj_buffer_write(kjBuffer* self, const void* buf, isize size) {
-    if(self == NULL || buf == NULL || size <= 0) {
+kjErr kj_buf_append(kjBuf* buf, const void* data, isize size) {
+    if(buf == NULL || size <= 0) {
         return KJ_ERR_INVALID_PARAMETER;
     }
 
     isize res = KJ_ERR_NONE;
-    if(self->size + size > self->capacity) {
-        isize new_size = kj_round_to(
-                self->capacity + size, self->granularity) + 1;
+    if(buf->size + size > buf->capacity) {
+        isize new_size = 1 + kj_round_to(
+                buf->capacity + size, buf->granularity);
         void* new_data = NULL;
-        if(self->data) {
-             new_data = kj_allocator_realloc(
-                    self->allocator, self->data, new_size);
-        } else {
-             new_data = kj_allocator_alloc(self->allocator, new_size);
-        }
+        new_data = kj_allocator_realloc(buf->allocator, buf->data, new_size);
         if(new_data) {
-            self->data = kj_cast(u8*, new_data);
-            self->capacity = size;
+            buf->data = kj_cast(u8*, new_data);
+            buf->capacity = size;
         } else {
-            res = KJ_ERR_ALLOC_FAILED;
+            return KJ_ERR_ALLOC_FAILED;
         }
-    }
-    if(kj_is_ok(res)) {
-        kj_copy(self->data + self->size, buf, size);
-        self->size += size;
-        self->data[self->size] = '\0';
     }
 
-    return kj_cast(kjErr, res);
+    kj_copy(buf->data + buf->size, data, size);
+    buf->size += size;
+    buf->data[buf->size] = '\0';
+    return res;
 }
 
-void kj_buffer_reset(kjBuffer* self) {
+void kj_buf_reset(kjBuf* self) {
     if(self == NULL || self->data == NULL) {
         return;
     }
 
     self->size = 0;
 }
-
-#if defined(KJ_DIALOG_IMPL)
-
-#if defined(KJ_SYS_WIN32)
-#include <commdlg.h>
-#pragma comment(lib, "comdlg32.lib")
-#elif defined(KJ_SYS_LINUX)
-#undef loop
-#include <gtk/gtk.h>
-#endif
-
-isize kj_file_dialog(char* path, isize size, u32 mode, const char* filters) {
-    if(path == NULL || size <= 0) {
-        return KJ_ERR_INVALID_PARAMETER;
-    }
-
-    isize res = KJ_ERR_NONE;
-#if defined(KJ_SYS_WIN32)
-    static const WCHAR* ALL_FILES = L"All Files (*.*)|*.*|";
-    static const i32 ALL_FILES_SIZE = 20 * kj_isize_of(WCHAR);
-    kj_copy(KJ__WCHAR_BUFB, ALL_FILES, ALL_FILES_SIZE);
-    res = kj_utf8_to_ucs(
-            KJ__WCHAR_BUFB + (ALL_FILES_SIZE / kj_isize_of(WCHAR)),
-            kj_count_of(KJ__WCHAR_BUFB) - (ALL_FILES_SIZE / kj_isize_of(WCHAR)),
-            filters);
-    if(kj_is_ok(res)) {
-        for(i32 i = 0; KJ__WCHAR_BUFB[i] != '\0'; i++) {
-            if(KJ__WCHAR_BUFB[i] == '|') {
-                KJ__WCHAR_BUFB[i] = '\0';
-            }
-        }
-        OPENFILENAMEW ofn;
-        kj_zero(&ofn, kj_isize_of(OPENFILENAMEW));
-        ofn.lStructSize = kj_isize_of(OPENFILENAMEW);
-        ofn.hwndOwner = GetActiveWindow();
-        ofn.lpstrFilter = KJ__WCHAR_BUFB;
-        ofn.lpstrFile = KJ__WCHAR_BUFA;
-        ofn.nMaxFile = KJ_PATH_MAX;
-        ofn.lpstrTitle = mode & KJ_DIALOG_OPEN ? L"Open": L"Save As";
-        ofn.Flags =
-            OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST |
-            OFN_NOLONGNAMES | OFN_NOCHANGEDIR | OFN_CREATEPROMPT;
-        b32 success = mode & KJ_DIALOG_OPEN ?
-            GetOpenFileNameW(&ofn): GetSaveFileNameW(&ofn);
-        if(success) {
-            res = kj_ucs_to_utf8(path, kj_cast(i32, size), KJ__WCHAR_BUFA);
-        } else {
-            switch(CommDlgExtendedError()) {
-                case 0x3003: { res = KJ_ERR_RANGE; } break;
-                case 0x3002: { res = KJ_ERR_NOT_FOUND; } break;
-                default: { res = KJ_ERR_UNKNOWN; } break;
-            }
-        }
-    }
-#else
-    if(gtk_init_check(NULL, NULL)) {
-        GtkWidget* gwindow = gtk_window_new(GTK_WINDOW_POPUP);
-        GtkWidget* gdialog = gtk_file_chooser_dialog_new(
-                mode & KJ_DIALOG_OPEN ? "Open": "Save As",
-                GTK_WINDOW(gwindow),
-                mode & KJ_DIALOG_OPEN ? GTK_FILE_CHOOSER_ACTION_OPEN:
-                GTK_FILE_CHOOSER_ACTION_SAVE, "_Cancel", GTK_RESPONSE_CANCEL,
-                mode & KJ_DIALOG_OPEN ? "_Open": "_Save", GTK_RESPONSE_ACCEPT,
-                NULL);
-        if(mode & KJ_DIALOG_SAVE) {
-            gtk_file_chooser_set_do_overwrite_confirmation(
-                    GTK_FILE_CHOOSER(gdialog), KJ_TRUE);
-        }
-
-        GtkFileChooser* gchooser = GTK_FILE_CHOOSER(gdialog);
-        GtkFileFilter* gfilter = gtk_file_filter_new();
-        gtk_file_filter_set_name(gfilter, "All Files (*.*)");
-        gtk_file_filter_add_pattern(gfilter, "*.*");
-        gtk_file_chooser_add_filter(gchooser, gfilter);
-        gfilter = gtk_file_filter_new();
-
-        isize offset = 0;
-        isize filters_size = kj_str_size(filters, 0);
-        if(filters_size < kj_count_of(KJ__CHAR_BUF)) {
-            kj_copy(KJ__CHAR_BUF, filters, filters_size);
-            KJ__CHAR_BUF[filters_size] = '\0';
-            b32 pattern = KJ_FALSE;
-            for(isize i = 0; i <= filters_size; i++) {
-                if(KJ__CHAR_BUF[i] == '|' && !pattern) {
-                    pattern = KJ_TRUE;
-                    KJ__CHAR_BUF[i] = '\0';
-                    gtk_file_filter_set_name(gfilter, KJ__CHAR_BUF + offset);
-                    offset = i + 1;
-                } elif(KJ__CHAR_BUF[i] == ';' && pattern) {
-                    KJ__CHAR_BUF[i] = '\0';
-                    gtk_file_filter_add_pattern(gfilter, KJ__CHAR_BUF + offset);
-                    offset = i + 1;
-                } elif(KJ__CHAR_BUF[i] == '|') {
-                    pattern = KJ_FALSE;
-                    KJ__CHAR_BUF[i] = '\0';
-                    gtk_file_filter_add_pattern(gfilter, KJ__CHAR_BUF + offset);
-                    gtk_file_chooser_add_filter(gchooser, gfilter);
-                    gfilter = gtk_file_filter_new();
-                    offset = i + 1;
-                } elif(KJ__CHAR_BUF[i] == '\0') {
-                    gtk_file_chooser_add_filter(gchooser, gfilter);
-                }
-            }
-
-            gint response = gtk_dialog_run(GTK_DIALOG(gdialog));
-            if(response == GTK_RESPONSE_ACCEPT) {
-                char* gpath = gtk_file_chooser_get_filename(gchooser);
-                if(gpath != NULL) {
-                    isize gpath_size = kj_str_size(gpath, 0);
-                    if(gpath_size < size) {
-                        kj_copy(path, gpath, gpath_size);
-                    } else {
-                        res = KJ_ERR_RANGE;
-                    }
-                    g_free(gpath);
-                } else {
-                    switch(GTK_FILE_CHOOSER_ERROR) {
-                        case GTK_FILE_CHOOSER_ERROR_NONEXISTENT:
-                        case GTK_FILE_CHOOSER_ERROR_BAD_FILENAME: {
-                            res = KJ_ERR_NOT_FOUND;
-                        } break;
-                        case GTK_FILE_CHOOSER_ERROR_ALREADY_EXISTS: {
-                            res = KJ_ERR_ALREADY_EXISTS;
-                        } break;
-                        default: {
-                            res = KJ_ERR_UNKNOWN;
-                        } break;
-                    }
-                }
-            }
-        } else {
-            res = KJ_ERR_RANGE;
-        }
-        while(gtk_events_pending()) {
-            gtk_main_iteration();
-        }
-        gtk_widget_destroy(gdialog);
-        gtk_widget_destroy(gwindow);
-    } else {
-        res = kj_err_from_sys(errno);
-    }
-#endif
-    return res;
-}
-#endif
 
 #endif
