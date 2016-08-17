@@ -88,6 +88,7 @@ KJ_EXTERN_BEGIN
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
