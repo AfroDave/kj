@@ -22,7 +22,9 @@
 #define KJ_MATH_VERSION_MINOR 5
 #define KJ_MATH_VERSION_PATCH 0
 
-KJ_EXTERN_BEGIN
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 #define kj_to_degrees(a) ((a) * 57.295779513082320f)
 #define kj_to_radians(a) ((a) * 0.017453292519943f)
@@ -34,15 +36,15 @@ KJ_EXTERN_BEGIN
 #define KJ_E (2.718281828459045f)
 #define KJ_PHI (1.618033988749894f)
 
-typedef union kjVec2f {
+typedef struct kjVec2f {
     f32 x, y;
 } kjVec2f;
 
-typedef union kjVec2i {
+typedef struct kjVec2i {
     i32 x, y;
 } kjVec2i;
 
-typedef union kjVec2u {
+typedef struct kjVec2u {
     u32 x, y;
 } kjVec2u;
 
@@ -83,27 +85,27 @@ typedef union kjMat4f {
 } kjMat4f;
 
 typedef struct kjRect2f {
-    f32 x, y, w, h;
+    kjVec2f min, max;
 } kjRect2f;
 
 typedef struct kjRect2i {
-    i32 x, y, w, h;
+    kjVec2i min, max;
 } kjRect2i;
 
 typedef struct kjRect2u {
-    u32 x, y, w, h;
+    kjVec2u min, max;
 } kjRect2u;
 
 typedef struct kjRect3f {
-    f32 x, y, z, w, h, d;
+    kjVec3f min, max;
 } kjRect3f;
 
 typedef struct kjRect3i {
-    i32 x, y, z, w, h, d;
+    kjVec3i min, max;
 } kjRect3i;
 
 typedef struct kjRect3u {
-    u32 x, y, z, w, h, d;
+    kjVec3u min, max;
 } kjRect3u;
 
 typedef struct kjRgba {
@@ -146,38 +148,16 @@ KJ_API kjVec2f kj_vec2f_all(f32 a);
 KJ_API kjVec2i kj_vec2i_all(i32 a);
 KJ_API kjVec2u kj_vec2u_all(u32 a);
 KJ_API kjVec2f kj_vec2f_negate(kjVec2f a);
-KJ_API kjVec2i kj_vec2i_negate(kjVec2i a);
-KJ_API kjVec2u kj_vec2u_negate(kjVec2u a);
 KJ_API kjVec2f kj_vec2f_add(kjVec2f a, kjVec2f b);
-KJ_API kjVec2i kj_vec2i_add(kjVec2i a, kjVec2i b);
-KJ_API kjVec2u kj_vec2u_add(kjVec2u a, kjVec2u b);
 KJ_API kjVec2f kj_vec2f_sub(kjVec2f a, kjVec2f b);
-KJ_API kjVec2i kj_vec2i_sub(kjVec2i a, kjVec2i b);
-KJ_API kjVec2u kj_vec2u_sub(kjVec2u a, kjVec2u b);
 KJ_API kjVec2f kj_vec2f_mul(kjVec2f a, kjVec2f b);
-KJ_API kjVec2i kj_vec2i_mul(kjVec2i a, kjVec2i b);
-KJ_API kjVec2u kj_vec2u_mul(kjVec2u a, kjVec2u b);
 KJ_API kjVec2f kj_vec2f_mulf(kjVec2f a, f32 b);
-KJ_API kjVec2i kj_vec2i_muli(kjVec2i a, i32 b);
-KJ_API kjVec2u kj_vec2u_mulu(kjVec2u a, u32 b);
 KJ_API kjVec2f kj_vec2f_div(kjVec2f a, kjVec2f b);
-KJ_API kjVec2i kj_vec2i_div(kjVec2i a, kjVec2i b);
-KJ_API kjVec2u kj_vec2u_div(kjVec2u a, kjVec2u b);
 KJ_API f32 kj_vec2f_dot(kjVec2f a, kjVec2f b);
-KJ_API i32 kj_vec2i_dot(kjVec2i a, kjVec2i b);
-KJ_API u32 kj_vec2u_dot(kjVec2u a, kjVec2u b);
 KJ_API f32 kj_vec2f_cross(kjVec2f a, kjVec2f b);
-KJ_API i32 kj_vec2i_cross(kjVec2i a, kjVec2i b);
-KJ_API u32 kj_vec2u_cross(kjVec2u a, kjVec2u b);
 KJ_API f32 kj_vec2f_length_sq(kjVec2f a);
-KJ_API i32 kj_vec2i_length_sq(kjVec2i a);
-KJ_API u32 kj_vec2u_length_sq(kjVec2u a);
 KJ_API f32 kj_vec2f_length(kjVec2f a);
-KJ_API i32 kj_vec2i_length(kjVec2i a);
-KJ_API u32 kj_vec2u_length(kjVec2u a);
 KJ_API kjVec2f kj_vec2f_normalise(kjVec2f a);
-KJ_API kjVec2i kj_vec2i_normalise(kjVec2i a);
-KJ_API kjVec2u kj_vec2u_normalise(kjVec2u a);
 KJ_API kjVec2f kj_vec2f_clamp(kjVec2f a, kjVec2f min, kjVec2f max);
 KJ_API kjVec2i kj_vec2i_clamp(kjVec2i a, kjVec2i min, kjVec2i max);
 KJ_API kjVec2u kj_vec2u_clamp(kjVec2u a, kjVec2u min, kjVec2u max);
@@ -198,38 +178,18 @@ KJ_API kjVec3f kj_vec3f_all(f32 a);
 KJ_API kjVec3i kj_vec3i_all(i32 a);
 KJ_API kjVec3u kj_vec3u_all(u32 a);
 KJ_API kjVec3f kj_vec3f_negate(kjVec3f a);
-KJ_API kjVec3i kj_vec3i_negate(kjVec3i a);
-KJ_API kjVec3u kj_vec3u_negate(kjVec3u a);
 KJ_API kjVec3f kj_vec3f_add(kjVec3f a, kjVec3f b);
-KJ_API kjVec3i kj_vec3i_add(kjVec3i a, kjVec3i b);
-KJ_API kjVec3u kj_vec3u_add(kjVec3u a, kjVec3u b);
 KJ_API kjVec3f kj_vec3f_sub(kjVec3f a, kjVec3f b);
-KJ_API kjVec3i kj_vec3i_sub(kjVec3i a, kjVec3i b);
-KJ_API kjVec3u kj_vec3u_sub(kjVec3u a, kjVec3u b);
 KJ_API kjVec3f kj_vec3f_mul(kjVec3f a, kjVec3f b);
-KJ_API kjVec3i kj_vec3i_mul(kjVec3i a, kjVec3i b);
-KJ_API kjVec3u kj_vec3u_mul(kjVec3u a, kjVec3u b);
 KJ_API kjVec3f kj_vec3f_mulf(kjVec3f a, f32 b);
-KJ_API kjVec3i kj_vec3i_muli(kjVec3i a, i32 b);
-KJ_API kjVec3u kj_vec3u_mulu(kjVec3u a, u32 b);
 KJ_API kjVec3f kj_vec3f_div(kjVec3f a, kjVec3f b);
-KJ_API kjVec3i kj_vec3i_div(kjVec3i a, kjVec3i b);
-KJ_API kjVec3u kj_vec3u_div(kjVec3u a, kjVec3u b);
 KJ_API f32 kj_vec3f_dot(kjVec3f a, kjVec3f b);
 KJ_API i32 kj_vec3i_dot(kjVec3i a, kjVec3i b);
 KJ_API u32 kj_vec3u_dot(kjVec3u a, kjVec3u b);
 KJ_API kjVec3f kj_vec3f_cross(kjVec3f a, kjVec3f b);
-KJ_API kjVec3i kj_vec3i_cross(kjVec3i a, kjVec3i b);
-KJ_API kjVec3u kj_vec3u_cross(kjVec3u a, kjVec3u b);
 KJ_API f32 kj_vec3f_length_sq(kjVec3f a);
-KJ_API i32 kj_vec3i_length_sq(kjVec3i a);
-KJ_API u32 kj_vec3u_length_sq(kjVec3u a);
 KJ_API f32 kj_vec3f_length(kjVec3f a);
-KJ_API i32 kj_vec3i_length(kjVec3i a);
-KJ_API u32 kj_vec3u_length(kjVec3u a);
 KJ_API kjVec3f kj_vec3f_normalise(kjVec3f a);
-KJ_API kjVec3i kj_vec3i_normalise(kjVec3i a);
-KJ_API kjVec3u kj_vec3u_normalise(kjVec3u a);
 KJ_API kjVec3f kj_vec3f_clamp(kjVec3f a, kjVec3f min, kjVec3f max);
 KJ_API kjVec3i kj_vec3i_clamp(kjVec3i a, kjVec3i min, kjVec3i max);
 KJ_API kjVec3u kj_vec3u_clamp(kjVec3u a, kjVec3u min, kjVec3u max);
@@ -250,43 +210,21 @@ KJ_API kjVec4f kj_vec4f_all(f32 a);
 KJ_API kjVec4i kj_vec4i_all(i32 a);
 KJ_API kjVec4u kj_vec4u_all(u32 a);
 KJ_API kjVec4f kj_vec4f_negate(kjVec4f a);
-KJ_API kjVec4i kj_vec4i_negate(kjVec4i a);
-KJ_API kjVec4u kj_vec4u_negate(kjVec4u a);
 KJ_API kjVec4f kj_vec4f_add(kjVec4f a, kjVec4f b);
-KJ_API kjVec4i kj_vec4i_add(kjVec4i a, kjVec4i b);
-KJ_API kjVec4u kj_vec4u_add(kjVec4u a, kjVec4u b);
 KJ_API kjVec4f kj_vec4f_sub(kjVec4f a, kjVec4f b);
-KJ_API kjVec4i kj_vec4i_sub(kjVec4i a, kjVec4i b);
-KJ_API kjVec4u kj_vec4u_sub(kjVec4u a, kjVec4u b);
 KJ_API kjVec4f kj_vec4f_mul(kjVec4f a, kjVec4f b);
-KJ_API kjVec4i kj_vec4i_mul(kjVec4i a, kjVec4i b);
-KJ_API kjVec4u kj_vec4u_mul(kjVec4u a, kjVec4u b);
 KJ_API kjVec4f kj_vec4f_mulf(kjVec4f a, f32 b);
-KJ_API kjVec4i kj_vec4i_muli(kjVec4i a, i32 b);
-KJ_API kjVec4u kj_vec4u_mulu(kjVec4u a, u32 b);
 KJ_API kjVec4f kj_vec4f_div(kjVec4f a, kjVec4f b);
-KJ_API kjVec4i kj_vec4i_div(kjVec4i a, kjVec4i b);
-KJ_API kjVec4u kj_vec4u_div(kjVec4u a, kjVec4u b);
 KJ_API f32 kj_vec4f_dot(kjVec4f a, kjVec4f b);
-KJ_API i32 kj_vec4i_dot(kjVec4i a, kjVec4i b);
-KJ_API u32 kj_vec4u_dot(kjVec4u a, kjVec4u b);
 KJ_API f32 kj_vec4f_length_sq(kjVec4f a);
-KJ_API i32 kj_vec4i_length_sq(kjVec4i a);
-KJ_API u32 kj_vec4u_length_sq(kjVec4u a);
 KJ_API f32 kj_vec4f_length(kjVec4f a);
-KJ_API i32 kj_vec4i_length(kjVec4i a);
-KJ_API u32 kj_vec4u_length(kjVec4u a);
 KJ_API kjVec4f kj_vec4f_normalise(kjVec4f a);
-KJ_API kjVec4i kj_vec4i_normalise(kjVec4i a);
-KJ_API kjVec4u kj_vec4u_normalise(kjVec4u a);
 KJ_API kjVec4f kj_vec4f_clamp(kjVec4f a, kjVec4f min, kjVec4f max);
 KJ_API kjVec4i kj_vec4i_clamp(kjVec4i a, kjVec4i min, kjVec4i max);
 KJ_API kjVec4u kj_vec4u_clamp(kjVec4u a, kjVec4u min, kjVec4u max);
 KJ_API kjVec4f kj_vec4f_clampf(kjVec4f a, f32 min, f32 max);
 KJ_API kjVec4i kj_vec4i_clampi(kjVec4i a, i32 min, i32 max);
 KJ_API kjVec4u kj_vec4u_clampu(kjVec4u a, u32 min, u32 max);
-
-KJ_API kjVec4f kj_vec4x4f_dot(kjVec4f* a, kjVec4f* b);
 
 KJ_API kjMat3f kj_mat3f(f32 e00, f32 e10, f32 e20,
                         f32 e01, f32 e11, f32 e21,
@@ -297,9 +235,12 @@ KJ_API kjMat3f kj_mat3f_zero(void);
 KJ_API kjMat3f kj_mat3f_one(void);
 KJ_API kjMat3f kj_mat3f_mul(kjMat3f a, kjMat3f b);
 KJ_API kjMat3f kj_mat3f_transpose(kjMat3f a);
+KJ_API kjMat3f kj_mat3f_translate(f32 x, f32 y);
+KJ_API kjMat3f kj_mat3f_translate_vec2f(kjVec2f xy);
 KJ_API kjMat3f kj_mat3f_rotate(f32 angle, f32 x, f32 y, f32 z);
 KJ_API kjMat3f kj_mat3f_rotate_vec3f(f32 angle, kjVec3f xyz);
 KJ_API kjMat3f kj_mat3f_scale(f32 x, f32 y, f32 z);
+KJ_API kjMat3f kj_mat3f_scale_uniform(f32 a);
 KJ_API kjMat3f kj_mat3f_scale_vec3f(kjVec3f xyz);
 
 KJ_API kjMat4f kj_mat4f(f32 e00, f32 e10, f32 e20, f32 e30,
@@ -317,7 +258,11 @@ KJ_API kjMat4f kj_mat4f_translate(f32 x, f32 y, f32 z);
 KJ_API kjMat4f kj_mat4f_translate_vec3f(kjVec3f xyz);
 KJ_API kjMat4f kj_mat4f_rotate(f32 angle, f32 x, f32 y, f32 z);
 KJ_API kjMat4f kj_mat4f_rotate_vec3f(f32 angle, kjVec3f xyz);
+KJ_API kjMat4f kj_mat4f_rotate_x(f32 angle);
+KJ_API kjMat4f kj_mat4f_rotate_y(f32 angle);
+KJ_API kjMat4f kj_mat4f_rotate_z(f32 angle);
 KJ_API kjMat4f kj_mat4f_scale(f32 x, f32 y, f32 z);
+KJ_API kjMat4f kj_mat4f_scale_uniform(f32 a);
 KJ_API kjMat4f kj_mat4f_scale_vec3f(kjVec3f xyz);
 KJ_API kjMat4f kj_mat4f_ortho(f32 l, f32 r, f32 b, f32 t, f32 znear, f32 zfar);
 KJ_API kjMat4f kj_mat4f_ortho_inf(f32 l, f32 r, f32 t, f32 b);
@@ -325,49 +270,32 @@ KJ_API kjMat4f kj_mat4f_perspective(f32 fovy, f32 aspect, f32 znear, f32 zfar);
 KJ_API kjMat4f kj_mat4f_perspective_inf(f32 fovy, f32 aspect, f32 znear);
 KJ_API kjMat4f kj_mat4f_look_at(kjVec3f eye, kjVec3f target, kjVec3f up);
 
-KJ_API kjRect2f kj_rect2f(f32 x, f32 y, f32 w, f32 h);
-KJ_API kjRect2i kj_rect2i(i32 x, i32 y, i32 w, i32 h);
-KJ_API kjRect2u kj_rect2u(u32 x, u32 y, u32 w, u32 h);
-KJ_API b32 kj_rect2f_contains(kjRect2f r, f32 x, f32 y);
-KJ_API b32 kj_rect2i_contains(kjRect2i r, i32 x, i32 y);
-KJ_API b32 kj_rect2u_contains(kjRect2u r, u32 x, u32 y);
-KJ_API b32 kj_rect2f_contains_vec2f(kjRect2f r, kjVec2f xy);
-KJ_API b32 kj_rect2i_contains_vec2i(kjRect2i r, kjVec2i xy);
-KJ_API b32 kj_rect2u_contains_vec2u(kjRect2u r, kjVec2u xy);
-KJ_API i32 kj_rect2f_extend(kjRect2f r, f32 x, f32 y);
-KJ_API i32 kj_rect2i_extend(kjRect2i r, i32 x, i32 y);
-KJ_API i32 kj_rect2u_extend(kjRect2u r, u32 x, u32 y);
-KJ_API i32 kj_rect2f_extend_vec2f(kjRect2f r, kjVec2f xy);
-KJ_API i32 kj_rect2i_extend_vec2i(kjRect2i r, kjVec2i xy);
-KJ_API i32 kj_rect2u_extend_vec2u(kjRect2u r, kjVec2u xy);
-KJ_API kjVec2f kj_rect2f_centre(kjRect2f r);
-KJ_API kjVec2i kj_rect2i_centre(kjRect2i r);
-KJ_API kjVec2u kj_rect2u_centre(kjRect2u r);
+#define kj_contains2(x1, y1, x2, y2, x, y)                                      \
+    (x1) <= (x) && (x2) >= (x) && (y1) <= (y) && (y2) >= (y)
+#define kj_contains3(x1, y1, z1, x2, y2, z2, x, y, z)                           \
+    (x1) <= (x) && (x2) >= (x) &&                                               \
+    (y1) <= (y) && (y2) >= (y) &&                                               \
+    (z1) <= (z) && (z2) >= (z)
 
-KJ_API kjRect3f kj_rect3f(f32 x, f32 y, f32 z, f32 w, f32 h, f32 d);
-KJ_API kjRect3i kj_rect3i(i32 x, i32 y, i32 z, i32 w, i32 h, i32 d);
-KJ_API kjRect3u kj_rect3u(u32 x, u32 y, u32 z, u32 w, u32 h, u32 d);
-KJ_API b32 kj_rect3f_contains_xy(kjRect3f r, f32 x, f32 y);
-KJ_API b32 kj_rect3i_contains_xy(kjRect3i r, i32 x, i32 y);
-KJ_API b32 kj_rect3u_contains_xy(kjRect3u r, u32 x, u32 y);
-KJ_API b32 kj_rect3f_contains_vec2f(kjRect3f r, kjVec2f xy);
-KJ_API b32 kj_rect3i_contains_vec2i(kjRect3i r, kjVec2i xy);
-KJ_API b32 kj_rect3u_contains_vec2u(kjRect3u r, kjVec2u xy);
-KJ_API b32 kj_rect3f_contains(kjRect3f r, f32 x, f32 y, f32 z);
-KJ_API b32 kj_rect3i_contains(kjRect3i r, i32 x, i32 y, i32 z);
-KJ_API b32 kj_rect3u_contains(kjRect3u r, u32 x, u32 y, u32 z);
-KJ_API b32 kj_rect3f_contains_vec3f(kjRect3f r, kjVec3f xyz);
-KJ_API b32 kj_rect3i_contains_vec3i(kjRect3i r, kjVec3i xyz);
-KJ_API b32 kj_rect3u_contains_vec3u(kjRect3u r, kjVec3u xyz);
-KJ_API i32 kj_rect3f_extend(kjRect3f r, f32 x, f32 y, f32 z);
-KJ_API i32 kj_rect3i_extend(kjRect3i r, i32 x, i32 y, i32 z);
-KJ_API i32 kj_rect3u_extend(kjRect3u r, u32 x, u32 y, u32 z);
-KJ_API i32 kj_rect3f_extend_vec3f(kjRect3f r, kjVec3f xyz);
-KJ_API i32 kj_rect3i_extend_vec3i(kjRect3i r, kjVec3i xyz);
-KJ_API i32 kj_rect3u_extend_vec3u(kjRect3u r, kjVec3u xyz);
-KJ_API kjVec3f kj_rect3f_centre(kjRect3f r);
-KJ_API kjVec3i kj_rect3i_centre(kjRect3i r);
-KJ_API kjVec3u kj_rect3u_centre(kjRect3u r);
+KJ_API kjRect2f kj_rect2f(f32 x1, f32 y1, f32 x2, f32 y2);
+KJ_API kjRect2i kj_rect2i(i32 x1, i32 y1, i32 x2, i32 y2);
+KJ_API kjRect2u kj_rect2u(u32 x1, u32 y1, u32 x2, u32 y2);
+#define kj_rect2_contains(r, x, y)                                              \
+    kj_contains2((r).min.x, (r).min.y, (r).max.x, (r).max.y, (x), (y))
+#define kj_rect2_contains_vec2(r, v)                                            \
+    kj_contains2((r).min.x, (r).min.y, (r).max.x, (r).max.y, (v).x, (v).y)
+
+KJ_API kjRect3f kj_rect3f(f32 x1, f32 y1, f32 z1, f32 x2, f32 y2, f32 z2);
+KJ_API kjRect3i kj_rect3i(i32 x1, i32 y1, i32 z1, i32 x2, i32 y2, i32 z2);
+KJ_API kjRect3u kj_rect3u(u32 x1, u32 y1, u32 z1, u32 x2, u32 y2, u32 z2);
+#define kj_rect3_contains(r, x, y, z)                                           \
+    kj_contains3(                                                               \
+            (r).min.x, (r).min.y, (r).min.z,                                    \
+            (r).max.x, (r).max.y, (r).max.z, (x), (y), (z))
+#define kj_rect3_contains_vec3(r, v)                                            \
+    kj_contains3(                                                               \
+            (r).min.x, (r).min.y, (r).min.z,                                    \
+            (r).max.x, (r).max.y, (r).max.z, (v).x, (v).y, (v).z)
 
 KJ_API kjRgba kj_rgba(u8 r, u8 g, u8 b, u8 a);
 KJ_API kjRgba kj_rgba_4f(f32 r, f32 g, f32 b, f32 a);
@@ -381,185 +309,26 @@ KJ_API kjVec4f kj_rgbaf_rgba(kjRgba rgba);
 KJ_API u32 kj_rgbaf_pack(kjVec4f rgba);
 KJ_API kjVec4f kj_rgbaf_unpack(u32 packed);
 
-#define KJ_RGBA_COLOUR_MAP(X)                                                   \
-    X(KJ_RGBA_ALICE_BLUE, 0xF0, 0xF8, 0xFF)                                     \
-    X(KJ_RGBA_ANTIQUE_WHITE, 0xFA, 0xEB, 0xD7)                                  \
-    X(KJ_RGBA_AQUA, 0x00, 0xFF, 0xFF)                                           \
-    X(KJ_RGBA_AQUAMARINE, 0x7F, 0xFF, 0xD4)                                     \
-    X(KJ_RGBA_AZURE, 0xF0, 0xFF, 0xFF)                                          \
-    X(KJ_RGBA_BEIGE, 0xF5, 0xF5, 0xDC)                                          \
-    X(KJ_RGBA_BISQUE, 0xFF, 0xE4, 0xC4)                                         \
-    X(KJ_RGBA_BLACK, 0x00, 0x00, 0x00)                                          \
-    X(KJ_RGBA_BLANCHED_ALMOND, 0xFF, 0xEB, 0xCD)                                \
-    X(KJ_RGBA_BLUE, 0x00, 0x00, 0xFF)                                           \
-    X(KJ_RGBA_BLUE_VIOLET, 0x8A, 0x2B, 0xE2)                                    \
-    X(KJ_RGBA_BROWN, 0xA5, 0x2A, 0x2A)                                          \
-    X(KJ_RGBA_BURLYWOOD, 0xDE, 0xB8, 0x87)                                      \
-    X(KJ_RGBA_CADET_BLUE, 0x5F, 0x9E, 0xA0)                                     \
-    X(KJ_RGBA_CHARTREUSE, 0x7F, 0xFF, 0x00)                                     \
-    X(KJ_RGBA_CHOCOLATE, 0xD2, 0x69, 0x1E)                                      \
-    X(KJ_RGBA_CORAL, 0xFF, 0x7F, 0x50)                                          \
-    X(KJ_RGBA_CORNFLOWER, 0x64, 0x95, 0xED)                                     \
-    X(KJ_RGBA_CORNSILK, 0xFF, 0xF8, 0xDC)                                       \
-    X(KJ_RGBA_CRIMSON, 0xDC, 0x14, 0x3C)                                        \
-    X(KJ_RGBA_CYAN, 0x00, 0xFF, 0xFF)                                           \
-    X(KJ_RGBA_DARK_BLUE, 0x00, 0x00, 0x8B)                                      \
-    X(KJ_RGBA_DARK_CYAN, 0x00, 0x8B, 0x8B)                                      \
-    X(KJ_RGBA_DARK_GOLDENROD, 0xB8, 0x86, 0x0B)                                 \
-    X(KJ_RGBA_DARK_GRAY, 0xA9, 0xA9, 0xA9)                                      \
-    X(KJ_RGBA_DARK_GREEN, 0x00, 0x64, 0x00)                                     \
-    X(KJ_RGBA_DARK_KHAKI, 0xBD, 0xB7, 0x6B)                                     \
-    X(KJ_RGBA_DARK_MAGENTA, 0x8B, 0x00, 0x8B)                                   \
-    X(KJ_RGBA_DARK_OLIVE_GREEN, 0x55, 0x6B, 0x2F)                               \
-    X(KJ_RGBA_DARK_ORANGE, 0xFF, 0x8C, 0x00)                                    \
-    X(KJ_RGBA_DARK_ORCHID, 0x99, 0x32, 0xCC)                                    \
-    X(KJ_RGBA_DARK_RED, 0x8B, 0x00, 0x00)                                       \
-    X(KJ_RGBA_DARK_SALMON, 0xE9, 0x96, 0x7A)                                    \
-    X(KJ_RGBA_DARK_SEA_GREEN, 0x8F, 0xBC, 0x8F)                                 \
-    X(KJ_RGBA_DARK_SLATE_BLUE, 0x48, 0x3D, 0x8B)                                \
-    X(KJ_RGBA_DARK_SLATE_GRAY, 0x2F, 0x4F, 0x4F)                                \
-    X(KJ_RGBA_DARK_TURQUOISE, 0x00, 0xCE, 0xD1)                                 \
-    X(KJ_RGBA_DARK_VIOLET, 0x94, 0x00, 0xD3)                                    \
-    X(KJ_RGBA_DEEP_PINK, 0xFF, 0x14, 0x93)                                      \
-    X(KJ_RGBA_DEEP_SKY_BLUE, 0x00, 0xBF, 0xFF)                                  \
-    X(KJ_RGBA_DIM_GRAY, 0x69, 0x69, 0x69)                                       \
-    X(KJ_RGBA_DODGER_BLUE, 0x1E, 0x90, 0xFF)                                    \
-    X(KJ_RGBA_FIREBRICK, 0xB2, 0x22, 0x22)                                      \
-    X(KJ_RGBA_FLORAL_WHITE, 0xFF, 0xFA, 0xF0)                                   \
-    X(KJ_RGBA_FOREST_GREEN, 0x22, 0x8B, 0x22)                                   \
-    X(KJ_RGBA_FUCHSIA, 0xFF, 0x00, 0xFF)                                        \
-    X(KJ_RGBA_GAINSBORO, 0xDC, 0xDC, 0xDC)                                      \
-    X(KJ_RGBA_GHOST_WHITE, 0xF8, 0xF8, 0xFF)                                    \
-    X(KJ_RGBA_GOLD, 0xFF, 0xD7, 0x00)                                           \
-    X(KJ_RGBA_GOLDENROD, 0xDA, 0xA5, 0x20)                                      \
-    X(KJ_RGBA_GRAY, 0xBE, 0xBE, 0xBE)                                           \
-    X(KJ_RGBA_GREEN, 0x00, 0xFF, 0x00)                                          \
-    X(KJ_RGBA_GREEN_YELLOW, 0xAD, 0xFF, 0x2F)                                   \
-    X(KJ_RGBA_HONEYDEW, 0xF0, 0xFF, 0xF0)                                       \
-    X(KJ_RGBA_HOT_PINK, 0xFF, 0x69, 0xB4)                                       \
-    X(KJ_RGBA_INDIAN_RED, 0xCD, 0x5C, 0x5C)                                     \
-    X(KJ_RGBA_INDIGO, 0x4B, 0x00, 0x82)                                         \
-    X(KJ_RGBA_IVORY, 0xFF, 0xFF, 0xF0)                                          \
-    X(KJ_RGBA_KHAKI, 0xF0, 0xE6, 0x8C)                                          \
-    X(KJ_RGBA_LAVENDER, 0xE6, 0xE6, 0xFA)                                       \
-    X(KJ_RGBA_LAVENDER_BLUSH, 0xFF, 0xF0, 0xF5)                                 \
-    X(KJ_RGBA_LAWN_GREEN, 0x7C, 0xFC, 0x00)                                     \
-    X(KJ_RGBA_LEMON_CHIFFON, 0xFF, 0xFA, 0xCD)                                  \
-    X(KJ_RGBA_LIGHT_BLUE, 0xAD, 0xD8, 0xE6)                                     \
-    X(KJ_RGBA_LIGHT_CORAL, 0xF0, 0x80, 0x80)                                    \
-    X(KJ_RGBA_LIGHT_CYAN, 0xE0, 0xFF, 0xFF)                                     \
-    X(KJ_RGBA_LIGHT_GOLDENROD, 0xFA, 0xFA, 0xD2)                                \
-    X(KJ_RGBA_LIGHT_GRAY, 0xD3, 0xD3, 0xD3)                                     \
-    X(KJ_RGBA_LIGHT_GREEN, 0x90, 0xEE, 0x90)                                    \
-    X(KJ_RGBA_LIGHT_PINK, 0xFF, 0xB6, 0xC1)                                     \
-    X(KJ_RGBA_LIGHT_SALMON, 0xFF, 0xA0, 0x7A)                                   \
-    X(KJ_RGBA_LIGHT_SEA_GREEN, 0X20, 0XB2, 0XAA)                                \
-    X(KJ_RGBA_LIGHT_SKY_BLUE, 0X87, 0XCE, 0XFA)                                 \
-    X(KJ_RGBA_LIGHT_SLATE_GRAY, 0X77, 0X88, 0X99)                               \
-    X(KJ_RGBA_LIGHT_STEEL_BLUE, 0XB0, 0XC4, 0XDE)                               \
-    X(KJ_RGBA_LIGHT_YELLOW, 0xFF, 0xFF, 0xE0)                                   \
-    X(KJ_RGBA_LIME, 0x00, 0xFF, 0x00)                                           \
-    X(KJ_RGBA_LIME_GREEN, 0x32, 0xCD, 0x32)                                     \
-    X(KJ_RGBA_LINEN, 0xFA, 0xF0, 0xE6)                                          \
-    X(KJ_RGBA_MAGENTA, 0xFF, 0x00, 0xFF)                                        \
-    X(KJ_RGBA_MAROON, 0xB0, 0x30, 0x60)                                         \
-    X(KJ_RGBA_MEDIUM_AQUAMARINE, 0x66, 0xCD, 0xAA)                              \
-    X(KJ_RGBA_MEDIUM_BLUE, 0x00, 0x00, 0xCD)                                    \
-    X(KJ_RGBA_MEDIUM_ORCHID, 0xBA, 0x55, 0xD3)                                  \
-    X(KJ_RGBA_MEDIUM_PURPLE, 0x93, 0x70, 0xDB)                                  \
-    X(KJ_RGBA_MEDIUM_SEA_GREEN, 0x3C, 0xB3, 0x71)                               \
-    X(KJ_RGBA_MEDIUM_SLATE_BLUE, 0x7B, 0x68, 0xEE)                              \
-    X(KJ_RGBA_MEDIUM_SPRING_GREEN, 0x00, 0xFA, 0x9A)                            \
-    X(KJ_RGBA_MEDIUM_TURQUOISE, 0x48, 0xD1, 0xCC)                               \
-    X(KJ_RGBA_MEDIUM_VIOLET_RED, 0xC7, 0x15, 0x85)                              \
-    X(KJ_RGBA_MIDNIGHT_BLUE, 0x19, 0x19, 0x70)                                  \
-    X(KJ_RGBA_MINT_CREAM, 0xF5, 0xFF, 0xFA)                                     \
-    X(KJ_RGBA_MISTY_ROSE, 0xFF, 0xE4, 0xE1)                                     \
-    X(KJ_RGBA_MOCCASIN, 0xFF, 0xE4, 0xB5)                                       \
-    X(KJ_RGBA_NAVAJO_WHITE, 0xFF, 0xDE, 0xAD)                                   \
-    X(KJ_RGBA_NAVY_BLUE, 0x00, 0x00, 0x80)                                      \
-    X(KJ_RGBA_OLD_LACE, 0xFD, 0xF5, 0xE6)                                       \
-    X(KJ_RGBA_OLIVE, 0x80, 0x80, 0x00)                                          \
-    X(KJ_RGBA_OLIVE_DRAB, 0x6B, 0x8E, 0x23)                                     \
-    X(KJ_RGBA_ORANGE, 0xFF, 0xA5, 0x00)                                         \
-    X(KJ_RGBA_ORANGE_RED, 0xFF, 0x45, 0x00)                                     \
-    X(KJ_RGBA_ORCHID, 0xDA, 0x70, 0xD6)                                         \
-    X(KJ_RGBA_PALE_GOLDENROD, 0xEE, 0xE8, 0xAA)                                 \
-    X(KJ_RGBA_PALE_GREEN, 0x98, 0xFB, 0x98)                                     \
-    X(KJ_RGBA_PALE_TURQUOISE, 0xAF, 0xEE, 0xEE)                                 \
-    X(KJ_RGBA_PALE_VIOLET_RED, 0xDB, 0x70, 0x93)                                \
-    X(KJ_RGBA_PAPAYA_WHIP, 0xFF, 0xEF, 0xD5)                                    \
-    X(KJ_RGBA_PEACH_PUFF, 0xFF, 0xDA, 0xB9)                                     \
-    X(KJ_RGBA_PERU, 0xCD, 0x85, 0x3F)                                           \
-    X(KJ_RGBA_PINK, 0xFF, 0xC0, 0xCB)                                           \
-    X(KJ_RGBA_PLUM, 0xDD, 0xA0, 0xDD)                                           \
-    X(KJ_RGBA_POWDER_BLUE, 0xB0, 0xE0, 0xE6)                                    \
-    X(KJ_RGBA_PURPLE, 0xA0, 0x20, 0xF0)                                         \
-    X(KJ_RGBA_REBECCA_PURPLE, 0x66, 0x33, 0x99)                                 \
-    X(KJ_RGBA_RED, 0xFF, 0x00, 0x00)                                            \
-    X(KJ_RGBA_ROSY_BROWN, 0xBC, 0x8F, 0x8F)                                     \
-    X(KJ_RGBA_ROYAL_BLUE, 0x41, 0x69, 0xE1)                                     \
-    X(KJ_RGBA_SADDLE_BROWN, 0x8B, 0x45, 0x13)                                   \
-    X(KJ_RGBA_SALMON, 0xFA, 0x80, 0x72)                                         \
-    X(KJ_RGBA_SANDY_BROWN, 0xF4, 0xA4, 0x60)                                    \
-    X(KJ_RGBA_SEASHELL, 0xFF, 0xF5, 0xEE)                                       \
-    X(KJ_RGBA_SEA_GREEN, 0x2E, 0x8B, 0x57)                                      \
-    X(KJ_RGBA_SIENNA, 0xA0, 0x52, 0x2D)                                         \
-    X(KJ_RGBA_SILVER, 0xC0, 0xC0, 0xC0)                                         \
-    X(KJ_RGBA_SKY_BLUE, 0x87, 0xCE, 0xEB)                                       \
-    X(KJ_RGBA_SLATE_BLUE, 0x6A, 0x5A, 0xCD)                                     \
-    X(KJ_RGBA_SLATE_GRAY, 0x70, 0x80, 0x90)                                     \
-    X(KJ_RGBA_SNOW, 0xFF, 0xFA, 0xFA)                                           \
-    X(KJ_RGBA_SPRING_GREEN, 0x00, 0xFF, 0x7F)                                   \
-    X(KJ_RGBA_STEEL_BLUE, 0x46, 0x82, 0xB4)                                     \
-    X(KJ_RGBA_TAN, 0xD2, 0xB4, 0x8C)                                            \
-    X(KJ_RGBA_TEAL, 0x00, 0x80, 0x80)                                           \
-    X(KJ_RGBA_THISTLE, 0xD8, 0xBF, 0xD8)                                        \
-    X(KJ_RGBA_TOMATO, 0xFF, 0x63, 0x47)                                         \
-    X(KJ_RGBA_TURQUOISE, 0x40, 0xE0, 0xD0)                                      \
-    X(KJ_RGBA_VIOLET, 0xEE, 0x82, 0xEE)                                         \
-    X(KJ_RGBA_WEB_GRAY, 0x80, 0x80, 0x80)                                       \
-    X(KJ_RGBA_WEB_GREEN, 0x00, 0x80, 0x00)                                      \
-    X(KJ_RGBA_WEB_MAROON, 0x7F, 0x00, 0x00)                                     \
-    X(KJ_RGBA_WEB_PURPLE, 0x7F, 0x00, 0x7F)                                     \
-    X(KJ_RGBA_WHEAT, 0xF5, 0xDE, 0xB3)                                          \
-    X(KJ_RGBA_WHITE, 0xFF, 0xFF, 0xFF)                                          \
-    X(KJ_RGBA_WHITE_SMOKE, 0xF5, 0xF5, 0xF5)                                    \
-    X(KJ_RGBA_YELLOW, 0xFF, 0xFF, 0x00)                                         \
-    X(KJ_RGBA_YELLOW_GREEN, 0x9A, 0xCD, 0x32)
-
-KJ_WARNING_DISABLE_BEGIN
-KJ_WARNING_DISABLE_MISSING_BRACES
-
-#define KJ_RGBA_CONST(c, r, g, b)                                               \
-        KJ_GLOBAL const kjRgba c = {                                            \
-            r, g, b, 0xFF                                                       \
-        };                                                                      \
-    KJ_RGBA_COLOUR_MAP(KJ_RGBA_CONST)
-#undef KJ_RGBA_CONST
-
-#define KJ_RGBAF_CONST(c, r, g, b)                                              \
-        KJ_GLOBAL const kjVec4f c = {                                           \
-            r / 255.0f, g / 255.0f, b / 255.0f, 1.0f                            \
-        };                                                                      \
-    KJ_RGBA_COLOUR_MAP(KJ_RGBAF_CONST)
-#undef KJ_RGBAF_CONST
-
-KJ_WARNING_DISABLE_END
-
-KJ_EXTERN_END
+#if defined(__cplusplus)
+}
+#endif
 
 #if defined(__cplusplus)
 KJ_API kjMat3f kj_mat3f(f32 e00, f32 e11, f32 e22);
 KJ_API kjMat3f kj_mat3f(void);
+KJ_API kjMat3f kj_mat3f_translate(kjVec2f xy);
 KJ_API kjMat3f kj_mat3f_rotate(f32 angle, kjVec3f xyz);
-KJ_API kjMat3f kj_mat3f_scale(f32 angle, kjVec3f xyz);
+KJ_API kjMat3f kj_mat3f_scale(f32 a);
+KJ_API kjMat3f kj_mat3f_scale(kjVec3f xyz);
+KJ_API kjMat3f operator*(kjMat3f a, kjMat3f b);
 
 KJ_API kjMat4f kj_mat4f(f32 e00, f32 e11, f32 e22, f32 e33);
 KJ_API kjMat4f kj_mat4f(void);
 KJ_API kjMat4f kj_mat4f_translate(kjVec3f xyz);
 KJ_API kjMat4f kj_mat4f_rotate(f32 angle, kjVec3f xyz);
+KJ_API kjMat4f kj_mat4f_scale(f32 a);
 KJ_API kjMat4f kj_mat4f_scale(kjVec3f xyz);
+KJ_API kjMat4f operator*(kjMat4f a, kjMat4f b);
 #endif
 
 #endif
@@ -682,83 +451,27 @@ KJ_CONST KJ_INLINE kjVec2f kj_vec2f_negate(kjVec2f a) {
     return kj_vec2f(-a.x, -a.y);
 }
 
-KJ_CONST KJ_INLINE kjVec2i kj_vec2i_negate(kjVec2i a) {
-    return kj_vec2i(-a.x, -a.y);
-}
-
-KJ_CONST KJ_INLINE kjVec2u kj_vec2u_negate(kjVec2u a) {
-    return kj_vec2u(-kj_cast(i32, a.x), -kj_cast(i32, a.y));
-}
-
 KJ_CONST KJ_INLINE kjVec2f kj_vec2f_add(kjVec2f a, kjVec2f b) {
     return kj_vec2f(a.x + b.x, a.y + b.y);
-}
-
-KJ_CONST KJ_INLINE kjVec2i kj_vec2i_add(kjVec2i a, kjVec2i b) {
-    return kj_vec2i(a.x + b.x, a.y + b.y);
-}
-
-KJ_CONST KJ_INLINE kjVec2u kj_vec2u_add(kjVec2u a, kjVec2u b) {
-    return kj_vec2u(a.x + b.x, a.y + b.y);
 }
 
 KJ_CONST KJ_INLINE kjVec2f kj_vec2f_sub(kjVec2f a, kjVec2f b) {
     return kj_vec2f(a.x - b.x, a.y - b.y);
 }
 
-KJ_CONST KJ_INLINE kjVec2i kj_vec2i_sub(kjVec2i a, kjVec2i b) {
-    return kj_vec2i(a.x - b.x, a.y - b.y);
-}
-
-KJ_CONST KJ_INLINE kjVec2u kj_vec2u_sub(kjVec2u a, kjVec2u b) {
-    return kj_vec2u(a.x - b.x, a.y - b.y);
-}
-
 KJ_CONST KJ_INLINE kjVec2f kj_vec2f_mul(kjVec2f a, kjVec2f b) {
     return kj_vec2f(a.x * b.x, a.y * b.y);
-}
-
-KJ_CONST KJ_INLINE kjVec2i kj_vec2i_mul(kjVec2i a, kjVec2i b) {
-    return kj_vec2i(a.x * b.x, a.y * b.y);
-}
-
-KJ_CONST KJ_INLINE kjVec2u kj_vec2u_mul(kjVec2u a, kjVec2u b) {
-    return kj_vec2u(a.x * b.x, a.y * b.y);
 }
 
 KJ_CONST KJ_INLINE kjVec2f kj_vec2f_mulf(kjVec2f a, f32 b) {
     return kj_vec2f(a.x * b, a.y * b);
 }
 
-KJ_CONST KJ_INLINE kjVec2i kj_vec2i_muli(kjVec2i a, i32 b) {
-    return kj_vec2i(a.x * b, a.y * b);
-}
-
-KJ_CONST KJ_INLINE kjVec2u kj_vec2u_mulu(kjVec2u a, u32 b) {
-    return kj_vec2u(a.x * b, a.y * b);
-}
-
 KJ_CONST KJ_INLINE kjVec2f kj_vec2f_div(kjVec2f a, kjVec2f b) {
-    return kj_vec2f(a.x / b.x, a.y / b.y);
-}
-
-KJ_CONST KJ_INLINE kjVec2i kj_vec2i_div(kjVec2i a, kjVec2i b) {
-    return kj_vec2i(a.x / b.x, a.y / b.y);
-}
-
-KJ_CONST KJ_INLINE kjVec2u kj_vec2u_div(kjVec2u a, kjVec2u b) {
-    return kj_vec2u(a.x / b.x, a.y / b.y);
+    return kj_vec2f(a.x * (1.0f / b.x), a.y * (1.0f / b.y));
 }
 
 KJ_CONST KJ_INLINE f32 kj_vec2f_dot(kjVec2f a, kjVec2f b) {
-    return (a.x * b.x + a.y * b.y);
-}
-
-KJ_CONST KJ_INLINE i32 kj_vec2i_dot(kjVec2i a, kjVec2i b) {
-    return (a.x * b.x + a.y * b.y);
-}
-
-KJ_CONST KJ_INLINE u32 kj_vec2u_dot(kjVec2u a, kjVec2u b) {
     return (a.x * b.x + a.y * b.y);
 }
 
@@ -766,53 +479,16 @@ KJ_CONST KJ_INLINE f32 kj_vec2f_cross(kjVec2f a, kjVec2f b) {
     return (a.x * b.y - b.x * a.y);
 }
 
-KJ_CONST KJ_INLINE i32 kj_vec2i_cross(kjVec2i a, kjVec2i b) {
-    return (a.x * b.y - b.x * a.y);
-}
-
-KJ_CONST KJ_INLINE u32 kj_vec2u_cross(kjVec2u a, kjVec2u b) {
-    return (a.x * b.y - b.x * a.y);
-}
-
 KJ_CONST KJ_INLINE f32 kj_vec2f_length_sq(kjVec2f a) {
     return kj_vec2f_dot(a, a);
-}
-
-KJ_CONST KJ_INLINE i32 kj_vec2i_length_sq(kjVec2i a) {
-    return kj_vec2i_dot(a, a);
-}
-
-KJ_CONST KJ_INLINE u32 kj_vec2u_length_sq(kjVec2u a) {
-    return kj_vec2u_dot(a, a);
 }
 
 KJ_CONST KJ_INLINE f32 kj_vec2f_length(kjVec2f a) {
     return kj_sqrtf(kj_vec2f_length_sq(a));
 }
 
-KJ_WARNING_DISABLE_BEGIN
-KJ_WARNING_DISABLE_LOSS_OF_DATA
-
-KJ_CONST KJ_INLINE i32 kj_vec2i_length(kjVec2i a) {
-    return kj_sqrtf(kj_vec2i_length_sq(a));
-}
-
-KJ_CONST KJ_INLINE u32 kj_vec2u_length(kjVec2u a) {
-    return kj_sqrtf(kj_vec2u_length_sq(a));
-}
-
-KJ_WARNING_DISABLE_END
-
 KJ_CONST KJ_INLINE kjVec2f kj_vec2f_normalise(kjVec2f a) {
     return kj_vec2f_div(a, kj_vec2f_all(kj_vec2f_length(a)));
-}
-
-KJ_CONST KJ_INLINE kjVec2i kj_vec2i_normalise(kjVec2i a) {
-    return kj_vec2i_div(a, kj_vec2i_all(kj_vec2i_length(a)));
-}
-
-KJ_CONST KJ_INLINE kjVec2u kj_vec2u_normalise(kjVec2u a) {
-    return kj_vec2u_div(a, kj_vec2u_all(kj_vec2u_length(a)));
 }
 
 KJ_CONST KJ_INLINE kjVec2f kj_vec2f_clamp(kjVec2f a, kjVec2f min, kjVec2f max) {
@@ -909,86 +585,27 @@ KJ_CONST KJ_INLINE kjVec3f kj_vec3f_negate(kjVec3f a) {
     return kj_vec3f(-a.x, -a.y, -a.z);
 }
 
-KJ_CONST KJ_INLINE kjVec3i kj_vec3i_negate(kjVec3i a) {
-    return kj_vec3i(-a.x, -a.y, -a.z);
-}
-
-KJ_CONST KJ_INLINE kjVec3u kj_vec3u_negate(kjVec3u a) {
-    return kj_vec3u(
-            -kj_cast(i32, a.x),
-            -kj_cast(i32, a.y),
-            -kj_cast(i32, a.z));
-}
-
 KJ_CONST KJ_INLINE kjVec3f kj_vec3f_add(kjVec3f a, kjVec3f b) {
     return kj_vec3f(a.x + b.x, a.y + b.y, a.z + b.z);
-}
-
-KJ_CONST KJ_INLINE kjVec3i kj_vec3i_add(kjVec3i a, kjVec3i b) {
-    return kj_vec3i(a.x + b.x, a.y + b.y, a.z + b.z);
-}
-
-KJ_CONST KJ_INLINE kjVec3u kj_vec3u_add(kjVec3u a, kjVec3u b) {
-    return kj_vec3u(a.x + b.x, a.y + b.y, a.z + b.z);
 }
 
 KJ_CONST KJ_INLINE kjVec3f kj_vec3f_sub(kjVec3f a, kjVec3f b) {
     return kj_vec3f(a.x - b.x, a.y - b.y, a.z - b.z);
 }
 
-KJ_CONST KJ_INLINE kjVec3i kj_vec3i_sub(kjVec3i a, kjVec3i b) {
-    return kj_vec3i(a.x - b.x, a.y - b.y, a.z - b.z);
-}
-
-KJ_CONST KJ_INLINE kjVec3u kj_vec3u_sub(kjVec3u a, kjVec3u b) {
-    return kj_vec3u(a.x - b.x, a.y - b.y, a.z - b.z);
-}
-
 KJ_CONST KJ_INLINE kjVec3f kj_vec3f_mul(kjVec3f a, kjVec3f b) {
     return kj_vec3f(a.x * b.x, a.y * b.y, a.z * b.z);
-}
-
-KJ_CONST KJ_INLINE kjVec3i kj_vec3i_mul(kjVec3i a, kjVec3i b) {
-    return kj_vec3i(a.x * b.x, a.y * b.y, a.z * b.z);
-}
-
-KJ_CONST KJ_INLINE kjVec3u kj_vec3u_mul(kjVec3u a, kjVec3u b) {
-    return kj_vec3u(a.x * b.x, a.y * b.y, a.z * b.z);
 }
 
 KJ_CONST KJ_INLINE kjVec3f kj_vec3f_mulf(kjVec3f a, f32 b) {
     return kj_vec3f(a.x * b, a.y * b, a.z * b);
 }
 
-KJ_CONST KJ_INLINE kjVec3i kj_vec3i_muli(kjVec3i a, i32 b) {
-    return kj_vec3i(a.x * b, a.y * b, a.z * b);
-}
-
-KJ_CONST KJ_INLINE kjVec3u kj_vec3u_mulu(kjVec3u a, u32 b) {
-    return kj_vec3u(a.x * b, a.y * b, a.z * b);
-}
-
 KJ_CONST KJ_INLINE kjVec3f kj_vec3f_div(kjVec3f a, kjVec3f b) {
-    return kj_vec3f(a.x / b.x, a.y / b.y, a.z / b.z);
-}
-
-KJ_CONST KJ_INLINE kjVec3i kj_vec3i_div(kjVec3i a, kjVec3i b) {
-    return kj_vec3i(a.x / b.x, a.y / b.y, a.z / b.z);
-}
-
-KJ_CONST KJ_INLINE kjVec3u kj_vec3u_div(kjVec3u a, kjVec3u b) {
-    return kj_vec3u(a.x / b.x, a.y / b.y, a.z / b.z);
+    return kj_vec3f(a.x * (1.0f / b.x), a.y * (1.0f / b.y), a.z * (1.0f / b.z));
 }
 
 KJ_CONST KJ_INLINE f32 kj_vec3f_dot(kjVec3f a, kjVec3f b) {
-    return (a.x * b.x + a.y * b.y + a.z * b.z);
-}
-
-KJ_CONST KJ_INLINE i32 kj_vec3i_dot(kjVec3i a, kjVec3i b) {
-    return (a.x * b.x + a.y * b.y + a.z * b.z);
-}
-
-KJ_CONST KJ_INLINE u32 kj_vec3u_dot(kjVec3u a, kjVec3u b) {
     return (a.x * b.x + a.y * b.y + a.z * b.z);
 }
 
@@ -999,59 +616,16 @@ KJ_CONST KJ_INLINE kjVec3f kj_vec3f_cross(kjVec3f a, kjVec3f b) {
             a.x * b.y - b.x * a.y);
 }
 
-KJ_CONST KJ_INLINE kjVec3i kj_vec3i_cross(kjVec3i a, kjVec3i b) {
-    return kj_vec3i(
-            a.y * b.z - b.y * a.z,
-            a.z * b.x - b.z * a.x,
-            a.x * b.y - b.x * a.y);
-}
-
-KJ_CONST KJ_INLINE kjVec3u kj_vec3u_cross(kjVec3u a, kjVec3u b) {
-    return kj_vec3u(
-            a.y * b.z - b.y * a.z,
-            a.z * b.x - b.z * a.x,
-            a.x * b.y - b.x * a.y);
-}
-
 KJ_CONST KJ_INLINE f32 kj_vec3f_length_sq(kjVec3f a) {
     return kj_vec3f_dot(a, a);
-}
-
-KJ_CONST KJ_INLINE i32 kj_vec3i_length_sq(kjVec3i a) {
-    return kj_vec3i_dot(a, a);
-}
-
-KJ_CONST KJ_INLINE u32 kj_vec3u_length_sq(kjVec3u a) {
-    return kj_vec3u_dot(a, a);
 }
 
 KJ_CONST KJ_INLINE f32 kj_vec3f_length(kjVec3f a) {
     return kj_sqrtf(kj_vec3f_length_sq(a));
 }
 
-KJ_WARNING_DISABLE_BEGIN
-KJ_WARNING_DISABLE_LOSS_OF_DATA
-
-KJ_CONST KJ_INLINE i32 kj_vec3i_length(kjVec3i a) {
-    return kj_sqrtf(kj_vec3i_length_sq(a));
-}
-
-KJ_CONST KJ_INLINE u32 kj_vec3u_length(kjVec3u a) {
-    return kj_sqrtf(kj_vec3u_length_sq(a));
-}
-
-KJ_WARNING_DISABLE_END
-
 KJ_CONST KJ_INLINE kjVec3f kj_vec3f_normalise(kjVec3f a) {
     return kj_vec3f_div(a, kj_vec3f_all(kj_vec3f_length(a)));
-}
-
-KJ_CONST KJ_INLINE kjVec3i kj_vec3i_normalise(kjVec3i a) {
-    return kj_vec3i_div(a, kj_vec3i_all(kj_vec3i_length(a)));
-}
-
-KJ_CONST KJ_INLINE kjVec3u kj_vec3u_normalise(kjVec3u a) {
-    return kj_vec3u_div(a, kj_vec3u_all(kj_vec3u_length(a)));
 }
 
 KJ_CONST KJ_INLINE kjVec3f kj_vec3f_clamp(kjVec3f a, kjVec3f b, kjVec3f c) {
@@ -1154,127 +728,42 @@ KJ_CONST KJ_INLINE kjVec4f kj_vec4f_negate(kjVec4f a) {
     return kj_vec4f(-a.x, -a.y, -a.z, -a.w);
 }
 
-KJ_CONST KJ_INLINE kjVec4i kj_vec4i_negate(kjVec4i a) {
-    return kj_vec4i(-a.x, -a.y, -a.z, -a.w);
-}
-
-KJ_CONST KJ_INLINE kjVec4u kj_vec4u_negate(kjVec4u a) {
-    return kj_vec4u(
-            -kj_cast(i32, a.x), -kj_cast(i32, a.y),
-            -kj_cast(i32, a.z), -kj_cast(i32, a.w));
-}
-
 KJ_CONST KJ_INLINE kjVec4f kj_vec4f_add(kjVec4f a, kjVec4f b) {
     return kj_vec4f(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
-}
-
-KJ_CONST KJ_INLINE kjVec4i kj_vec4i_add(kjVec4i a, kjVec4i b) {
-    return kj_vec4i(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
-}
-
-KJ_CONST KJ_INLINE kjVec4u kj_vec4u_add(kjVec4u a, kjVec4u b) {
-    return kj_vec4u(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
 }
 
 KJ_CONST KJ_INLINE kjVec4f kj_vec4f_sub(kjVec4f a, kjVec4f b) {
     return kj_vec4f(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
 }
 
-KJ_CONST KJ_INLINE kjVec4i kj_vec4i_sub(kjVec4i a, kjVec4i b) {
-    return kj_vec4i(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
-}
-
-KJ_CONST KJ_INLINE kjVec4u kj_vec4u_sub(kjVec4u a, kjVec4u b) {
-    return kj_vec4u(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
-}
-
 KJ_CONST KJ_INLINE kjVec4f kj_vec4f_mul(kjVec4f a, kjVec4f b) {
     return kj_vec4f(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
-}
-
-KJ_CONST KJ_INLINE kjVec4i kj_vec4i_mul(kjVec4i a, kjVec4i b) {
-    return kj_vec4i(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
-}
-
-KJ_CONST KJ_INLINE kjVec4u kj_vec4u_mul(kjVec4u a, kjVec4u b) {
-    return kj_vec4u(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
 }
 
 KJ_CONST KJ_INLINE kjVec4f kj_vec4f_mulf(kjVec4f a, f32 b) {
     return kj_vec4f(a.x * b, a.y * b, a.z * b, a.w * b);
 }
 
-KJ_CONST KJ_INLINE kjVec4i kj_vec4i_muli(kjVec4i a, i32 b) {
-    return kj_vec4i(a.x * b, a.y * b, a.z * b, a.w * b);
-}
-
-KJ_CONST KJ_INLINE kjVec4u kj_vec4u_mulu(kjVec4u a, u32 b) {
-    return kj_vec4u(a.x * b, a.y * b, a.z * b, a.w * b);
-}
-
 KJ_CONST KJ_INLINE kjVec4f kj_vec4f_div(kjVec4f a, kjVec4f b) {
-    return kj_vec4f(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w);
-}
-
-KJ_CONST KJ_INLINE kjVec4i kj_vec4i_div(kjVec4i a, kjVec4i b) {
-    return kj_vec4i(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w);
-}
-
-KJ_CONST KJ_INLINE kjVec4u kj_vec4u_div(kjVec4u a, kjVec4u b) {
-    return kj_vec4u(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w);
+    return kj_vec4f(
+            a.x * (1.0f / b.x), a.y * (1.0f / b.y),
+            a.z * (1.0f / b.z), a.w * (1.0f / b.w));
 }
 
 KJ_CONST KJ_INLINE f32 kj_vec4f_dot(kjVec4f a, kjVec4f b) {
     return (a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
 }
 
-KJ_CONST KJ_INLINE i32 kj_vec4i_dot(kjVec4i a, kjVec4i b) {
-    return (a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
-}
-
-KJ_CONST KJ_INLINE u32 kj_vec4u_dot(kjVec4u a, kjVec4u b) {
-  return (a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
-}
-
 KJ_CONST KJ_INLINE f32 kj_vec4f_length_sq(kjVec4f a) {
     return kj_vec4f_dot(a, a);
-}
-
-KJ_CONST KJ_INLINE i32 kj_vec4i_length_sq(kjVec4i a) {
-    return kj_vec4i_dot(a, a);
-}
-
-KJ_CONST KJ_INLINE u32 kj_vec4u_length_sq(kjVec4u a) {
-    return kj_vec4u_dot(a, a);
 }
 
 KJ_CONST KJ_INLINE f32 kj_vec4f_length(kjVec4f a) {
     return kj_sqrtf(kj_vec4f_length_sq(a));
 }
 
-KJ_WARNING_DISABLE_BEGIN
-KJ_WARNING_DISABLE_LOSS_OF_DATA
-
-KJ_CONST KJ_INLINE i32 kj_vec4i_length(kjVec4i a) {
-    return kj_sqrtf(kj_vec4i_length_sq(a));
-}
-
-KJ_CONST KJ_INLINE u32 kj_vec4u_length(kjVec4u a) {
-    return kj_sqrtf(kj_vec4u_length_sq(a));
-}
-
-KJ_WARNING_DISABLE_END
-
 KJ_CONST KJ_INLINE kjVec4f kj_vec4f_normalise(kjVec4f a) {
     return kj_vec4f_div(a, kj_vec4f_all(kj_vec4f_length(a)));
-}
-
-KJ_CONST KJ_INLINE kjVec4i kj_vec4i_normalise(kjVec4i a) {
-    return kj_vec4i_div(a, kj_vec4i_all(kj_vec4i_length(a)));
-}
-
-KJ_CONST KJ_INLINE kjVec4u kj_vec4u_normalise(kjVec4u a) {
-    return kj_vec4u_div(a, kj_vec4u_all(kj_vec4u_length(a)));
 }
 
 KJ_CONST KJ_INLINE kjVec4f kj_vec4f_clamp(kjVec4f a, kjVec4f min, kjVec4f max) {
@@ -1340,14 +829,15 @@ KJ_CONST KJ_INLINE kjMat3f kj_mat3f_ident(void) {
 
 KJ_CONST KJ_INLINE kjMat3f kj_mat3f_zero(void) {
     kjMat3f res;
-    kj_zero(&res, kj_isize_of(kjMat3f));
+    kj_mem_zero(&res, kj_isize_of(kjMat3f));
     return res;
 }
 
 KJ_CONST KJ_INLINE kjMat3f kj_mat3f_one(void) {
-    kjMat3f res;
-    kj_one(&res, kj_isize_of(kjMat3f));
-    return res;
+    return kj_mat3f(
+            1.0f, 1.0f, 1.0f,
+            1.0f, 1.0f, 1.0f,
+            1.0f, 1.0f, 1.0f);
 }
 
 KJ_CONST KJ_INLINE kjMat3f kj_mat3f_mul(kjMat3f a, kjMat3f b) {
@@ -1374,12 +864,39 @@ KJ_CONST KJ_INLINE kjMat3f kj_mat3f_transpose(kjMat3f a) {
             a.e[0][2], a.e[1][2], a.e[2][2]);
 }
 
+KJ_CONST KJ_INLINE kjMat3f kj_mat3f_translate(f32 x, f32 y) {
+    return kj_mat3f(
+            1.0f, 0.0f, x,
+            0.0f, 1.0f, y,
+            0.0f, 0.0f, 1.0f);
+}
+
+KJ_CONST KJ_INLINE kjMat3f kj_mat3f_translate_vec2f(kjVec2f xy) {
+    return kj_mat3f_translate(xy.x, xy.y);
+}
+
 KJ_CONST KJ_INLINE kjMat3f kj_mat3f_rotate(f32 angle, f32 x, f32 y, f32 z) {
+    return kj_mat3f_rotate_vec3f(angle, kj_vec3f(x, y, z));
+}
+
+KJ_CONST KJ_INLINE kjMat3f kj_mat3f_rotate_x(f32 angle) {
+    return kj_mat3f_rotate(angle, 1.0f, 0.0f, 0.0f);
+}
+
+KJ_CONST KJ_INLINE kjMat3f kj_mat3f_rotate_y(f32 angle) {
+    return kj_mat3f_rotate(angle, 0.0f, 1.0f, 0.0f);
+}
+
+KJ_CONST KJ_INLINE kjMat3f kj_mat3f_rotate_z(f32 angle) {
+    return kj_mat3f_rotate(angle, 0.0f, 0.0f, 1.0f);
+}
+
+KJ_CONST KJ_INLINE kjMat3f kj_mat3f_rotate_vec3f(f32 angle, kjVec3f xyz) {
     kjMat3f res;
     f32 c = kj_cosf(angle);
     f32 s = kj_sinf(angle);
 
-    kjVec3f axis = kj_vec3f_normalise(kj_vec3f(x, y, z));
+    kjVec3f axis = kj_vec3f_normalise(xyz);
     kjVec3f rot_axis = kj_vec3f_mul(axis, kj_vec3f_all(1.0f - c));
     res.e[0][0] = c + rot_axis.x * axis.x;
     res.e[0][1] = 0.0f + rot_axis.x * axis.y + s * axis.z;
@@ -1393,16 +910,16 @@ KJ_CONST KJ_INLINE kjMat3f kj_mat3f_rotate(f32 angle, f32 x, f32 y, f32 z) {
     return res;
 }
 
-KJ_CONST KJ_INLINE kjMat3f kj_mat3f_rotate_vec3f(f32 angle, kjVec3f xyz) {
-    return kj_mat3f_rotate(angle, xyz.x, xyz.y, xyz.z);
-}
-
 KJ_CONST KJ_INLINE kjMat3f kj_mat3f_scale(f32 x, f32 y, f32 z) {
     return kj_mat3f_diag(x, y, z);
 }
 
+KJ_CONST KJ_INLINE kjMat3f kj_mat3f_scale_uniform(f32 a) {
+    return kj_mat3f_diag(a, a, a);
+}
+
 KJ_CONST KJ_INLINE kjMat3f kj_mat3f_scale_vec3f(kjVec3f xyz) {
-    return kj_mat3f_scale(xyz.x, xyz.y, xyz.z);
+    return kj_mat3f_diag(xyz.x, xyz.y, xyz.z);
 }
 
 KJ_CONST KJ_INLINE kjMat4f kj_mat4f(
@@ -1444,46 +961,80 @@ KJ_CONST KJ_INLINE kjMat4f kj_mat4f_ident(void) {
 
 KJ_CONST KJ_INLINE kjMat4f kj_mat4f_zero(void) {
     kjMat4f res;
-    kj_zero(&res, kj_isize_of(kjMat4f));
+    kj_mem_zero(&res, kj_isize_of(kjMat4f));
     return res;
 }
 
 KJ_CONST KJ_INLINE kjMat4f kj_mat4f_one(void) {
-    kjMat4f res;
-    kj_one(&res, kj_isize_of(kjMat4f));
-    return res;
+    return kj_mat4f(
+            1.0f, 1.0f, 1.0f, 1.0f,
+            1.0f, 1.0f, 1.0f, 1.0f,
+            1.0f, 1.0f, 1.0f, 1.0f,
+            1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 KJ_CONST KJ_INLINE kjMat4f kj_mat4f_mul(kjMat4f a, kjMat4f b) {
     kjMat4f res;
-    u32 i, j;
-    for(j = 0; j < 4; j++) {
-        for(i = 0; i < 4; i++) {
-            res.e[j][i] =
-                a.e[0][i] * b.e[j][0] +
-                a.e[1][i] * b.e[j][1] +
-                a.e[2][i] * b.e[j][2] +
-                a.e[3][i] * b.e[j][3];
-        }
-    }
+    res.e[0][0] =
+        a.e[0][0] * b.e[0][0] + a.e[1][0] * b.e[0][1] +
+        a.e[2][0] * b.e[0][2] + a.e[3][0] * b.e[0][3];
+    res.e[0][1] =
+        a.e[0][1] * b.e[0][0] + a.e[1][1] * b.e[0][1] +
+        a.e[2][1] * b.e[0][2] + a.e[3][1] * b.e[0][3];
+    res.e[0][2] =
+        a.e[0][2] * b.e[0][0] + a.e[1][2] * b.e[0][1] +
+        a.e[2][2] * b.e[0][2] + a.e[3][2] * b.e[0][3];
+    res.e[0][3] =
+        a.e[0][3] * b.e[0][0] + a.e[1][3] * b.e[0][1] +
+        a.e[2][3] * b.e[0][2] + a.e[3][3] * b.e[0][3];
+
+    res.e[1][0] =
+        a.e[0][0] * b.e[1][0] + a.e[1][0] * b.e[1][1] +
+        a.e[2][0] * b.e[1][2] + a.e[3][0] * b.e[1][3];
+    res.e[1][1] =
+        a.e[0][1] * b.e[1][0] + a.e[1][1] * b.e[1][1] +
+        a.e[2][1] * b.e[1][2] + a.e[3][1] * b.e[1][3];
+    res.e[1][2] =
+        a.e[0][2] * b.e[1][0] + a.e[1][2] * b.e[1][1] +
+        a.e[2][2] * b.e[1][2] + a.e[3][2] * b.e[1][3];
+    res.e[1][3] =
+        a.e[0][3] * b.e[1][0] + a.e[1][3] * b.e[1][1] +
+        a.e[2][3] * b.e[1][2] + a.e[3][3] * b.e[1][3];
+
+    res.e[2][0] =
+        a.e[0][0] * b.e[2][0] + a.e[1][0] * b.e[2][1] +
+        a.e[2][0] * b.e[2][2] + a.e[3][0] * b.e[2][3];
+    res.e[2][1] =
+        a.e[0][1] * b.e[2][0] + a.e[1][1] * b.e[2][1] +
+        a.e[2][1] * b.e[2][2] + a.e[3][1] * b.e[2][3];
+    res.e[2][2] =
+        a.e[0][2] * b.e[2][0] + a.e[1][2] * b.e[2][1] +
+        a.e[2][2] * b.e[2][2] + a.e[3][2] * b.e[2][3];
+    res.e[2][3] =
+        a.e[0][3] * b.e[2][0] + a.e[1][3] * b.e[2][1] +
+        a.e[2][3] * b.e[2][2] + a.e[3][3] * b.e[2][3];
+
+    res.e[3][0] =
+        a.e[0][0] * b.e[3][0] + a.e[1][0] * b.e[3][1] +
+        a.e[2][0] * b.e[3][2] + a.e[3][0] * b.e[3][3];
+    res.e[3][1] =
+        a.e[0][1] * b.e[3][0] + a.e[1][1] * b.e[3][1] +
+        a.e[2][1] * b.e[3][2] + a.e[3][1] * b.e[3][3];
+    res.e[3][2] =
+        a.e[0][2] * b.e[3][0] + a.e[1][2] * b.e[3][1] +
+        a.e[2][2] * b.e[3][2] + a.e[3][2] * b.e[3][3];
+    res.e[3][3] =
+        a.e[0][3] * b.e[3][0] + a.e[1][3] * b.e[3][1] +
+        a.e[2][3] * b.e[3][2] + a.e[3][3] * b.e[3][3];
     return res;
 }
 
 KJ_CONST KJ_INLINE kjVec4f kj_mat4f_mul_vec4f(kjMat4f a, kjVec4f b) {
-    kjVec4f res;
-    res.x =
-        a.e[0][0] * b.x + a.e[1][0] * b.y +
-        a.e[2][0] * b.z + a.e[3][0] * b.w;
-    res.y =
-        a.e[0][1] * b.x + a.e[1][1] * b.y +
-        a.e[2][1] * b.z + a.e[3][1] * b.w;
-    res.z =
-        a.e[0][2] * b.x + a.e[1][2] * b.y +
-        a.e[2][2] * b.z + a.e[3][2] * b.w;
-    res.w =
-        a.e[0][3] * b.x + a.e[1][3] * b.y +
-        a.e[2][3] * b.z + a.e[3][3] * b.w;
-    return res;
+    return kj_vec4f(
+        a.e[0][0] * b.x + a.e[1][0] * b.y + a.e[2][0] * b.z + a.e[3][0] * b.w,
+        a.e[0][1] * b.x + a.e[1][1] * b.y + a.e[2][1] * b.z + a.e[3][1] * b.w,
+        a.e[0][2] * b.x + a.e[1][2] * b.y + a.e[2][2] * b.z + a.e[3][2] * b.w,
+        a.e[0][3] * b.x + a.e[1][3] * b.y + a.e[2][3] * b.z + a.e[3][3] * b.w);
 }
 
 KJ_CONST KJ_INLINE kjMat4f kj_mat4f_transpose(kjMat4f a) {
@@ -1507,11 +1058,27 @@ KJ_CONST KJ_INLINE kjMat4f kj_mat4f_translate_vec3f(kjVec3f xyz) {
 }
 
 KJ_CONST KJ_INLINE kjMat4f kj_mat4f_rotate(f32 angle, f32 x, f32 y, f32 z) {
+    return kj_mat4f_rotate_vec3f(angle, kj_vec3f(x, y, z));
+}
+
+KJ_CONST KJ_INLINE kjMat4f kj_mat4f_rotate_x(f32 angle) {
+    return kj_mat4f_rotate(angle, 1.0f, 0.0f, 0.0f);
+}
+
+KJ_CONST KJ_INLINE kjMat4f kj_mat4f_rotate_y(f32 angle) {
+    return kj_mat4f_rotate(angle, 0.0f, 1.0f, 0.0f);
+}
+
+KJ_CONST KJ_INLINE kjMat4f kj_mat4f_rotate_z(f32 angle) {
+    return kj_mat4f_rotate(angle, 0.0f, 0.0f, 1.0f);
+}
+
+KJ_CONST KJ_INLINE kjMat4f kj_mat4f_rotate_vec3f(f32 angle, kjVec3f xyz) {
     kjMat4f res = kj_mat4f_ident();
     f32 c = kj_cosf(angle);
     f32 s = kj_sinf(angle);
 
-    kjVec3f axis = kj_vec3f_normalise(kj_vec3f(x, y, z));
+    kjVec3f axis = kj_vec3f_normalise(xyz);
     kjVec3f rot_axis = kj_vec3f_mul(axis, kj_vec3f_all(1.0f - c));
     res.e[0][0] = c + rot_axis.x * axis.x;
     res.e[0][1] = 0.0f + rot_axis.x * axis.y + s * axis.z;
@@ -1528,12 +1095,12 @@ KJ_CONST KJ_INLINE kjMat4f kj_mat4f_rotate(f32 angle, f32 x, f32 y, f32 z) {
     return res;
 }
 
-KJ_CONST KJ_INLINE kjMat4f kj_mat4f_rotate_vec3f(f32 angle, kjVec3f xyz) {
-    return kj_mat4f_rotate(angle, xyz.x, xyz.y, xyz.z);
-}
-
 KJ_CONST KJ_INLINE kjMat4f kj_mat4f_scale(f32 x, f32 y, f32 z) {
     return kj_mat4f_diag(x, y, z, 1.0f);
+}
+
+KJ_CONST KJ_INLINE kjMat4f kj_mat4f_scale_uniform(f32 a) {
+    return kj_mat4f_diag(a, a, a, 1.0f);
 }
 
 KJ_CONST KJ_INLINE kjMat4f kj_mat4f_scale_vec3f(kjVec3f xyz) {
@@ -1660,6 +1227,10 @@ KJ_CONST KJ_INLINE kjMat4f kj_mat4f_rotate(f32 angle, kjVec3f xyz) {
     return kj_mat4f_rotate_vec3f(angle, xyz);
 }
 
+KJ_CONST KJ_INLINE kjMat4f kj_mat4f_scale(f32 a) {
+    return kj_mat4f_scale_uniform(a);
+}
+
 KJ_CONST KJ_INLINE kjMat4f kj_mat4f_scale(kjVec3f xyz) {
     return kj_mat4f_scale_vec3f(xyz);
 }
@@ -1669,283 +1240,49 @@ KJ_CONST KJ_INLINE kjMat4f operator*(kjMat4f a, kjMat4f b) {
 }
 #endif
 
-KJ_CONST KJ_INLINE kjRect2f kj_rect2f(f32 x, f32 y, f32 w, f32 h) {
+KJ_CONST KJ_INLINE kjRect2f kj_rect2f(f32 x1, f32 y1, f32 x2, f32 y2) {
     kjRect2f res;
-    res.x = x;
-    res.y = y;
-    res.w = w;
-    res.h = h;
+    res.min = kj_vec2f(x1, y1);
+    res.max = kj_vec2f(x2, y2);
     return res;
 }
 
-KJ_CONST KJ_INLINE kjRect2i kj_rect2i(i32 x, i32 y, i32 w, i32 h) {
+KJ_CONST KJ_INLINE kjRect2i kj_rect2i(i32 x1, i32 y1, i32 x2, i32 y2) {
     kjRect2i res;
-    res.x = x;
-    res.y = y;
-    res.w = w;
-    res.h = h;
+    res.min = kj_vec2i(x1, y1);
+    res.max = kj_vec2i(x2, y2);
     return res;
 }
 
-KJ_CONST KJ_INLINE kjRect2u kj_rect2u(u32 x, u32 y, u32 w, u32 h) {
+KJ_CONST KJ_INLINE kjRect2u kj_rect2u(u32 x1, u32 y1, u32 x2, u32 y2) {
     kjRect2u res;
-    res.x = x;
-    res.y = y;
-    res.w = w;
-    res.h = h;
+    res.min = kj_vec2u(x1, y1);
+    res.max = kj_vec2u(x2, y2);
     return res;
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect2f_contains(kjRect2f r, f32 x, f32 y) {
-    return r.x <= x && (r.x + r.w) >= x && r.y <= y && (r.y + r.h) >= y;
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect2i_contains(kjRect2i r, i32 x, i32 y) {
-    return (r.x <= x && (r.x + r.w) >= x && r.y <= y && (r.y + r.h) >= y);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect2u_contains(kjRect2u r, u32 x, u32 y) {
-    return (r.x <= x && (r.x + r.w) >= x && r.y <= y && (r.y + r.h) >= y);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect2f_contains_vec2f(kjRect2f r, kjVec2f xy) {
-    return (r.x <= xy.x && (r.x + r.w) >= xy.x && r.y <= xy.y &&
-            (r.y + r.h) >= xy.y);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect2i_contains_vec2i(kjRect2i r, kjVec2i xy) {
-    return (r.x <= xy.x && (r.x + r.w) >= xy.x && r.y <= xy.y &&
-            (r.y + r.h) >= xy.y);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect2u_contains_vec2u(kjRect2u r, kjVec2u xy) {
-    return (r.x <= xy.x && (r.x + r.w) >= xy.x && r.y <= xy.y &&
-            (r.y + r.h) >= xy.y);
-}
-
-KJ_CONST KJ_INLINE i32 kj_rect2f_extend(kjRect2f r, f32 x, f32 y) {
-    kj_unused(r);
-    kj_unused(x);
-    kj_unused(y);
-    kj_unimplemented();
-    kj_unreachable();
-}
-
-KJ_CONST KJ_INLINE i32 kj_rect2i_extend(kjRect2i r, i32 x, i32 y) {
-    kj_unused(r);
-    kj_unused(x);
-    kj_unused(y);
-    kj_unimplemented();
-    kj_unreachable();
-}
-
-KJ_CONST KJ_INLINE i32 kj_rect2u_extend(kjRect2u r, u32 x, u32 y) {
-    kj_unused(r);
-    kj_unused(x);
-    kj_unused(y);
-    kj_unimplemented();
-    kj_unreachable();
-}
-
-KJ_CONST KJ_INLINE i32 kj_rect2f_extend_vec2f(kjRect2f r, kjVec2f xy) {
-    kj_unused(r);
-    kj_unused(xy);
-    kj_unimplemented();
-    kj_unreachable();
-}
-
-KJ_CONST KJ_INLINE i32 kj_rect2i_extend_vec2i(kjRect2i r, kjVec2i xy) {
-    kj_unused(r);
-    kj_unused(xy);
-    kj_unimplemented();
-    kj_unreachable();
-}
-
-KJ_CONST KJ_INLINE i32 kj_rect2u_extend_vec2u(kjRect2u r, kjVec2u xy) {
-    kj_unused(r);
-    kj_unused(xy);
-    kj_unimplemented();
-    kj_unreachable();
-}
-
-KJ_CONST KJ_INLINE kjVec2f kj_rect2f_centre(kjRect2f r) {
-    return kj_vec2f((r.x + (r.x + r.w)) / 2.0f, (r.y + (r.y + r.h)) / 2.0f);
-}
-
-KJ_CONST KJ_INLINE kjVec2i kj_rect2i_centre(kjRect2i r) {
-    return kj_vec2i((r.x + (r.x + r.w)) / 2, (r.y + (r.y + r.h)) / 2);
-}
-
-KJ_CONST KJ_INLINE kjVec2u kj_rect2u_centre(kjRect2u r) {
-    return kj_vec2u((r.x + (r.x + r.w)) / 2, (r.y + (r.y + r.h)) / 2);
 }
 
 KJ_CONST KJ_INLINE kjRect3f kj_rect3f(
-        f32 x, f32 y, f32 z, f32 w, f32 h, f32 d) {
+        f32 x1, f32 y1, f32 z1, f32 x2, f32 y2, f32 z2) {
     kjRect3f res;
-    res.x = x;
-    res.y = y;
-    res.z = z;
-    res.w = w;
-    res.h = h;
-    res.d = d;
+    res.min = kj_vec3f(x1, y1, z1);
+    res.max = kj_vec3f(x2, y2, z2);
     return res;
 }
 
 KJ_CONST KJ_INLINE kjRect3i kj_rect3i(
-        i32 x, i32 y, i32 z, i32 w, i32 h, i32 d) {
+        i32 x1, i32 y1, i32 z1, i32 x2, i32 y2, i32 z2) {
     kjRect3i res;
-    res.x = x;
-    res.y = y;
-    res.z = z;
-    res.w = w;
-    res.h = h;
-    res.d = d;
+    res.min = kj_vec3i(x1, y1, z1);
+    res.max = kj_vec3i(x2, y2, z2);
     return res;
 }
 
 KJ_CONST KJ_INLINE kjRect3u kj_rect3u(
-        u32 x, u32 y, u32 z, u32 w, u32 h, u32 d) {
+        u32 x1, u32 y1, u32 z1, u32 x2, u32 y2, u32 z2) {
     kjRect3u res;
-    res.x = x;
-    res.y = y;
-    res.z = z;
-    res.w = w;
-    res.h = h;
-    res.d = d;
+    res.min = kj_vec3u(x1, y1, z1);
+    res.max = kj_vec3u(x2, y2, z2);
     return res;
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect3f_contains_xy(kjRect3f r, f32 x, f32 y) {
-    return (r.x <= x && (r.x + r.w) >= x && r.y <= y && (r.y + r.h) >= y);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect3i_contains_xy(kjRect3i r, i32 x, i32 y) {
-    return (r.x <= x && (r.x + r.w) >= x && r.y <= y && (r.y + r.h) >= y);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect3u_contains_xy(kjRect3u r, u32 x, u32 y) {
-    return (r.x <= x && (r.x + r.w) >= x && r.y <= y && (r.y + r.h) >= y);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect3f_contains_vec2f(kjRect3f r, kjVec2f xy) {
-    return (r.x <= xy.x && (r.x + r.w) >= xy.x &&
-            r.y <= xy.y && (r.y + r.h) >= xy.y);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect3i_contains_vec2i(kjRect3i r, kjVec2i xy) {
-    return (r.x <= xy.x && (r.x + r.w) >= xy.x &&
-            r.y <= xy.y && (r.y + r.h) >= xy.y);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect3u_contains_vec2u(kjRect3u r, kjVec2u xy) {
-    return (r.x <= xy.x && (r.x + r.w) >= xy.x &&
-            r.y <= xy.y && (r.y + r.h) >= xy.y);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect3f_contains(kjRect3f r, f32 x, f32 y, f32 z) {
-    return (r.x <= x && (r.x + r.w) >= x &&
-            r.y <= y && (r.y + r.h) >= y &&
-            r.z <= z && (r.z + r.d) >= z);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect3i_contains(kjRect3i r, i32 x, i32 y, i32 z) {
-    return (r.x <= x && (r.x + r.w) >= x &&
-            r.y <= y && (r.y + r.h) >= y &&
-            r.z <= z && (r.z + r.d) >= z);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect3u_contains(kjRect3u r, u32 x, u32 y, u32 z) {
-    return (r.x <= x && (r.x + r.w) >= x &&
-            r.y <= y && (r.y + r.h) >= y &&
-            r.z <= z && (r.z + r.d) >= z);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect3f_contains_vec3f(kjRect3f r, kjVec3f xyz) {
-    return (r.x <= xyz.x && (r.x + r.w) >= xyz.x &&
-            r.y <= xyz.y && (r.y + r.h) >= xyz.y &&
-            r.z <= xyz.z && (r.z + r.d) >= xyz.z);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect3i_contains_vec3i(kjRect3i r, kjVec3i xyz) {
-    return (r.x <= xyz.x && (r.x + r.w) >= xyz.x &&
-            r.y <= xyz.y && (r.y + r.h) >= xyz.y &&
-            r.z <= xyz.z && (r.z + r.d) >= xyz.z);
-}
-
-KJ_CONST KJ_INLINE b32 kj_rect3u_contains_vec3u(kjRect3u r, kjVec3u xyz) {
-    return (r.x <= xyz.x && (r.x + r.w) >= xyz.x &&
-            r.y <= xyz.y && (r.y + r.h) >= xyz.y &&
-            r.z <= xyz.z && (r.z + r.d) >= xyz.z);
-}
-
-KJ_CONST KJ_INLINE i32 kj_rect3f_extend(kjRect3f r, f32 x, f32 y, f32 z) {
-    kj_unused(r);
-    kj_unused(x);
-    kj_unused(y);
-    kj_unused(z);
-    kj_unimplemented();
-    kj_unreachable();
-}
-
-KJ_CONST KJ_INLINE i32 kj_rect3i_extend(kjRect3i r, i32 x, i32 y, i32 z) {
-    kj_unused(r);
-    kj_unused(x);
-    kj_unused(y);
-    kj_unused(z);
-    kj_unimplemented();
-    kj_unreachable();
-}
-
-KJ_CONST KJ_INLINE i32 kj_rect3u_extend(kjRect3u r, u32 x, u32 y, u32 z) {
-    kj_unused(r);
-    kj_unused(x);
-    kj_unused(y);
-    kj_unused(z);
-    kj_unimplemented();
-    kj_unreachable();
-}
-
-KJ_CONST KJ_INLINE i32 kj_rect3f_extend_vec3f(kjRect3f r, kjVec3f xyz) {
-    kj_unused(r);
-    kj_unused(xyz);
-    kj_unimplemented();
-    kj_unreachable();
-}
-
-KJ_CONST KJ_INLINE i32 kj_rect3i_extend_vec3i(kjRect3i r, kjVec3i xyz) {
-    kj_unused(r);
-    kj_unused(xyz);
-    kj_unimplemented();
-    kj_unreachable();
-}
-
-KJ_CONST KJ_INLINE i32 kj_rect3u_extend_vec3u(kjRect3u r, kjVec3u xyz) {
-    kj_unused(r);
-    kj_unused(xyz);
-    kj_unimplemented();
-    kj_unreachable();
-}
-
-KJ_CONST KJ_INLINE kjVec3f kj_rect3f_centre(kjRect3f r) {
-    return kj_vec3f(
-            (r.x + (r.x + r.w)) / 2.0f,
-            (r.y + (r.y + r.h)) / 2.0f,
-            (r.z + (r.z + r.w)) / 2.0f);
-}
-
-KJ_CONST KJ_INLINE kjVec3i kj_rect3i_centre(kjRect3i r) {
-    return kj_vec3i(
-            (r.x + (r.x + r.w)) / 2,
-            (r.y + (r.y + r.h)) / 2,
-            (r.z + (r.z + r.w)) / 2);
-}
-
-KJ_CONST KJ_INLINE kjVec3u kj_rect3u_centre(kjRect3u r) {
-    return kj_vec3u(
-            (r.x + (r.x + r.w)) / 2,
-            (r.y + (r.y + r.h)) / 2,
-            (r.z + (r.z + r.w)) / 2);
 }
 
 KJ_CONST KJ_INLINE kjRgba kj_rgba(u8 r, u8 g, u8 b, u8 a) {
@@ -1984,18 +1321,18 @@ KJ_CONST KJ_INLINE kjRgba kj_rgba_unpack(u32 packed) {
 KJ_CONST KJ_INLINE kjVec4f kj_rgbaf(f32 r, f32 g, f32 b, f32 a) {
     kjVec4f res;
     res.x = r;
-    res.y = b;
-    res.z = g;
+    res.y = g;
+    res.z = b;
     res.w = a;
     return res;
 }
 
 KJ_CONST KJ_INLINE kjVec4f kj_rgbaf_4u8(u8 r, u8 g, u8 b, u8 a) {
     return kj_rgbaf(
-        kj_cast(f32, r / 255.0f),
-        kj_cast(f32, g / 255.0f),
-        kj_cast(f32, b / 255.0f),
-        kj_cast(f32, a / 255.0f));
+        kj_cast(f32, r * (1.0f / 255.0f)),
+        kj_cast(f32, g * (1.0f / 255.0f)),
+        kj_cast(f32, b * (1.0f / 255.0f)),
+        kj_cast(f32, a * (1.0f / 255.0f)));
 }
 
 KJ_CONST KJ_INLINE kjVec4f kj_rgbaf_rgba(kjRgba rgba) {
@@ -2012,10 +1349,10 @@ KJ_CONST KJ_INLINE u32 kj_rgbaf_pack(kjVec4f rgba) {
 
 KJ_CONST KJ_INLINE kjVec4f kj_rgbaf_unpack(u32 packed) {
     return kj_rgbaf(
-        kj_cast(f32, ((packed & 0xFF000000) >> 24) / 255.0f),
-        kj_cast(f32, ((packed & 0x00FF0000) >> 16) / 255.0f),
-        kj_cast(f32, ((packed & 0x0000FF00) >> 8)  / 255.0f),
-        kj_cast(f32, ((packed & 0x000000FF) >> 0)  / 255.0f));
+        kj_cast(f32, ((packed & 0xFF000000) >> 24) * (1.0f / 255.0f)),
+        kj_cast(f32, ((packed & 0x00FF0000) >> 16) * (1.0f / 255.0f)),
+        kj_cast(f32, ((packed & 0x0000FF00) >> 8)  * (1.0f / 255.0f)),
+        kj_cast(f32, ((packed & 0x000000FF) >> 0)  * (1.0f / 255.0f)));
 }
 
 #endif

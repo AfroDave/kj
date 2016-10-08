@@ -1,14 +1,11 @@
 extern/*
-data/*
 bin/*
-lib/*
-tool/*
-
-test*.*
+test/*
 
 *.out
 *.exe
 *.obj
+*.o
 *.sh
 *.bat
 *.pdb
@@ -17,10 +14,3 @@ test*.*
 *.dll
 *.so
 *.txt
-
-kj_platform.h
-kj_gfx.h
-kj_array.h
-kj_lexer.h
-
-glcorearb.h
