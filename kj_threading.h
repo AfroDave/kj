@@ -40,15 +40,16 @@ typedef u32 kjTls;
 #define _GNU_SOURCE
 #endif
 #include <pthread.h>
-#include <semaphore.h>
 #include <sched.h>
+#include <semaphore.h>
+#include <sys/syscall.h>
 typedef pthread_mutex_t kjMutex;
 typedef sem_t kjSemaphore;
 typedef pthread_key_t kjTls;
 #define KJ_TLS_INVALID kj_cast(pthread_key_t, U32_MAX)
 #endif
 
-#define KJ_THREAD_FN(name) void name(void* data)
+#define KJ_THREAD_FN(name) void* name(void* data)
 typedef KJ_THREAD_FN(kjThreadFn);
 
 typedef struct kjThread {
@@ -59,6 +60,7 @@ typedef struct kjThread {
 #endif
     kjThreadFn* fn;
     void* data;
+    void* res;
 } kjThread;
 
 #if !defined(KJ_TLS)
@@ -97,24 +99,24 @@ typedef struct kjProcess {
 KJ_API void kj_yield(void);
 KJ_API void kj_sleep_ms(u32 ms);
 
-KJ_API kjErr kj_thread(kjThread* thread, kjThreadFn* fn, void* data, u32 flags);
-KJ_API void kj_thread_join(kjThread* thread);
+KJ_API kjResult kj_thread(kjThread* thread, kjThreadFn* fn, void* data, u32 flags);
+KJ_API void* kj_thread_join(kjThread* thread);
 KJ_API void kj_thread_detach(kjThread* thread);
-KJ_API void kj_thread_set_name(kjThread* thread, const char* name);
+KJ_API void kj_thread_set_name(kjThread* thread, const char* name, isize size);
 KJ_API u32 kj_thread_id(void);
 
-KJ_API kjErr kj_tls(kjTls* tls);
+KJ_API kjResult kj_tls(kjTls* tls);
 KJ_API void kj_tls_destroy(kjTls tls);
 KJ_API void kj_tls_set(kjTls tls, void* value);
 KJ_API void* kj_tls_get(kjTls tls);
 
-KJ_API kjErr kj_mutex(kjMutex* mutex);
+KJ_API kjResult kj_mutex(kjMutex* mutex);
 KJ_API void kj_mutex_destroy(kjMutex* mutex);
 KJ_API void kj_mutex_lock(kjMutex* mutex);
 KJ_API b32 kj_mutex_try_lock(kjMutex* mutex);
 KJ_API void kj_mutex_unlock(kjMutex* mutex);
 
-KJ_API kjErr kj_semaphore(kjSemaphore* semaphore, i32 count);
+KJ_API kjResult kj_semaphore(kjSemaphore* semaphore, i32 count);
 KJ_API void kj_semaphore_destroy(kjSemaphore* semaphore);
 KJ_API b32 kj_semaphore_wait(kjSemaphore* semaphore, i32 ms);
 KJ_API b32 kj_semaphore_try_wait(kjSemaphore* semaphore);
@@ -205,52 +207,56 @@ KJ_INLINE void kj_sleep_ms(u32 ms) {
 }
 
 #if defined(KJ_SYS_WIN32)
-KJ_INTERN DWORD __cdecl kj__win32_fn(LPVOID p) {
+KJ_INTERN DWORD __cdecl _kj_win32_fn(LPVOID p) {
     kjThread* thread = kj_cast(kjThread*, p);
     if(thread) {
-        thread->fn(thread->data);
+        thread->res = thread->fn(thread->data);
     }
     return 0;
 }
 #elif defined(KJ_SYS_UNIX)
-KJ_INTERN void* kj__pthread_fn(void* p) {
+KJ_INTERN void* _kj_pthread_fn(void* p) {
     kjThread* thread = kj_cast(kjThread*, p);
     if(thread) {
-        thread->fn(thread->data);
+        thread->res = thread->fn(thread->data);
     }
     return NULL;
 }
 #endif
 
-kjErr kj_thread(kjThread* thread, kjThreadFn* fn, void* data, u32 flags) {
+kjResult kj_thread(kjThread* thread, kjThreadFn* fn, void* data, u32 flags) {
+    kj_validate(thread != NULL && fn != NULL, { return KJ_ERROR_PARAM; });
     kj_unused(flags);
-    kj_check(thread != NULL && fn != NULL, { return KJ_ERR_PARAM; });
 
+    kjResult res = KJ_SUCCESS;
     thread->fn = fn;
     thread->data = data;
-    kjErr res = KJ_ERR_NONE;
+    thread->res = NULL;
 #if defined(KJ_SYS_WIN32)
-    if((thread->handle = CreateThread(
-                    NULL, 0, kj__win32_fn, thread, 0, NULL)) == NULL) {
-        res = kj_os_err();
+    if((thread->handle = CreateThread(NULL, 0, _kj_win32_fn, thread, 0, NULL)) == NULL) {
+        res = kj_os_error();
     }
 #elif defined(KJ_SYS_UNIX)
-    res = kj_err_from_os(pthread_create(
-                &thread->handle, NULL, kj__pthread_fn, thread));
+    res = kj_error_from_os(pthread_create(&thread->handle, NULL, _kj_pthread_fn, thread));
 #endif
     return res;
 }
 
-KJ_INLINE void kj_thread_join(kjThread* thread) {
+KJ_INLINE void* kj_thread_join(kjThread* thread) {
+    kj_validate(thread != NULL, { return NULL; });
+
 #if defined(KJ_SYS_WIN32)
     WaitForSingleObjectEx(thread->handle, INFINITE, FALSE);
     CloseHandle(thread->handle);
 #elif defined(KJ_SYS_UNIX)
     pthread_join(thread->handle, NULL);
 #endif
+    return thread->res;
 }
 
 KJ_INLINE void kj_thread_detach(kjThread* thread) {
+    kj_validate(thread != NULL, { return; });
+
 #if defined(KJ_SYS_WIN32)
     CloseHandle(thread->handle);
     thread->handle = NULL;
@@ -259,7 +265,9 @@ KJ_INLINE void kj_thread_detach(kjThread* thread) {
 #endif
 }
 
-KJ_INLINE void kj_thread_set_name(kjThread* thread, const char* name) {
+KJ_INLINE void kj_thread_set_name(kjThread* thread, const char* name, isize size) {
+    kj_validate(thread != NULL && name != NULL && size >= 0, { return; });
+
 #if defined(KJ_SYS_WIN32)
     const DWORD MS_VC_EXCEPTION = 0x406D1388;
 #pragma pack(push, 8)
@@ -276,10 +284,7 @@ KJ_INLINE void kj_thread_set_name(kjThread* thread, const char* name) {
     info.id = GetThreadId(thread->handle);
     info.flags = 0;
     __try{
-        RaiseException(
-            MS_VC_EXCEPTION, 0,
-            kj_isize_of(info) / kj_isize_of(ULONG_PTR),
-            kj_cast(ULONG_PTR*, &info));
+        RaiseException(MS_VC_EXCEPTION, 0, kj_isize_of(info) / kj_isize_of(ULONG_PTR), kj_cast(ULONG_PTR*, &info));
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
 #elif defined(KJ_SYS_UNIX)
@@ -306,26 +311,26 @@ KJ_INLINE u32 kj_thread_id(void) {
     return res;
 }
 
-kjErr kj_tls(kjTls* tls) {
-    kj_check(tls != NULL, { return KJ_ERR_PARAM; });
+kjResult kj_tls(kjTls* tls) {
+    kj_validate(tls != NULL, { return KJ_ERROR_PARAM; });
 
-    kjErr res = KJ_ERR_NONE;
+    isize res = KJ_SUCCESS;
 #if defined(KJ_SYS_WIN32)
     if((*tls = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
         *tls = KJ_TLS_INVALID;
-        res = kj_os_err();
+        res = kj_os_error();
     }
 #elif defined(KJ_SYS_UNIX)
     if((res = pthread_key_create(tls, NULL)) != 0) {
         *tls = KJ_TLS_INVALID;
-        res = kj_err_from_os(res);
+        res = kj_error_from_os(res);
     }
 #endif
-    return res;
+    return kj_cast(kjResult, res);
 }
 
 KJ_INLINE void kj_tls_destroy(kjTls tls) {
-    kj_check(tls != KJ_TLS_INVALID, { return; });
+    kj_validate(tls != KJ_TLS_INVALID, { return; });
 
 #if defined(KJ_SYS_WIN32)
     TlsFree(tls);
@@ -335,7 +340,7 @@ KJ_INLINE void kj_tls_destroy(kjTls tls) {
 }
 
 KJ_INLINE void kj_tls_set(kjTls tls, void* value) {
-    kj_check(tls != KJ_TLS_INVALID, { return; });
+    kj_validate(tls != KJ_TLS_INVALID, { return; });
 
 #if defined(KJ_SYS_WIN32)
     TlsSetValue(tls, value);
@@ -345,7 +350,7 @@ KJ_INLINE void kj_tls_set(kjTls tls, void* value) {
 }
 
 KJ_INLINE void* kj_tls_get(kjTls tls) {
-    kj_check(tls != KJ_TLS_INVALID, { return NULL; });
+    kj_validate(tls != KJ_TLS_INVALID, { return NULL; });
 
 #if defined(KJ_SYS_WIN32)
     return TlsGetValue(tls);
@@ -354,26 +359,26 @@ KJ_INLINE void* kj_tls_get(kjTls tls) {
 #endif
 }
 
-kjErr kj_mutex(kjMutex* mutex) {
-    kj_check(mutex != NULL, { return KJ_ERR_PARAM; });
+kjResult kj_mutex(kjMutex* mutex) {
+    kj_validate(mutex != NULL, { return KJ_ERROR_PARAM; });
 
-    kjErr res = KJ_ERR_NONE;
+    kjResult res = KJ_SUCCESS;
 #if defined(KJ_SYS_WIN32)
     if(!InitializeCriticalSectionAndSpinCount(mutex, 4000)) {
-        res = kj_os_err();
+        res = kj_os_error();
     }
 #elif defined(KJ_SYS_UNIX)
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    res = kj_err_from_os(pthread_mutex_init(mutex, &attr));
+    res = kj_error_from_os(pthread_mutex_init(mutex, &attr));
     pthread_mutexattr_destroy(&attr);
 #endif
     return res;
 }
 
 KJ_INLINE void kj_mutex_destroy(kjMutex* mutex) {
-    kj_check(mutex != NULL, { return; });
+    kj_validate(mutex != NULL, { return; });
 
 #if defined(KJ_SYS_WIN32)
     DeleteCriticalSection(mutex);
@@ -383,7 +388,7 @@ KJ_INLINE void kj_mutex_destroy(kjMutex* mutex) {
 }
 
 KJ_INLINE void kj_mutex_lock(kjMutex* mutex) {
-    kj_check(mutex != NULL, { return; });
+    kj_validate(mutex != NULL, { return; });
 
 #if defined(KJ_SYS_WIN32)
     EnterCriticalSection(mutex);
@@ -393,7 +398,7 @@ KJ_INLINE void kj_mutex_lock(kjMutex* mutex) {
 }
 
 KJ_INLINE b32 kj_mutex_try_lock(kjMutex* mutex) {
-    kj_check(mutex != NULL, { return KJ_FALSE; });
+    kj_validate(mutex != NULL, { return KJ_FALSE; });
 
 #if defined(KJ_SYS_WIN32)
     return TryEnterCriticalSection(mutex) != 0;
@@ -403,7 +408,7 @@ KJ_INLINE b32 kj_mutex_try_lock(kjMutex* mutex) {
 }
 
 KJ_INLINE void kj_mutex_unlock(kjMutex* mutex) {
-    kj_check(mutex != NULL, { return; });
+    kj_validate(mutex != NULL, { return; });
 
 #if defined(KJ_SYS_WIN32)
     LeaveCriticalSection(mutex);
@@ -412,24 +417,24 @@ KJ_INLINE void kj_mutex_unlock(kjMutex* mutex) {
 #endif
 }
 
-kjErr kj_semaphore(kjSemaphore* semaphore, i32 count) {
-    kj_check(semaphore != NULL && count > 0, { return KJ_ERR_PARAM; });
+kjResult kj_semaphore(kjSemaphore* semaphore, i32 count) {
+    kj_validate(semaphore != NULL && count > 0, { return KJ_ERROR_PARAM; });
 
-    kjErr res = KJ_ERR_NONE;
+    kjResult res = KJ_SUCCESS;
 #if defined(KJ_SYS_WIN32)
     if((*semaphore = CreateSemaphore(NULL, count, count, NULL)) == NULL) {
-        res = kj_os_err();
+        res = kj_os_error();
     }
 #elif defined(KJ_SYS_UNIX)
     if(sem_init(semaphore, 0, count) == -1) {
-        res = kj_os_err();
+        res = kj_os_error();
     }
 #endif
     return res;
 }
 
 KJ_INLINE void kj_semaphore_destroy(kjSemaphore* semaphore) {
-    kj_check(semaphore != NULL, { return; });
+    kj_validate(semaphore != NULL, { return; });
 
 #if defined(KJ_SYS_WIN32)
     CloseHandle(semaphore);
@@ -439,26 +444,26 @@ KJ_INLINE void kj_semaphore_destroy(kjSemaphore* semaphore) {
 }
 
 KJ_INLINE b32 kj_semaphore_wait(kjSemaphore* semaphore, i32 ms) {
-    kj_check(semaphore != NULL, { return KJ_FALSE; });
+    kj_validate(semaphore != NULL, { return KJ_FALSE; });
 
 #if defined(KJ_SYS_WIN32)
     u32 res = WaitForSingleObject(semaphore, ms < 0 ? INFINITE: ms);
     return res == WAIT_OBJECT_0 || res == WAIT_TIMEOUT;
 #elif defined(KJ_SYS_UNIX)
-    if(ms < 0) {
+    if(ms <= 0) {
         return sem_wait(semaphore) == 0;
     } else {
         struct timespec ts;
         kj_mem_zero(&ts, kj_isize_of(struct timespec));
-        ts.tv_sec += ms / 1000;
-        ts.tv_nsec += (ms % 1000) * 1000;
+        ts.tv_sec = ms / 1000;
+        ts.tv_nsec = (ms % 1000) * 1000;
         return sem_timedwait(semaphore, &ts) == 0;
     }
 #endif
 }
 
 KJ_INLINE b32 kj_semaphore_try_wait(kjSemaphore* semaphore) {
-    kj_check(semaphore != NULL, { return KJ_FALSE; });
+    kj_validate(semaphore != NULL, { return KJ_FALSE; });
 
 #if defined(KJ_SYS_WIN32)
     return WaitForSingleObject(semaphore, 0) == WAIT_OBJECT_0;
@@ -468,14 +473,12 @@ KJ_INLINE b32 kj_semaphore_try_wait(kjSemaphore* semaphore) {
 }
 
 KJ_INLINE void kj_semaphore_signal(kjSemaphore* semaphore, i32 count) {
-    kj_check(semaphore != NULL || count <= 0, { return; });
+    kj_validate(semaphore != NULL && count > 0, { return; });
 
 #if defined(KJ_SYS_WIN32)
     ReleaseSemaphore(semaphore, count, NULL);
 #elif defined(KJ_SYS_UNIX)
-    while(count-- > 0) {
-        sem_post(semaphore);
-    }
+    while(count--) { sem_post(semaphore); }
 #endif
 }
 
@@ -519,8 +522,7 @@ KJ_INLINE u64 kj_atomic64_cmp_swap(kjAtomic64* v, u64 cmp, u64 swap) {
 #endif
 }
 
-KJ_INLINE void* kj_atomic_cmp_swap_ptr(
-        kjAtomicPtr* v, void* cmp, void* swap) {
+KJ_INLINE void* kj_atomic_cmp_swap_ptr(kjAtomicPtr* v, void* cmp, void* swap) {
 #if defined(KJ_COMPILER_MSVC)
     return _InterlockedCompareExchangePointer(v, swap, cmp);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
