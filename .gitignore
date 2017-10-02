@@ -14,3 +14,4 @@ test/*
 *.dll
 *.so
 *.txt
+.clang-format
