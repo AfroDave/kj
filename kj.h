@@ -184,6 +184,14 @@ typedef __builtin_va_list va_list;
 #endif
 #endif
 
+#if !defined(KJ_TLS)
+#if defined(KJ_COMPILER_MSVC)
+#define KJ_TLS __declspec(thread)
+#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+#define KJ_TLS __thread
+#endif
+#endif
+
 #if defined(KJ_ARCH_X86)
 #if defined(KJ_SYS_WIN32)
 #include <intrin.h>
@@ -2193,6 +2201,8 @@ isize kj_file_spit(const char* path, void* buf, isize size) {
     return res;
 }
 
+KJ_INTERN u64 _kj_filetime_to_unix(FILETIME* ft);
+
 kjResult kj_file_metadata(kjFileMetadata* meta, kjFd fd) {
     kj_validate(fd != KJ_FD_INVALID, { return KJ_ERROR_BAD_HANDLE; });
     kj_validate(meta != NULL, { return KJ_ERROR_PARAM; });
@@ -2916,7 +2926,7 @@ char* kj_utf8_from_ucs_alloc(const WCHAR* ws, i32 wsize) {
     return res;
 }
 
-KJ_INTERN __declspec(thread) WCHAR _KJ_WCHAR_BUF[KJ_STACK_BUF_SIZE];
+KJ_INTERN KJ_TLS WCHAR _KJ_WCHAR_BUF[KJ_STACK_BUF_SIZE];
 #define _KJ_WCHAR_SIZE kj_isize_of(_KJ_WCHAR_BUF)
 
 WCHAR* kj_ucs_from_utf8_malloca(const char* s, i32 size) {
@@ -2927,7 +2937,7 @@ WCHAR* kj_ucs_from_utf8_malloca(const char* s, i32 size) {
     return res;
 }
 
-KJ_INTERN __declspec(thread) char _KJ_CHAR_BUF[KJ_STACK_BUF_SIZE];
+KJ_INTERN KJ_TLS char _KJ_CHAR_BUF[KJ_STACK_BUF_SIZE];
 #define _KJ_CHAR_SIZE kj_isize_of(_KJ_CHAR_BUF)
 
 char* kj_utf8_from_ucs_malloca(const WCHAR* ws, i32 wsize) {
@@ -3376,7 +3386,7 @@ KJ_INLINE void _kj_systime_to_datetime(struct tm* tm, kjDateTime* dt) {
 }
 
 #if defined(KJ_SYS_WIN32)
-KJ_INLINE u64 _kj_filetime_to_unix(FILETIME* ft) {
+static KJ_INLINE u64 _kj_filetime_to_unix(FILETIME* ft) {
     ULARGE_INTEGER ul;
     ul.LowPart = ft->dwLowDateTime;
     ul.HighPart = ft->dwHighDateTime;
@@ -3407,7 +3417,7 @@ KJ_INLINE u64 kj_datetime_to_timestamp(kjDateTime dt) {
     st.wYear = dt.year;
     st.wMonth = dt.month;
     st.wDay = dt.day;
-    st.wHour = dt.hour;
+    st.wHour = dt.hours;
     st.wMinute = dt.minutes;
     st.wSecond = dt.seconds;
     st.wMilliseconds = dt.milliseconds;
