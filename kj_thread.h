@@ -1,15 +1,6 @@
 /*
  * `kj_thread.h`
  *
- * ---------------------------------- LICENSE ----------------------------------
- * This software is in the public domain.  Where that dedication is not
- * recognized, you are granted a perpetual, irrevocable license to copy,
- * distribute, and modify the source code as you see fit.
- *
- * The source code is provided "as is", without warranty of any kind, express
- * or implied. No attribution is required, but always appreciated.
- * =============================================================================
- *
  * usage:
  *      #define KJ_THREAD_IMPL
  *      #include "kj_thread.h"
@@ -44,7 +35,6 @@ extern "C" {
 #if !defined(KJ_SYS_WIN32)
 #define KJ_SYS_WIN32
 #endif
-#pragma comment(lib, "kernel32.lib")
 #elif defined(__unix__) || defined(__CYGWIN__) || defined(__MSYS__)
 #include <pthread.h>
 #include <sched.h>
@@ -78,6 +68,14 @@ extern "C" {
 #define KJ_ALIGN(a) __declspec(align(a))
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
 #define KJ_ALIGN(a) __attribute__((aligned(a)))
+#endif
+#endif
+
+#if !defined(KJ_FORCE_INLINE)
+#if defined(KJ_COMPILER_MSVC)
+#define KJ_FORCE_INLINE __forceinline
+#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+#define KJ_FORCE_INLINE __attribute__((always_inline)) inline
 #endif
 #endif
 
@@ -129,13 +127,13 @@ enum {
 #if defined(KJ_SYS_WIN32)
 typedef CRITICAL_SECTION kjMutex;
 typedef HANDLE kjSemaphore;
-typedef uint32_t kjTls;
-#define KJ_TLS_INVALID ((uint32_t) -1)
+typedef uint32_t kjThreadLocal;
+#define KJ_THREAD_LOCAL_INVALID ((uint32_t) -1)
 #elif defined(KJ_SYS_UNIX)
 typedef pthread_mutex_t kjMutex;
 typedef sem_t kjSemaphore;
-typedef pthread_key_t kjTls;
-#define KJ_TLS_INVALID ((pthread_key_t) -1)
+typedef pthread_key_t kjThreadLocal;
+#define KJ_THREAD_LOCAL_INVALID ((pthread_key_t) -1)
 #endif
 
 #define KJ_THREAD_FN(name) void* name(void* data)
@@ -150,16 +148,26 @@ typedef struct kjThread {
     uint32_t flags;
     kjThreadFn* fn;
     void* data;
-    void* res;
+    void* result;
 } kjThread;
 
-#if !defined(KJ_TLS)
+#if !defined(KJ_THREAD_LOCAL)
 #if defined(KJ_COMPILER_MSVC)
-#define KJ_TLS __declspec(thread)
+#define KJ_THREAD_LOCAL __declspec(thread)
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-#define KJ_TLS __thread
+#define KJ_THREAD_LOCAL __thread
 #endif
 #endif
+
+typedef enum kjMemoryOrder {
+    KJ_MEMORY_ORDER_RELAXED,
+    KJ_MEMORY_ORDER_CONSUME,
+    KJ_MEMORY_ORDER_ACQUIRE,
+    KJ_MEMORY_ORDER_RELEASE,
+    KJ_MEMORY_ORDER_ACQ_REL,
+    KJ_MEMORY_ORDER_SEQ_CST,
+    KJ_MEMORY_ORDER_COUNT
+} kjMemoryOrder;
 
 #if defined(KJ_COMPILER_MSVC)
 typedef struct kjAtomic32 { volatile LONG value; } kjAtomic32;
@@ -179,65 +187,112 @@ typedef struct kjAtomicPtr { KJ_ALIGN(8) volatile void* value; } kjAtomicPtr;
 #endif
 #endif
 
+typedef kjAtomic32 kjSpinLock;
+
 KJ_API void kj_yield(void);
+KJ_API uint32_t kj_hardware_thread_count(void);
 KJ_API void kj_sleep_ms(uint32_t ms);
 
-KJ_API bool kj_thread(kjThread* thread, kjThreadFn* fn, void* data, uint32_t flags);
+KJ_API kjThread kj_thread(kjThreadFn* fn, void* data, uint32_t flags);
 KJ_API void kj_thread_start(kjThread* thread);
 KJ_API void* kj_thread_join(kjThread* thread);
 KJ_API void kj_thread_detach(kjThread* thread);
 KJ_API void kj_thread_set_name(kjThread* thread, const char* name);
 KJ_API uint32_t kj_thread_id(void);
+KJ_API kjThread kj_thread_current(void);
 
-KJ_API bool kj_tls(kjTls* tls);
-KJ_API void kj_tls_destroy(kjTls tls);
-KJ_API void kj_tls_set(kjTls tls, void* value);
-KJ_API void* kj_tls_get(kjTls tls);
+KJ_API kjThreadLocal kj_thread_local(void);
+KJ_API void kj_thread_local_destroy(kjThreadLocal tls);
+KJ_API void kj_thread_local_set(kjThreadLocal tls, void* value);
+KJ_API void* kj_thread_local_get(kjThreadLocal tls);
 
-KJ_API bool kj_mutex(kjMutex* mutex);
+KJ_API kjMutex kj_mutex(void);
 KJ_API void kj_mutex_destroy(kjMutex* mutex);
 KJ_API void kj_mutex_lock(kjMutex* mutex);
 KJ_API bool kj_mutex_try_lock(kjMutex* mutex);
 KJ_API void kj_mutex_unlock(kjMutex* mutex);
 
-KJ_API bool kj_semaphore(kjSemaphore* semaphore, int32_t count);
+KJ_API kjSemaphore kj_semaphore(int32_t count);
 KJ_API void kj_semaphore_destroy(kjSemaphore* semaphore);
-KJ_API bool kj_semaphore_wait(kjSemaphore* semaphore, int32_t ms);
+KJ_API bool kj_semaphore_wait(kjSemaphore* semaphore);
 KJ_API bool kj_semaphore_try_wait(kjSemaphore* semaphore);
-KJ_API void kj_semaphore_signal(kjSemaphore* semaphore, int32_t count);
+KJ_API void kj_semaphore_signal(kjSemaphore* semaphore, uint32_t count);
+
+KJ_API kjSpinLock kj_spinlock(void);
+KJ_API void kj_spinlock_lock(kjSpinLock* spinlock);
+KJ_API void kj_spinlock_unlock(kjSpinLock* spinlock);
 
 KJ_API void kj_atomic_read_fence(void);
 KJ_API void kj_atomic_write_fence(void);
-KJ_API void kj_atomic_rw_fence(void);
+KJ_API void kj_atomic_read_write_fence(void);
 
+KJ_API void kj_atomic32_set(kjAtomic32* v, uint32_t value);
 KJ_API uint32_t kj_atomic32_load(kjAtomic32* v);
 KJ_API void kj_atomic32_store(kjAtomic32* v, uint32_t value);
 KJ_API bool kj_atomic32_cmp_swap(kjAtomic32* v, uint32_t cmp, uint32_t swap);
 KJ_API uint32_t kj_atomic32_swap(kjAtomic32* v, uint32_t swap);
-KJ_API uint32_t kj_atomic32_inc(kjAtomic32* v);
-KJ_API uint32_t kj_atomic32_dec(kjAtomic32* v);
 KJ_API uint32_t kj_atomic32_fetch_add(kjAtomic32* v, uint32_t op);
 KJ_API uint32_t kj_atomic32_fetch_sub(kjAtomic32* v, uint32_t op);
 KJ_API uint32_t kj_atomic32_fetch_or(kjAtomic32* v, uint32_t op);
 KJ_API uint32_t kj_atomic32_fetch_and(kjAtomic32* v, uint32_t op);
 KJ_API uint32_t kj_atomic32_fetch_xor(kjAtomic32* v, uint32_t op);
 
+KJ_API void kj_atomic64_set(kjAtomic64* v, uint64_t value);
 KJ_API uint64_t kj_atomic64_load(kjAtomic64* v);
 KJ_API void kj_atomic64_store(kjAtomic64* v, uint64_t value);
 KJ_API bool kj_atomic64_cmp_swap(kjAtomic64* v, uint64_t cmp, uint64_t swap);
 KJ_API uint64_t kj_atomic64_swap(kjAtomic64* v, uint64_t swap);
-KJ_API uint64_t kj_atomic64_inc(kjAtomic64* v);
-KJ_API uint64_t kj_atomic64_dec(kjAtomic64* v);
 KJ_API uint64_t kj_atomic64_fetch_add(kjAtomic64* v, uint64_t op);
 KJ_API uint64_t kj_atomic64_fetch_sub(kjAtomic64* v, uint64_t op);
 KJ_API uint64_t kj_atomic64_fetch_or(kjAtomic64* v, uint64_t op);
 KJ_API uint64_t kj_atomic64_fetch_and(kjAtomic64* v, uint64_t op);
 KJ_API uint64_t kj_atomic64_fetch_xor(kjAtomic64* v, uint64_t op);
 
+KJ_API void kj_atomic_ptr_set(kjAtomicPtr* v, void* value);
 KJ_API void* kj_atomic_ptr_load(kjAtomicPtr* v);
 KJ_API void kj_atomic_ptr_store(kjAtomicPtr* v, void* value);
 KJ_API bool kj_atomic_ptr_cmp_swap(kjAtomicPtr* v, void* cmp, void* swap);
 KJ_API void* kj_atomic_ptr_swap(kjAtomicPtr* v, void* swap);
+
+KJ_API uint32_t kj_atomic32_load_explicit(kjAtomic32* v, kjMemoryOrder order);
+KJ_API void kj_atomic32_store_explicit(kjAtomic32* v, uint32_t value, kjMemoryOrder order);
+KJ_API bool kj_atomic32_cmp_swap_explicit(kjAtomic32* v, uint32_t cmp, uint32_t swap, kjMemoryOrder success, kjMemoryOrder failure);
+KJ_API uint32_t kj_atomic32_swap_explicit(kjAtomic32* v, uint32_t swap, kjMemoryOrder order);
+KJ_API uint32_t kj_atomic32_fetch_add_explicit(kjAtomic32* v, uint32_t op, kjMemoryOrder order);
+KJ_API uint32_t kj_atomic32_fetch_sub_explicit(kjAtomic32* v, uint32_t op, kjMemoryOrder order);
+KJ_API uint32_t kj_atomic32_fetch_or_explicit(kjAtomic32* v, uint32_t op, kjMemoryOrder order);
+KJ_API uint32_t kj_atomic32_fetch_and_explicit(kjAtomic32* v, uint32_t op, kjMemoryOrder order);
+KJ_API uint32_t kj_atomic32_fetch_xor_explicit(kjAtomic32* v, uint32_t op, kjMemoryOrder order);
+
+KJ_API uint64_t kj_atomic64_load_explicit(kjAtomic64* v, kjMemoryOrder order);
+KJ_API void kj_atomic64_store_explicit(kjAtomic64* v, uint64_t value, kjMemoryOrder order);
+KJ_API bool kj_atomic64_cmp_swap_explicit(kjAtomic64* v, uint64_t cmp, uint64_t swap, kjMemoryOrder success, kjMemoryOrder failure);
+KJ_API uint64_t kj_atomic64_swap_explicit(kjAtomic64* v, uint64_t swap, kjMemoryOrder order);
+KJ_API uint64_t kj_atomic64_fetch_add_explicit(kjAtomic64* v, uint64_t op, kjMemoryOrder order);
+KJ_API uint64_t kj_atomic64_fetch_sub_explicit(kjAtomic64* v, uint64_t op, kjMemoryOrder order);
+KJ_API uint64_t kj_atomic64_fetch_or_explicit(kjAtomic64* v, uint64_t op, kjMemoryOrder order);
+KJ_API uint64_t kj_atomic64_fetch_and_explicit(kjAtomic64* v, uint64_t op, kjMemoryOrder order);
+KJ_API uint64_t kj_atomic64_fetch_xor_explicit(kjAtomic64* v, uint64_t op, kjMemoryOrder order);
+
+KJ_API void* kj_atomic_ptr_load_explicit(kjAtomicPtr* v, kjMemoryOrder order);
+KJ_API void kj_atomic_ptr_store_explicit(kjAtomicPtr* v, void* value, kjMemoryOrder order);
+KJ_API bool kj_atomic_ptr_cmp_swap_explicit(kjAtomicPtr* v, void* cmp, void* swap, kjMemoryOrder success, kjMemoryOrder failure);
+KJ_API void* kj_atomic_ptr_swap_explicit(kjAtomicPtr* v, void* swap, kjMemoryOrder order);
+
+#if 0
+typedef struct kjSpScQueue {
+    kjAtomic64 read;
+    kjAtomic64 write;
+    uint64_t capacity;
+    uint64_t stride;
+    uint8_t data[];
+} kjSpScQueue;
+
+KJ_API void kj_spsc_queue(kjSpScQueue* queue, uint64_t capacity, uint64_t stride);
+KJ_API bool kj_spsc_queue_enqueue(kjSpScQueue* queue, void* value);
+KJ_API bool kj_spsc_queue_dequeue(kjSpScQueue* queue, void* value);
+KJ_API bool kj_spsc_queue_peek(kjSpScQueue* queue, void* value);
+#endif
 
 #if defined(__cplusplus)
 }
@@ -246,11 +301,24 @@ KJ_API void* kj_atomic_ptr_swap(kjAtomicPtr* v, void* swap);
 #endif
 
 #if defined(KJ_THREAD_IMPL)
+
+static KJ_THREAD_LOCAL kjThread _KJ_THREAD_CURRENT;
+
+#if !defined(KJ_ASSERT)
+#include <assert.h>
+#define KJ_ASSERT assert
+#endif
+
+#if !defined(KJ_MEMCPY)
+#include <string.h>
+#define KJ_MEMCPY memcpy
+#endif
+
 void kj_yield(void) {
 #if defined(KJ_SYS_WIN32)
     SwitchToThread();
 #elif defined(KJ_SYS_UNIX)
-    syscall(SYS_sched_yield);
+    sched_yield();
 #endif
 }
 
@@ -276,48 +344,62 @@ void kj_sleep_ms(uint32_t ms) {
 #endif
 }
 
+uint32_t kj_hardware_thread_count(void) {
 #if defined(KJ_SYS_WIN32)
-static DWORD __cdecl _kj_win32_fn(LPVOID p) {
-    kjThread* thread = (kjThread*) p;
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+    return sysinfo.dwNumberOfProcessors;
+#elif defined(KJ_SYS_UNIX)
+    uint32_t res = sysconf(_SC_NPROCESSORS_ONLN);
+    return res < 0 ? 1: res;
+#endif
+}
+
+#if defined(KJ_SYS_WIN32)
+static DWORD __cdecl _kj_win32_thread_fn(LPVOID ptr) {
+    kjThread* thread = (kjThread*) ptr;
     if(thread) {
-        thread->res = thread->fn(thread->data);
+        thread->result = thread->fn(thread->data);
     }
     return 0;
 }
 #elif defined(KJ_SYS_UNIX)
-static void* _kj_pthread_fn(void* p) {
-    kjThread* thread = (kjThread*) p;
+static void* _kj_posix_thread_fn(void* ptr) {
+    kjThread* thread = (kjThread*) ptr;
     if(thread) {
-        thread->res = thread->fn(thread->data);
+        thread->result = thread->fn(thread->data);
     }
     return NULL;
 }
 #endif
 
-void _kj_thread_start(kjThread* thread) {
+static bool _kj_thread_create(kjThread* thread) {
 #if defined(KJ_SYS_WIN32)
-    thread->handle = CreateThread(NULL, 0, _kj_win32_fn, thread, 0, NULL);
+    thread->handle = CreateThread(NULL, 0, _kj_win32_thread_fn, thread, 0, NULL);
+    return thread->handle != INVALID_HANDLE_VALUE;
 #elif defined(KJ_SYS_UNIX)
-    pthread_create(&thread->handle, NULL, _kj_pthread_fn, thread) == 0;
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    int32_t err = pthread_create(&thread->handle, &attr, _kj_posix_thread_fn, thread);
+    pthread_attr_destroy(&attr);
+    return err == 0;
 #endif
 }
 
-bool kj_thread(kjThread* thread, kjThreadFn* fn, void* data, uint32_t flags) {
-    thread->fn = fn;
-    thread->data = data;
-    thread->res = NULL;
-    thread->flags = flags;
-    if((thread->flags & KJ_THREAD_SUSPENDED) != 1) {
-        _kj_thread_start(thread);
-        return thread->handle;
-    }
-    return true;
+kjThread kj_thread(kjThreadFn* fn, void* data, uint32_t flags) {
+    _KJ_THREAD_CURRENT.fn = fn;
+    _KJ_THREAD_CURRENT.data = data;
+    _KJ_THREAD_CURRENT.result = NULL;
+    _KJ_THREAD_CURRENT.flags = flags;
+    _kj_thread_create(&_KJ_THREAD_CURRENT);
+    return _KJ_THREAD_CURRENT;
 }
 
 void kj_thread_start(kjThread* thread) {
     if(thread->flags & KJ_THREAD_SUSPENDED) {
         thread->flags &= ~KJ_THREAD_SUSPENDED;
-        _kj_thread_start(thread);
+        _kj_thread_create(thread);
     }
 }
 
@@ -325,23 +407,19 @@ void* kj_thread_join(kjThread* thread) {
 #if defined(KJ_SYS_WIN32)
     WaitForSingleObjectEx(thread->handle, INFINITE, FALSE);
     CloseHandle(thread->handle);
+    thread->handle = INVALID_HANDLE_VALUE;
 #elif defined(KJ_SYS_UNIX)
     pthread_join(thread->handle, NULL);
+    thread->handle = 0;
 #endif
-    return thread->res;
-}
-
-void kj_thread_detach(kjThread* thread) {
-#if defined(KJ_SYS_WIN32)
-    CloseHandle(thread->handle);
-    thread->handle = NULL;
-#elif defined(KJ_SYS_UNIX)
-    pthread_detach(thread->handle);
-#endif
+    return thread->result;
 }
 
 void kj_thread_set_name(kjThread* thread, const char* name) {
-#if 0 && defined(KJ_SYS_WIN32)
+#if defined(KJ_SYS_WIN32)
+    (void) thread;
+    (void) name;
+#if 0
     const DWORD MS_VC_EXCEPTION = 0x406D1388;
 #pragma pack(push, 8)
     typedef struct tagTHREADNAME_INFO {
@@ -360,6 +438,7 @@ void kj_thread_set_name(kjThread* thread, const char* name) {
         RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*) &info);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
+#endif
 #elif defined(KJ_SYS_UNIX)
     pthread_setname_np(thread->handle, name);
 #endif
@@ -373,22 +452,23 @@ uint32_t kj_thread_id(void) {
 #endif
 }
 
-bool kj_tls(kjTls* tls) {
+kjThread kj_thread_current(void) {
+    return _KJ_THREAD_CURRENT;
+}
+
+kjThreadLocal kj_thread_local(void) {
+    kjThreadLocal res;
 #if defined(KJ_SYS_WIN32)
-    if((*tls = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
-        *tls = KJ_TLS_INVALID;
-        return false;
-    }
+    res = TlsAlloc();
+    KJ_ASSERT(res != TLS_OUT_OF_INDEXES);
 #elif defined(KJ_SYS_UNIX)
-    if((res = pthread_key_create(tls, NULL)) != 0) {
-        *tls = KJ_TLS_INVALID;
-        return false;
-    }
+    res = pthread_key_create(tls, NULL);
+    KJ_ASSERT(res == 0);
 #endif
     return true;
 }
 
-void kj_tls_destroy(kjTls tls) {
+KJ_FORCE_INLINE void kj_thread_local_destroy(kjThreadLocal tls) {
 #if defined(KJ_SYS_WIN32)
     TlsFree(tls);
 #elif defined(KJ_SYS_UNIX)
@@ -396,7 +476,7 @@ void kj_tls_destroy(kjTls tls) {
 #endif
 }
 
-void kj_tls_set(kjTls tls, void* value) {
+KJ_FORCE_INLINE void kj_thread_local_set(kjThreadLocal tls, void* value) {
 #if defined(KJ_SYS_WIN32)
     TlsSetValue(tls, value);
 #elif defined(KJ_SYS_UNIX)
@@ -404,7 +484,7 @@ void kj_tls_set(kjTls tls, void* value) {
 #endif
 }
 
-void* kj_tls_get(kjTls tls) {
+KJ_FORCE_INLINE void* kj_thread_local_get(kjThreadLocal tls) {
 #if defined(KJ_SYS_WIN32)
     return TlsGetValue(tls);
 #elif defined(KJ_SYS_UNIX)
@@ -412,20 +492,21 @@ void* kj_tls_get(kjTls tls) {
 #endif
 }
 
-bool kj_mutex(kjMutex* mutex) {
+kjMutex kj_mutex(void) {
+    kjMutex res;
 #if defined(KJ_SYS_WIN32)
-    return InitializeCriticalSectionAndSpinCount(mutex, 4000);
+    InitializeCriticalSectionAndSpinCount(&res, 4000);
 #elif defined(KJ_SYS_UNIX)
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    bool res = pthread_mutex_init(mutex, &attr) == 0;
+    pthread_mutex_init(&res, &attr);
     pthread_mutexattr_destroy(&attr);
-    return res;
 #endif
+    return res;
 }
 
-void kj_mutex_destroy(kjMutex* mutex) {
+KJ_FORCE_INLINE void kj_mutex_destroy(kjMutex* mutex) {
 #if defined(KJ_SYS_WIN32)
     DeleteCriticalSection(mutex);
 #elif defined(KJ_SYS_UNIX)
@@ -433,17 +514,15 @@ void kj_mutex_destroy(kjMutex* mutex) {
 #endif
 }
 
-void kj_mutex_lock(kjMutex* mutex) {
+KJ_FORCE_INLINE void kj_mutex_lock(kjMutex* mutex) {
 #if defined(KJ_SYS_WIN32)
-    if(kj_mutex_try_lock(mutex)) {
-        EnterCriticalSection(mutex);
-    }
+    EnterCriticalSection(mutex);
 #elif defined(KJ_SYS_UNIX)
     pthread_mutex_lock(mutex);
 #endif
 }
 
-bool kj_mutex_try_lock(kjMutex* mutex) {
+KJ_FORCE_INLINE bool kj_mutex_try_lock(kjMutex* mutex) {
 #if defined(KJ_SYS_WIN32)
     return TryEnterCriticalSection(mutex) != 0;
 #elif defined(KJ_SYS_UNIX)
@@ -451,7 +530,7 @@ bool kj_mutex_try_lock(kjMutex* mutex) {
 #endif
 }
 
-void kj_mutex_unlock(kjMutex* mutex) {
+KJ_FORCE_INLINE void kj_mutex_unlock(kjMutex* mutex) {
 #if defined(KJ_SYS_WIN32)
     LeaveCriticalSection(mutex);
 #elif defined(KJ_SYS_UNIX)
@@ -459,16 +538,17 @@ void kj_mutex_unlock(kjMutex* mutex) {
 #endif
 }
 
-bool kj_semaphore(kjSemaphore* semaphore, int32_t count) {
+kjSemaphore kj_semaphore(int32_t count) {
 #if defined(KJ_SYS_WIN32)
-    *semaphore = CreateSemaphore(NULL, count, count, NULL);
-    return *semaphore;
+    return CreateSemaphore(NULL, count, count, NULL);
 #elif defined(KJ_SYS_UNIX)
-    return sem_init(semaphore, 0, count) == 0;
+    kjSemaphore res;
+    sem_init(&res, 0, count);
+    return res;
 #endif
 }
 
-void kj_semaphore_destroy(kjSemaphore* semaphore) {
+KJ_FORCE_INLINE void kj_semaphore_destroy(kjSemaphore* semaphore) {
 #if defined(KJ_SYS_WIN32)
     CloseHandle(semaphore);
 #elif defined(KJ_SYS_UNIX)
@@ -476,24 +556,19 @@ void kj_semaphore_destroy(kjSemaphore* semaphore) {
 #endif
 }
 
-bool kj_semaphore_wait(kjSemaphore* semaphore, int32_t ms) {
+KJ_FORCE_INLINE bool kj_semaphore_wait(kjSemaphore* semaphore) {
 #if defined(KJ_SYS_WIN32)
-    uint32_t res = WaitForSingleObject(semaphore, ms < 0 ? INFINITE: ms);
-    return res == WAIT_OBJECT_0 || res == WAIT_TIMEOUT;
+    return WaitForSingleObject(semaphore, INFINITE) == WAIT_OBJECT_0;
 #elif defined(KJ_SYS_UNIX)
-    if(ms <= 0) {
-        return sem_wait(semaphore) == 0;
-    } else {
-        struct timespec ts;
-        kj_mem_zero(&ts, sizeof(struct timespec));
-        ts.tv_sec = ms / 1000;
-        ts.tv_nsec = (ms % 1000) * 1000;
-        return sem_timedwait(semaphore, &ts) == 0;
-    }
+    int32_t err = 0;
+    do {
+        err = sem_wait(semaphore) == 0;
+    } while(err == -1 && errno == EINTR);
+    return err == 0;
 #endif
 }
 
-bool kj_semaphore_try_wait(kjSemaphore* semaphore) {
+KJ_FORCE_INLINE bool kj_semaphore_try_wait(kjSemaphore* semaphore) {
 #if defined(KJ_SYS_WIN32)
     return WaitForSingleObject(semaphore, 0) == WAIT_OBJECT_0;
 #elif defined(KJ_SYS_UNIX)
@@ -501,7 +576,7 @@ bool kj_semaphore_try_wait(kjSemaphore* semaphore) {
 #endif
 }
 
-void kj_semaphore_signal(kjSemaphore* semaphore, int32_t count) {
+KJ_FORCE_INLINE void kj_semaphore_signal(kjSemaphore* semaphore, uint32_t count) {
 #if defined(KJ_SYS_WIN32)
     ReleaseSemaphore(semaphore, count, NULL);
 #elif defined(KJ_SYS_UNIX)
@@ -509,7 +584,23 @@ void kj_semaphore_signal(kjSemaphore* semaphore, int32_t count) {
 #endif
 }
 
-void kj_atomic_read_fence(void) {
+kjSpinLock kj_spinlock(void) {
+    kjSpinLock res;
+    kj_atomic32_store(&res, 0);
+    return res;
+}
+
+KJ_FORCE_INLINE void kj_spinlock_lock(kjSpinLock* spinlock) {
+    while(kj_atomic32_cmp_swap(spinlock, 1, 0) != 0) {
+        kj_yield();
+    }
+}
+
+KJ_FORCE_INLINE void kj_spinlock_unlock(kjSpinLock* spinlock) {
+    kj_atomic32_store(spinlock, 0);
+}
+
+KJ_FORCE_INLINE void kj_atomic_read_fence(void) {
 #if defined(KJ_COMPILER_MSVC)
     _ReadBarrier();
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
@@ -517,7 +608,7 @@ void kj_atomic_read_fence(void) {
 #endif
 }
 
-void kj_atomic_write_fence(void) {
+KJ_FORCE_INLINE void kj_atomic_write_fence(void) {
 #if defined(KJ_COMPILER_MSVC)
     _WriteBarrier();
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
@@ -525,7 +616,7 @@ void kj_atomic_write_fence(void) {
 #endif
 }
 
-void kj_atomic_rw_fence(void) {
+KJ_FORCE_INLINE void kj_atomic_read_write_fence(void) {
 #if defined(KJ_COMPILER_MSVC)
     _ReadWriteBarrier();
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
@@ -533,213 +624,370 @@ void kj_atomic_rw_fence(void) {
 #endif
 }
 
-uint32_t kj_atomic32_load(kjAtomic32* v) {
+//#if defined(KJ_SYS_WIN32)
+//    _mm_mfence();
+//#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+//    __sync_synchronize();
+//#endif
+
+#if defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
+const uint32_t _KJ_MEMORY_ORDER[KJ_MEMORY_ORDER_COUNT] = {
+    __ATOMIC_RELAXED,
+    __ATOMIC_CONSUME,
+    __ATOMIC_ACQUIRE,
+    __ATOMIC_RELEASE,
+    __ATOMIC_ACQ_REL,
+    __ATOMIC_SEQ_CST,
+};
+#endif
+
+KJ_FORCE_INLINE void kj_atomic32(kjAtomic32* v, uint32_t value) {
+    v->value = value;
+}
+
+KJ_FORCE_INLINE uint32_t kj_atomic32_load_explicit(kjAtomic32* v, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedExchange(&v->value, v->value);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_load_n(&v->value, __ATOMIC_SEQ_CST);
+    return __atomic_load_n(&v->value, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-void kj_atomic32_store(kjAtomic32* v, uint32_t value) {
+KJ_FORCE_INLINE void kj_atomic32_store_explicit(kjAtomic32* v, uint32_t value, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     _InterlockedExchange(&v->value, value);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    __atomic_store_n(&v->value, value, __ATOMIC_SEQ_CST);
+    __atomic_store_n(&v->value, value, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-bool kj_atomic32_cmp_swap(kjAtomic32* v, uint32_t cmp, uint32_t swap) {
+KJ_FORCE_INLINE bool kj_atomic32_cmp_swap_explicit(kjAtomic32* v, uint32_t cmp, uint32_t swap, kjMemoryOrder success, kjMemoryOrder failure) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) success;
+    (void) failure;
     return _InterlockedCompareExchange(&v->value, swap, cmp);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_compare_exchange_n(&v->value, &cmp, swap, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+    return __atomic_compare_exchange_n(&v->value, &cmp, swap, false, _KJ_MEMORY_ORDER[success], _KJ_MEMORY_ORDER[failure]);
 #endif
 }
 
-uint32_t kj_atomic32_swap(kjAtomic32* v, uint32_t swap) {
+KJ_FORCE_INLINE uint32_t kj_atomic32_swap_explicit(kjAtomic32* v, uint32_t swap, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedExchange(&v->value, swap);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_exchange_n(&v->value, swap, __ATOMIC_SEQ_CST);
+    return __atomic_exchange_n(&v->value, swap, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-uint32_t kj_atomic32_inc(kjAtomic32* v) {
+KJ_FORCE_INLINE uint32_t kj_atomic32_fetch_add_explicit(kjAtomic32* v, uint32_t op, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
-    return _InterlockedIncrement(&v->value);
-#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_fetch_add(&v->value, 1, __ATOMIC_SEQ_CST);
-#endif
-}
-
-uint32_t kj_atomic32_dec(kjAtomic32* v) {
-#if defined(KJ_COMPILER_MSVC)
-    return _InterlockedDecrement(&v->value);
-#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_fetch_sub(&v->value, 1, __ATOMIC_SEQ_CST);
-#endif
-}
-
-uint32_t kj_atomic32_fetch_add(kjAtomic32* v, uint32_t op) {
-#if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedExchangeAdd(&v->value, op);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_fetch_add(&v->value, op, __ATOMIC_SEQ_CST);
+    return __atomic_fetch_add(&v->value, op, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-uint32_t kj_atomic32_fetch_sub(kjAtomic32* v, uint32_t op) {
+KJ_FORCE_INLINE uint32_t kj_atomic32_fetch_sub_explicit(kjAtomic32* v, uint32_t op, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return InterlockedExchangeAdd(&v->value, -((int32_t) op));
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_fetch_sub(&v->value, op, __ATOMIC_SEQ_CST);
+    return __atomic_fetch_sub(&v->value, op, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-uint32_t kj_atomic32_fetch_or(kjAtomic32* v, uint32_t op) {
+KJ_FORCE_INLINE uint32_t kj_atomic32_fetch_or_explicit(kjAtomic32* v, uint32_t op, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedOr(&v->value, op);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_fetch_or(&v->value, op, __ATOMIC_SEQ_CST);
+    return __atomic_fetch_or(&v->value, op, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-uint32_t kj_atomic32_fetch_and(kjAtomic32* v, uint32_t op) {
+KJ_FORCE_INLINE uint32_t kj_atomic32_fetch_and_explicit(kjAtomic32* v, uint32_t op, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedAnd(&v->value, op);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_fetch_and(&v->value, op, __ATOMIC_SEQ_CST);
+    return __atomic_fetch_and(&v->value, op, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-uint32_t kj_atomic32_fetch_xor(kjAtomic32* v, uint32_t op) {
+KJ_FORCE_INLINE uint32_t kj_atomic32_fetch_xor_explicit(kjAtomic32* v, uint32_t op, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedXor(&v->value, op);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_fetch_xor(&v->value, op, __ATOMIC_SEQ_CST);
+    return __atomic_fetch_xor(&v->value, op, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-uint64_t kj_atomic64_load(kjAtomic64* v) {
+KJ_FORCE_INLINE void kj_atomic64(kjAtomic64* v, uint64_t value) {
+    v->value = value;
+}
+
+KJ_FORCE_INLINE uint64_t kj_atomic64_load_explicit(kjAtomic64* v, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedExchange64(&v->value, v->value);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_load_n(&v->value, __ATOMIC_SEQ_CST);
+    return __atomic_load_n(&v->value, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-void kj_atomic64_store(kjAtomic64* v, uint64_t value) {
+KJ_FORCE_INLINE void kj_atomic64_store_explicit(kjAtomic64* v, uint64_t value, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     _InterlockedExchange64(&v->value, value);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    __atomic_store_n(&v->value, value, __ATOMIC_SEQ_CST);
+    __atomic_store_n(&v->value, value, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-bool kj_atomic64_cmp_swap(kjAtomic64* v, uint64_t cmp, uint64_t swap) {
+KJ_FORCE_INLINE bool kj_atomic64_cmp_swap_explicit(kjAtomic64* v, uint64_t cmp, uint64_t swap, kjMemoryOrder success, kjMemoryOrder failure) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) success;
+    (void) failure;
     return _InterlockedCompareExchange64(&v->value, swap, cmp);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_compare_exchange_n(&v->value, &cmp, swap, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+    return __atomic_compare_exchange_n(&v->value, &cmp, swap, false, _KJ_MEMORY_ORDER[success], _KJ_MEMORY_ORDER[failure]);
 #endif
 }
 
-uint64_t kj_atomic64_swap(kjAtomic64* v, uint64_t swap) {
+KJ_FORCE_INLINE uint64_t kj_atomic64_swap_explicit(kjAtomic64* v, uint64_t swap, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedExchange64(&v->value, swap);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_exchange_n(&v->value, swap, __ATOMIC_SEQ_CST);
+    return __atomic_exchange_n(&v->value, swap, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-uint64_t kj_atomic64_inc(kjAtomic64* v) {
+KJ_FORCE_INLINE uint64_t kj_atomic64_fetch_add_explicit(kjAtomic64* v, uint64_t op, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
-    return _InterlockedIncrement64(&v->value);
-#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_fetch_add(&v->value, 1, __ATOMIC_SEQ_CST);
-#endif
-}
-
-uint64_t kj_atomic64_dec(kjAtomic64* v) {
-#if defined(KJ_COMPILER_MSVC)
-    return _InterlockedDecrement64(&v->value);
-#elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_fetch_sub(&v->value, 1, __ATOMIC_SEQ_CST);
-#endif
-}
-
-uint64_t kj_atomic64_fetch_add(kjAtomic64* v, uint64_t op) {
-#if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedExchangeAdd64(&v->value, op);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_fetch_add(&v->value, op, __ATOMIC_SEQ_CST);
+    return __atomic_fetch_add(&v->value, op, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-uint64_t kj_atomic64_fetch_sub(kjAtomic64* v, uint64_t op) {
+KJ_FORCE_INLINE uint64_t kj_atomic64_fetch_sub_explicit(kjAtomic64* v, uint64_t op, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedExchangeAdd64(&v->value, -((int64_t) op));
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_fetch_sub(&v->value, op, __ATOMIC_SEQ_CST);
+    return __atomic_fetch_sub(&v->value, op, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-uint64_t kj_atomic64_fetch_or(kjAtomic64* v, uint64_t op) {
+KJ_FORCE_INLINE uint64_t kj_atomic64_fetch_or_explicit(kjAtomic64* v, uint64_t op, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedOr64(&v->value, op);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_fetch_or(&v->value, op, __ATOMIC_SEQ_CST);
+    return __atomic_fetch_or(&v->value, op, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-uint64_t kj_atomic64_fetch_and(kjAtomic64* v, uint64_t op) {
+KJ_FORCE_INLINE uint64_t kj_atomic64_fetch_and_explicit(kjAtomic64* v, uint64_t op, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedAnd64(&v->value, op);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_fetch_and(&v->value, op, __ATOMIC_SEQ_CST);
+    return __atomic_fetch_and(&v->value, op, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-uint64_t kj_atomic64_fetch_xor(kjAtomic64* v, uint64_t op) {
+KJ_FORCE_INLINE uint64_t kj_atomic64_fetch_xor_explicit(kjAtomic64* v, uint64_t op, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedXor64(&v->value, op);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_fetch_xor(&v->value, op, __ATOMIC_SEQ_CST);
+    return __atomic_fetch_xor(&v->value, op, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-void* kj_atomic_load_ptr(kjAtomicPtr* v) {
+KJ_FORCE_INLINE void kj_atomic_ptr(kjAtomicPtr* v, void* value) {
+    v->value = value;
+}
+
+KJ_FORCE_INLINE void* kj_atomic_ptr_load_explicit(kjAtomicPtr* v, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedExchangePointer(&v->value, v->value);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return (void*) __atomic_load_n(&v->value, __ATOMIC_SEQ_CST);
+    return (void*) __atomic_load_n(&v->value, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-void kj_atomic_store_ptr(kjAtomicPtr* v, void* value) {
+KJ_FORCE_INLINE void kj_atomic_ptr_store_explicit(kjAtomicPtr* v, void* value, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     _InterlockedExchangePointer(&v->value, value);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    __atomic_store_n(&v->value, value, __ATOMIC_SEQ_CST);
+    __atomic_store_n(&v->value, value, _KJ_MEMORY_ORDER[order]);
 #endif
 }
 
-bool kj_atomic_cmp_swap_ptr(kjAtomicPtr* v, void* cmp, void* swap) {
+KJ_FORCE_INLINE bool kj_atomic_ptr_cmp_swap_explicit(kjAtomicPtr* v, void* cmp, void* swap, kjMemoryOrder success, kjMemoryOrder failure) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) success;
+    (void) failure;
     return _InterlockedCompareExchangePointer(&v->value, swap, cmp);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return __atomic_compare_exchange_n(&v->value, cmp, swap, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+    return __atomic_compare_exchange_n(&v->value, cmp, swap, false, _KJ_MEMORY_ORDER[success], _KJ_MEMORY_ORDER[failure]);
 #endif
 }
 
-void* kj_atomic_swap_ptr(kjAtomicPtr* v, void* swap) {
+KJ_FORCE_INLINE void* kj_atomic_ptr_swap_explicit(kjAtomicPtr* v, void* swap, kjMemoryOrder order) {
 #if defined(KJ_COMPILER_MSVC)
+    (void) order;
     return _InterlockedExchangePointer(&v->value, swap);
 #elif defined(KJ_COMPILER_GNU) || defined(KJ_COMPILER_CLANG)
-    return (void*) __atomic_exchange_n(&v->value, swap, __ATOMIC_SEQ_CST);
+    return (void*) __atomic_exchange_n(&v->value, swap, _KJ_MEMORY_ORDER[order]);
 #endif
 }
+
+KJ_FORCE_INLINE uint32_t kj_atomic32_load(kjAtomic32* v) {
+    return kj_atomic32_load_explicit(v, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE void kj_atomic32_store(kjAtomic32* v, uint32_t value) {
+    kj_atomic32_store_explicit(v, value, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE bool kj_atomic32_cmp_swap(kjAtomic32* v, uint32_t cmp, uint32_t swap) {
+    return kj_atomic32_cmp_swap_explicit(v, cmp, swap, KJ_MEMORY_ORDER_SEQ_CST, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE uint32_t kj_atomic32_swap(kjAtomic32* v, uint32_t swap) {
+    return kj_atomic32_swap_explicit(v, swap, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE uint32_t kj_atomic32_fetch_add(kjAtomic32* v, uint32_t op) {
+    return kj_atomic32_fetch_add_explicit(v, op, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE uint32_t kj_atomic32_fetch_sub(kjAtomic32* v, uint32_t op) {
+    return kj_atomic32_fetch_sub_explicit(v, op, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE uint32_t kj_atomic32_fetch_or(kjAtomic32* v, uint32_t op) {
+    return kj_atomic32_fetch_or_explicit(v, op, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE uint32_t kj_atomic32_fetch_and(kjAtomic32* v, uint32_t op) {
+    return kj_atomic32_fetch_and_explicit(v, op, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE uint32_t kj_atomic32_fetch_xor(kjAtomic32* v, uint32_t op) {
+    return kj_atomic32_fetch_xor_explicit(v, op, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE uint64_t kj_atomic64_load(kjAtomic64* v) {
+    return kj_atomic64_load_explicit(v, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE void kj_atomic64_store(kjAtomic64* v, uint64_t value) {
+    kj_atomic64_store_explicit(v, value, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE bool kj_atomic64_cmp_swap(kjAtomic64* v, uint64_t cmp, uint64_t swap) {
+    return kj_atomic64_cmp_swap_explicit(v, cmp, swap, KJ_MEMORY_ORDER_SEQ_CST, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE uint64_t kj_atomic64_swap(kjAtomic64* v, uint64_t swap) {
+    return kj_atomic64_swap_explicit(v, swap, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE uint64_t kj_atomic64_fetch_add(kjAtomic64* v, uint64_t op) {
+    return kj_atomic64_fetch_add_explicit(v, op, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE uint64_t kj_atomic64_fetch_sub(kjAtomic64* v, uint64_t op) {
+    return kj_atomic64_fetch_sub_explicit(v, op, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE uint64_t kj_atomic64_fetch_or(kjAtomic64* v, uint64_t op) {
+    return kj_atomic64_fetch_or_explicit(v, op, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE uint64_t kj_atomic64_fetch_and(kjAtomic64* v, uint64_t op) {
+    return kj_atomic64_fetch_and_explicit(v, op, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE uint64_t kj_atomic64_fetch_xor(kjAtomic64* v, uint64_t op) {
+    return kj_atomic64_fetch_xor_explicit(v, op, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE void* kj_atomic_ptr_load(kjAtomicPtr* v) {
+    return kj_atomic_ptr_load_explicit(v, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE void kj_atomic_ptr_store(kjAtomicPtr* v, void* value) {
+    kj_atomic_ptr_store_explicit(v, value, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE bool kj_atomic_ptr_cmp_swap(kjAtomicPtr* v, void* cmp, void* swap) {
+    return kj_atomic_ptr_cmp_swap_explicit(v, cmp, swap, KJ_MEMORY_ORDER_SEQ_CST, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+KJ_FORCE_INLINE void* kj_atomic_ptr_swap(kjAtomicPtr* v, void* swap) {
+    return kj_atomic_ptr_swap_explicit(v, swap, KJ_MEMORY_ORDER_SEQ_CST);
+}
+
+#if 0
+void kj_spsc_queue(kjSpScQueue* queue, uint64_t capacity, uint64_t stride) {
+    kj_atomic64(&queue->read, 0);
+    kj_atomic64(&queue->write, 0);
+    queue->capacity = capacity;
+    queue->stride = stride;
+}
+
+void kj_spsc_queue_reset(kjSpScQueue* queue) {
+    kj_atomic64(&queue->read, 0);
+    kj_atomic64(&queue->write, 0);
+}
+
+KJ_FORCE_INLINE bool kj_spsc_queue_enqueue(kjSpScQueue* queue, void* value) {
+    uint64_t stride = queue->stride;
+    uint64_t capacity = queue->capacity;
+    uint64_t read = kj_atomic64_load_explicit(&queue->read, KJ_MEMORY_ORDER_ACQUIRE);
+    uint64_t write = kj_atomic64_load_explicit(&queue->write, KJ_MEMORY_ORDER_RELAXED);
+    uint32_t count = write - read;
+    if(count >= capacity) { return false; }
+    KJ_MEMCPY(queue->data + write * stride, value, stride);
+    kj_atomic64_store_explicit(&queue->write, (write + 1) % capacity, KJ_MEMORY_ORDER_RELEASE);
+    return true;
+}
+
+KJ_FORCE_INLINE bool kj_spsc_queue_dequeue(kjSpScQueue* queue, void* value) {
+    uint64_t stride = queue->stride;
+    uint64_t capacity = queue->capacity;
+    uint64_t read = kj_atomic64_load_explicit(&queue->read, KJ_MEMORY_ORDER_RELAXED);
+    uint64_t write = kj_atomic64_load_explicit(&queue->write, KJ_MEMORY_ORDER_ACQUIRE);
+    if(read == write) { return false; }
+    KJ_MEMCPY(value, queue->data + read * stride, stride);
+    kj_atomic64_store_explicit(&queue->read, (read + 1) % capacity, KJ_MEMORY_ORDER_RELEASE);
+    return true;
+}
+
+KJ_FORCE_INLINE bool kj_spsc_queue_peek(kjSpScQueue* queue, void* value) {
+    uint64_t stride = queue->stride;
+    uint64_t read = kj_atomic64_load_explicit(&queue->read, KJ_MEMORY_ORDER_RELAXED);
+    uint64_t write = kj_atomic64_load_explicit(&queue->write, KJ_MEMORY_ORDER_ACQUIRE);
+    if(read == write) { return false; }
+    KJ_MEMCPY(value, queue->data + read * stride, stride);
+    return true;
+}
+#endif
+
 #endif
 
 /*
